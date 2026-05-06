@@ -1,84 +1,61 @@
-# Simple Event Check-In — Event Lab
+# MD_mobile_android
 
-Uproszczona aplikacja mobilna do obsługi check-inu uczestników na wydarzeniach.
-Przeznaczona dla obsługi na miejscu — szybka, offline-capable, skupiona na jednym zadaniu.
+Native Android app for Medidesk event organizers.
 
----
+## Tech Stack
 
-## Zakres funkcjonalny (MVP)
+- Kotlin 2.0.21 + Jetpack Compose (Material 3)
+- Hilt (DI), Retrofit + Moshi (networking), Room (offline DB)
+- WorkManager (background sync), CameraX + MLKit (QR scanner)
+- Navigation Compose, DataStore (JWT storage)
 
-### 1. Logowanie
-- Logowanie kontem administratora (te same konta co panel webowy)
-- JWT token, sesja persystowana lokalnie
-- Wylogowanie
+## Architecture
 
-### 2. Lista wydarzeń
-- Wyświetlenie dostępnych wydarzeń
-- Wybór wydarzenia do obsługi check-inu
+Multi-module Clean Architecture:
+- `core/` — shared infrastructure (network, DB, theme, sync)
+- `features/` — independent feature modules (auth, events, scanner, etc.)
+- `app/` — wiring, navigation, DI entry point
 
-### 3. Lista uczestników
-- Lista uczestników wybranego wydarzenia
-- Informacje: imię, nazwisko, typ biletu, status check-inu
-- Wyszukiwanie uczestnika po nazwisku / emailu
+## Backend
 
-### 4. Ręczny check-in uczestnika
-- Wyszukanie uczestnika na liście
-- Potwierdzenie check-inu jednym tapnięciem
-- Informacja zwrotna: sukces / już zaczekowany / błąd
+All API endpoints are on the existing Flask backend:
+`https://md-order-portal-backend.onrender.com/api/mobile/`
 
-### 5. Skaner kodów QR
-- Skanowanie kodu QR z biletu uczestnika
-- Automatyczne wyszukanie uczestnika po `backstage_ticket_id`
-- Ekran potwierdzenia z danymi uczestnika
-- Możliwość anulowania / potwierdzenia check-inu
+No new backend services required.
 
-### 6. Statystyki check-inu
-- Liczba zacheck-inowanych vs wszystkich uczestników
-- Pasek postępu
-- Odświeżanie w czasie rzeczywistym
+## Setup
 
----
+1. Open project in Android Studio Ladybug or newer
+2. Copy `local.properties.example` to `local.properties` and fill in `sdk.dir`
+3. Sync Gradle
+4. Run on device or emulator (API 26+)
 
-## Stack technologiczny (planowany)
+## Build
 
-- **Framework:** Expo (React Native, TypeScript)
-- **Routing:** Expo Router (file-based)
-- **Kamera/QR:** `expo-camera` + `expo-barcode-scanner`
-- **Auth:** JWT via Secure Store (`expo-secure-store`)
-- **API:** Backend Medidesk (`/api/mobile/*`)
-- **Offline:** `expo-sqlite` (cache uczestników, kolejka check-inów)
-- **Build:** EAS Build (Android APK + iOS)
+```bash
+./gradlew assembleDebug
+```
 
----
+For release APK:
+```bash
+./gradlew assembleRelease
+```
 
-## API (z istniejącego backendu)
+## Modules
 
-Wszystkie endpointy już istnieją w `backend/api/mobile.py`:
-
-| Endpoint | Opis |
-|---|---|
-| `POST /api/mobile/login` | Logowanie, zwraca JWT |
-| `GET /api/mobile/me` | Dane zalogowanego użytkownika |
-| `GET /api/mobile/events` | Lista wydarzeń |
-| `GET /api/mobile/events/:id/participants` | Lista uczestników wydarzenia |
-| `POST /api/mobile/checkin` | Check-in uczestnika (po ticket_id) |
-| `POST /api/mobile/checkin/sync` | Sync offline check-inów |
-| `GET /api/mobile/events/:id/checkin-stats` | Statystyki check-inu |
-
----
-
-## Powiązanie z monorepo
-
-Ten projekt jest submodułem monorepo `Event_orders_portal_monorepo`.
-Współdzieli backend z aplikacją `checkin-app/` (pełna wersja) — używa tych samych endpointów API.
-
-Różnica względem `checkin-app/`:
-- Uproszczony UI, bez zaawansowanych funkcji
-- Przeznaczony jako wersja demonstracyjna / Event Lab
-- Szybszy onboarding dla nowych operatorów
-
----
-
-## Status
-
-`SCAFFOLD` — projekt w fazie planowania. Kod nie jest jeszcze napisany.
+| Module | Purpose |
+|--------|---------|
+| `core-model` | Shared domain data classes |
+| `core-network` | Retrofit + JWT interceptor |
+| `core-database` | Room offline cache |
+| `core-datastore` | JWT token storage |
+| `core-ui` | Material3 theme + shared composables |
+| `core-sync` | WorkManager sync engine |
+| `feature-auth` | Login screen |
+| `feature-events` | Event list |
+| `feature-scanner` | QR scanner + check-in |
+| `feature-participants` | Participant list (offline-first) |
+| `feature-dashboard` | KPI + statistics |
+| `feature-walkin` | Walk-in form + offline queue |
+| `feature-inhub` | Kiosk/InHub mode |
+| `feature-more` | Profile + settings |
