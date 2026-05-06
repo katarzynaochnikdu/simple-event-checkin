@@ -1,0 +1,56 @@
+{
+  "expo": {
+    "name": "Simple Event Check-In",
+    "slug": "simple-event-checkin",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "platforms": [
+      "android"
+    ],
+    "icon": "./assets/icon.png",
+    "scheme": "simple-event-checkin",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0d9488"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0d9488"
+      },
+      "package": "pl.medidesk.eventlab.checkin",
+      "permissions": [
+        "CAMERA"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Pozwól na dostęp do kamery, aby skanować kody QR uczestników."
+        }
+      ],
+      "expo-asset",
+      "expo-sqlite",
+      "expo-font"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "TO_BE_FILLED_AFTER_EAS_INIT"
+      },
+      "router": {
+        "origin": false
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "TO_BE_FILLED_AFTER_EAS_INIT"
+    }
+  }
+}
