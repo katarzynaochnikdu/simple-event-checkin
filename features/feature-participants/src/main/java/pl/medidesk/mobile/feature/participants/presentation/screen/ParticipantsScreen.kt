@@ -7,7 +7,6 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -28,8 +27,6 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import pl.medidesk.mobile.core.model.Participant
-import pl.medidesk.mobile.core.ui.components.SyncStatusBar
-import pl.medidesk.mobile.core.ui.theme.ScanSuccess
 import pl.medidesk.mobile.feature.participants.presentation.viewmodel.ParticipantsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -145,7 +142,6 @@ fun ParticipantsScreen(
 
                 Spacer(Modifier.width(8.dp))
 
-                // Filter icon with badge when active
                 BadgedBox(
                     badge = {
                         if (isFilterActive) Badge(containerColor = MaterialTheme.colorScheme.error)
@@ -191,7 +187,6 @@ fun ParticipantsScreen(
         }
     }
 
-    // Filter Bottom Sheet
     if (showFilterSheet) {
         ModalBottomSheet(
             onDismissRequest = { showFilterSheet = false },
@@ -277,132 +272,115 @@ private fun ParticipantItem(participant: Participant, onClick: () -> Unit, onSta
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .padding(horizontal = 16.dp, vertical = 4.dp)
             .clickable { onClick() },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
     ) {
         Row(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "${participant.lastName.orEmpty()}, ${participant.firstName.orEmpty()}",
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    if (participant.tags.isNotEmpty()) {
-                        Spacer(Modifier.width(8.dp))
-                        Surface(
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            shape = RoundedCornerShape(4.dp)
-                        ) {
-                            Text(
-                                text = participant.tags.first(),
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
-                    }
-                }
-                
-                val companyText = participant.company.orEmpty().ifEmpty { 
-                    participant.buyerName?.let { "Płatnik: $it" } ?: "Indywidualny uczestnik"
-                }
-                Text(
-                    text = companyText,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                
-                if (!participant.email.isNullOrEmpty() || !participant.phone.isNullOrEmpty()) {
-                    val contactText = listOfNotNull(participant.phone, participant.email).joinToString(" • ")
-                    Text(
-                        text = contactText,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                        style = MaterialTheme.typography.bodySmall,
-                        fontSize = 11.sp
-                    )
-                }
-            }
-            
-
-            Column(horizontalAlignment = Alignment.End) {
-                Surface(
-                    color = MaterialTheme.colorScheme.surfaceVariant,
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text(
-                        text = participant.ticketName ?: "Standard",
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelSmall,
-                        fontSize = 10.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                val orderStatus = participant.orderStatus
-                if (!orderStatus.isNullOrEmpty()) {
-                    Spacer(Modifier.height(4.dp))
-                    val statusColor = when (orderStatus.lowercase()) {
-                        "paid" -> Color(0xFFE8F5E9)
-                        "unpaid" -> Color(0xFFFFEBEE)
-                        "cancelled" -> Color(0xFFECEFF1)
-                        else -> Color(0xFFFFF3E0)
-                    }
-                    val statusTextColor = when (orderStatus.lowercase()) {
-                        "paid" -> Color(0xFF2E7D32)
-                        "unpaid" -> Color(0xFFC62828)
-                        "cancelled" -> Color(0xFF546E7A)
-                        else -> Color(0xFFEF6C00)
-                    }
-                    val statusText = when (orderStatus.lowercase()) {
-                        "paid" -> "Opłacone"
-                        "unpaid" -> "Nieopłacone"
-                        "cancelled" -> "Anulowane"
-                        else -> orderStatus
-                    }
-
-                    Surface(
-                        color = if (isSystemInDarkTheme()) statusTextColor.copy(alpha = 0.2f) else statusColor,
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text(
-                            text = statusText,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontSize = 10.sp,
-                            color = if (isSystemInDarkTheme()) statusTextColor.copy(alpha = 0.9f) else statusTextColor
-                        )
-                    }
-                }
-            }
-
-            Spacer(Modifier.width(12.dp))
-
-            IconButton(onClick = onStatusClick) {
+            // Check-in status icon (left side)
+            IconButton(
+                onClick = onStatusClick,
+                modifier = Modifier.size(36.dp)
+            ) {
                 if (participant.isCheckedIn) {
                     Icon(
                         Icons.Default.CheckCircle,
-                        contentDescription = "Odznaczony",
+                        contentDescription = "Zameldowany",
                         tint = Color(0xFF4CAF50),
-                        modifier = Modifier.size(28.dp)
+                        modifier = Modifier.size(26.dp)
                     )
                 } else {
                     Icon(
                         Icons.Outlined.AccessTime,
                         contentDescription = "Oczekujący",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                        modifier = Modifier.size(28.dp)
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f),
+                        modifier = Modifier.size(26.dp)
                     )
                 }
             }
+
+            Spacer(Modifier.width(10.dp))
+
+            // Name + subtitle
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = participant.displayName,
+                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1
+                )
+
+                val subtitle = participant.company?.takeIf { it.isNotBlank() }
+                    ?: participant.email?.takeIf { it.isNotBlank() }
+                if (subtitle != null) {
+                    Text(
+                        text = subtitle,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        style = MaterialTheme.typography.bodySmall,
+                        maxLines = 1,
+                        fontSize = 12.sp
+                    )
+                }
+            }
+
+            Spacer(Modifier.width(8.dp))
+
+            // Right side: ticket name + payment status
+            Column(horizontalAlignment = Alignment.End) {
+                if (!participant.ticketName.isNullOrBlank()) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        shape = RoundedCornerShape(6.dp)
+                    ) {
+                        Text(
+                            text = participant.ticketName!!,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontSize = 10.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                val orderStatus = participant.orderStatus
+                if (!orderStatus.isNullOrEmpty()) {
+                    Spacer(Modifier.height(4.dp))
+                    val (statusText, statusColor) = translateOrderStatus(orderStatus)
+                    Surface(
+                        color = statusColor.copy(alpha = 0.1f),
+                        shape = RoundedCornerShape(6.dp)
+                    ) {
+                        Text(
+                            text = statusText,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = statusColor
+                        )
+                    }
+                }
+            }
         }
+    }
+}
+
+private fun translateOrderStatus(raw: String): Pair<String, Color> {
+    return when (raw.lowercase().replace(" ", "_")) {
+        "paid" -> "Opłacone" to Color(0xFF2E7D32)
+        "unpaid" -> "Nieopłacone" to Color(0xFFC62828)
+        "pending_payment" -> "Oczekuje" to Color(0xFFEF6C00)
+        "payment_expired" -> "Wygasło" to Color(0xFF78909C)
+        "cancelled" -> "Anulowane" to Color(0xFF546E7A)
+        "refunded" -> "Zwrot" to Color(0xFF546E7A)
+        "free" -> "Bezpłatne" to Color(0xFF2E7D32)
+        else -> raw to Color(0xFF78909C)
     }
 }
