@@ -8,6 +8,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -41,16 +42,12 @@ import pl.medidesk.mobile.feature.participants.presentation.viewmodel.Participan
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-private val DarkBg = Color(0xFF0F172A)
-private val CardBg = Color(0xFF1E293B)
-private val CardBorder = Color(0xFF334155)
-private val LabelColor = Color(0xFF94A3B8)
-private val ValueColor = Color(0xFFE2E8F0)
+// Semantic status colors — same in light and dark
+private val StatusGreen = Color(0xFF22C55E)
+private val StatusAmber = Color(0xFFF59E0B)
+private val StatusRed = Color(0xFFEF4444)
+private val StatusGray = Color(0xFF64748B)
 private val AccentBlue = Color(0xFF3B82F6)
-private val AccentGreen = Color(0xFF22C55E)
-private val AccentAmber = Color(0xFFF59E0B)
-private val AccentRed = Color(0xFFEF4444)
-private val AccentGray = Color(0xFF64748B)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,13 +59,13 @@ fun ParticipantDetailsScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Scaffold(
-        containerColor = DarkBg,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
                 title = {},
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = Color.White)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, null)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
@@ -80,7 +77,7 @@ fun ParticipantDetailsScreen(
             is ParticipantDetailsUiState.Error -> Box(
                 Modifier.fillMaxSize().padding(padding),
                 contentAlignment = Alignment.Center
-            ) { Text(state.message, color = LabelColor) }
+            ) { Text(state.message, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             is ParticipantDetailsUiState.Success -> ParticipantDetailsContent(
                 participant = state.participant,
                 modifier = Modifier.padding(padding)
@@ -98,42 +95,27 @@ private fun ParticipantDetailsContent(participant: Participant, modifier: Modifi
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
     ) {
-        // Hero header
         HeroHeader(participant)
-
         Spacer(Modifier.height(20.dp))
-
-        // Status indicators row (icons like desktop)
         StatusIconsRow(participant)
-
         Spacer(Modifier.height(16.dp))
-
-        // Check-in banner
         CheckinBanner(participant)
-
         Spacer(Modifier.height(16.dp))
-
-        // Contact
         ContactCard(participant, context)
-
         Spacer(Modifier.height(12.dp))
-
-        // Order details (expandable)
         OrderSection(participant)
-
         Spacer(Modifier.height(24.dp))
     }
 }
 
 @Composable
 private fun HeroHeader(participant: Participant) {
+    val cs = MaterialTheme.colorScheme
+
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Avatar
         val initials = buildString {
             participant.firstName?.firstOrNull()?.let { append(it.uppercaseChar()) }
             participant.lastName?.firstOrNull()?.let { append(it.uppercaseChar()) }
@@ -143,60 +125,50 @@ private fun HeroHeader(participant: Participant) {
             modifier = Modifier
                 .size(72.dp)
                 .clip(CircleShape)
-                .background(Brush.linearGradient(listOf(AccentBlue, Color(0xFF8B5CF6)))),
+                .background(Brush.linearGradient(listOf(cs.primary, Color(0xFF8B5CF6)))),
             contentAlignment = Alignment.Center
         ) {
-            Text(initials, fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            Text(initials, fontSize = 26.sp, fontWeight = FontWeight.Bold, color = cs.onPrimary)
         }
 
         Spacer(Modifier.height(14.dp))
 
-        // Name
         Text(
             text = participant.displayName,
             fontSize = 22.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.White,
+            color = cs.onBackground,
             textAlign = TextAlign.Center
         )
 
-        // Company / buyer name as identifier
         val identifier = participant.company?.takeIf { it.isNotBlank() }
             ?: participant.buyerName?.takeIf { it.isNotBlank() }
         if (identifier != null) {
             Spacer(Modifier.height(4.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Outlined.Business, null, modifier = Modifier.size(14.dp), tint = LabelColor)
+                Icon(Icons.Outlined.Business, null, modifier = Modifier.size(14.dp), tint = cs.onSurfaceVariant)
                 Spacer(Modifier.width(6.dp))
-                Text(
-                    text = identifier,
-                    fontSize = 14.sp,
-                    color = LabelColor,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Text(identifier, fontSize = 14.sp, color = cs.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
 
         Spacer(Modifier.height(8.dp))
 
-        // Ticket badge
         if (!participant.ticketName.isNullOrBlank()) {
             Surface(
                 shape = RoundedCornerShape(6.dp),
-                color = AccentBlue.copy(alpha = 0.15f)
+                color = cs.primaryContainer
             ) {
                 Text(
                     text = participant.ticketName!!,
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = AccentBlue
+                    color = cs.onPrimaryContainer
                 )
             }
         }
 
-        // Tags
         if (participant.tags.isNotEmpty()) {
             Spacer(Modifier.height(10.dp))
             Row(
@@ -208,14 +180,14 @@ private fun HeroHeader(participant: Participant) {
                 participant.tags.forEach { tag ->
                     Surface(
                         shape = RoundedCornerShape(12.dp),
-                        color = CardBg,
-                        border = BorderStroke(1.dp, CardBorder)
+                        color = cs.surfaceVariant,
+                        border = BorderStroke(1.dp, cs.outlineVariant)
                     ) {
                         Text(
                             tag,
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                             fontSize = 11.sp,
-                            color = LabelColor,
+                            color = cs.onSurfaceVariant,
                             fontWeight = FontWeight.Medium
                         )
                     }
@@ -228,59 +200,47 @@ private fun HeroHeader(participant: Participant) {
 
 @Composable
 private fun StatusIconsRow(participant: Participant) {
+    val cs = MaterialTheme.colorScheme
+
     Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
         shape = RoundedCornerShape(14.dp),
-        color = CardBg,
-        border = BorderStroke(1.dp, CardBorder)
+        color = cs.surface,
+        border = BorderStroke(1.dp, cs.outlineVariant)
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 14.dp, horizontal = 8.dp),
+            modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp, horizontal = 8.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            // RSVP status
             val attendanceRaw = participant.attendanceStatus?.lowercase() ?: ""
-            val (rsvpIcon, rsvpColor, rsvpLabel) = when {
+            val (rsvpIcon, rsvpColor) = when {
                 attendanceRaw in listOf("attending", "confirmed", "rsvp_confirmed") ->
-                    Triple(Icons.Default.EventAvailable, AccentGreen, "RSVP")
-                attendanceRaw in listOf("declined", "rsvp_declined") ->
-                    Triple(Icons.Default.EventBusy, AccentRed, "RSVP")
-                attendanceRaw == "cancelled" ->
-                    Triple(Icons.Default.Cancel, AccentRed, "RSVP")
+                    Icons.Default.EventAvailable to StatusGreen
+                attendanceRaw in listOf("declined", "rsvp_declined", "cancelled") ->
+                    Icons.Default.EventBusy to StatusRed
                 attendanceRaw.isNotBlank() && attendanceRaw != "n/a" ->
-                    Triple(Icons.Default.HelpOutline, AccentGray, "RSVP")
-                else -> Triple(Icons.Outlined.Event, CardBorder, "RSVP")
+                    Icons.Default.HelpOutline to StatusGray
+                else -> Icons.Outlined.Event to cs.outlineVariant
             }
-            StatusIcon(rsvpIcon, rsvpColor, rsvpLabel)
+            StatusIcon(rsvpIcon, rsvpColor, "RSVP")
 
-            // Payment status
             val orderRaw = participant.orderStatus?.lowercase() ?: ""
-            val (payIcon, payColor, payLabel) = when {
-                orderRaw == "paid" || orderRaw == "free" ->
-                    Triple(Icons.Default.Paid, AccentGreen, "Płatność")
-                orderRaw == "unpaid" || orderRaw.contains("pending") ->
-                    Triple(Icons.Outlined.Payments, AccentAmber, "Płatność")
-                orderRaw in listOf("cancelled", "refunded") ->
-                    Triple(Icons.Default.MoneyOff, AccentRed, "Płatność")
-                orderRaw.contains("expired") ->
-                    Triple(Icons.Default.TimerOff, AccentGray, "Płatność")
-                orderRaw.isNotBlank() && orderRaw != "n/a" ->
-                    Triple(Icons.Outlined.Payments, AccentGray, "Płatność")
-                else -> Triple(Icons.Outlined.Payments, CardBorder, "Płatność")
+            val (payIcon, payColor) = when {
+                orderRaw in listOf("paid", "free") -> Icons.Default.Paid to StatusGreen
+                orderRaw == "unpaid" || orderRaw.contains("pending") -> Icons.Outlined.Payments to StatusAmber
+                orderRaw in listOf("cancelled", "refunded") -> Icons.Default.MoneyOff to StatusRed
+                orderRaw.contains("expired") -> Icons.Default.TimerOff to StatusGray
+                orderRaw.isNotBlank() && orderRaw != "n/a" -> Icons.Outlined.Payments to StatusGray
+                else -> Icons.Outlined.Payments to cs.outlineVariant
             }
-            StatusIcon(payIcon, payColor, payLabel)
+            StatusIcon(payIcon, payColor, "Płatność")
 
-            // Check-in status
-            val (ciIcon, ciColor, ciLabel) = if (participant.isCheckedIn) {
-                Triple(Icons.Default.CheckCircle, AccentGreen, "Wejście")
+            val (ciIcon, ciColor) = if (participant.isCheckedIn) {
+                Icons.Default.CheckCircle to StatusGreen
             } else {
-                Triple(Icons.Outlined.Schedule, AccentGray, "Wejście")
+                Icons.Outlined.Schedule to StatusGray
             }
-            StatusIcon(ciIcon, ciColor, ciLabel)
+            StatusIcon(ciIcon, ciColor, "Wejście")
         }
     }
 }
@@ -289,44 +249,39 @@ private fun StatusIconsRow(participant: Participant) {
 private fun StatusIcon(icon: ImageVector, color: Color, label: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
-            modifier = Modifier
-                .size(42.dp)
-                .clip(CircleShape)
-                .background(color.copy(alpha = 0.12f)),
+            modifier = Modifier.size(42.dp).clip(CircleShape).background(color.copy(alpha = 0.12f)),
             contentAlignment = Alignment.Center
         ) {
             Icon(icon, contentDescription = label, tint = color, modifier = Modifier.size(22.dp))
         }
         Spacer(Modifier.height(4.dp))
-        Text(label, fontSize = 10.sp, color = LabelColor, fontWeight = FontWeight.Medium)
+        Text(label, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
     }
 }
 
 @Composable
 private fun CheckinBanner(participant: Participant) {
+    val cs = MaterialTheme.colorScheme
     val isCheckedIn = participant.isCheckedIn
 
     Surface(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
         shape = RoundedCornerShape(14.dp),
-        color = if (isCheckedIn) AccentGreen.copy(alpha = 0.1f) else CardBg,
-        border = BorderStroke(1.dp, if (isCheckedIn) AccentGreen.copy(alpha = 0.3f) else CardBorder)
+        color = if (isCheckedIn) StatusGreen.copy(alpha = 0.08f) else cs.surface,
+        border = BorderStroke(1.dp, if (isCheckedIn) StatusGreen.copy(alpha = 0.3f) else cs.outlineVariant)
     ) {
-        Row(
-            modifier = Modifier.padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier
                     .size(38.dp)
                     .clip(CircleShape)
-                    .background(if (isCheckedIn) AccentGreen.copy(alpha = 0.15f) else Color(0xFF374151)),
+                    .background(if (isCheckedIn) StatusGreen.copy(alpha = 0.12f) else cs.surfaceVariant),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     if (isCheckedIn) Icons.Default.CheckCircle else Icons.Default.Schedule,
                     null,
-                    tint = if (isCheckedIn) AccentGreen else LabelColor,
+                    tint = if (isCheckedIn) StatusGreen else cs.onSurfaceVariant,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -336,13 +291,13 @@ private fun CheckinBanner(participant: Participant) {
                     if (isCheckedIn) "Zameldowany" else "Oczekujący na wejście",
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 14.sp,
-                    color = if (isCheckedIn) AccentGreen else ValueColor
+                    color = if (isCheckedIn) StatusGreen else cs.onSurface
                 )
                 if (isCheckedIn && !participant.checkedInAt.isNullOrBlank()) {
                     Text(
                         formatDateTime(participant.checkedInAt!!),
                         fontSize = 12.sp,
-                        color = if (isCheckedIn) AccentGreen.copy(alpha = 0.7f) else LabelColor
+                        color = if (isCheckedIn) StatusGreen.copy(alpha = 0.7f) else cs.onSurfaceVariant
                     )
                 }
             }
@@ -352,6 +307,7 @@ private fun CheckinBanner(participant: Participant) {
 
 @Composable
 private fun ContactCard(participant: Participant, context: android.content.Context) {
+    val cs = MaterialTheme.colorScheme
     val hasEmail = !participant.email.isNullOrBlank()
     val hasPhone = !participant.phone.isNullOrBlank()
     if (!hasEmail && !hasPhone) return
@@ -359,8 +315,8 @@ private fun ContactCard(participant: Participant, context: android.content.Conte
     Surface(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
         shape = RoundedCornerShape(14.dp),
-        color = CardBg,
-        border = BorderStroke(1.dp, CardBorder)
+        color = cs.surface,
+        border = BorderStroke(1.dp, cs.outlineVariant)
     ) {
         Column {
             if (hasEmail) {
@@ -373,7 +329,7 @@ private fun ContactCard(participant: Participant, context: android.content.Conte
                 )
             }
             if (hasEmail && hasPhone) {
-                HorizontalDivider(color = CardBorder.copy(alpha = 0.5f), modifier = Modifier.padding(horizontal = 16.dp))
+                HorizontalDivider(color = cs.outlineVariant.copy(alpha = 0.5f), modifier = Modifier.padding(horizontal = 16.dp))
             }
             if (hasPhone) {
                 ContactRow(
@@ -390,22 +346,24 @@ private fun ContactCard(participant: Participant, context: android.content.Conte
 
 @Composable
 private fun ContactRow(icon: ImageVector, label: String, onClick: () -> Unit) {
+    val cs = MaterialTheme.colorScheme
     Surface(onClick = onClick, color = Color.Transparent) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 13.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(icon, null, modifier = Modifier.size(18.dp), tint = AccentBlue)
+            Icon(icon, null, modifier = Modifier.size(18.dp), tint = cs.primary)
             Spacer(Modifier.width(12.dp))
-            Text(label, fontSize = 14.sp, color = ValueColor, fontWeight = FontWeight.Medium)
+            Text(label, fontSize = 14.sp, color = cs.onSurface, fontWeight = FontWeight.Medium)
             Spacer(Modifier.weight(1f))
-            Icon(Icons.Default.ChevronRight, null, modifier = Modifier.size(16.dp), tint = LabelColor.copy(alpha = 0.4f))
+            Icon(Icons.Default.ChevronRight, null, modifier = Modifier.size(16.dp), tint = cs.onSurfaceVariant.copy(alpha = 0.4f))
         }
     }
 }
 
 @Composable
 private fun OrderSection(participant: Participant) {
+    val cs = MaterialTheme.colorScheme
     var expanded by remember { mutableStateOf(false) }
     val hasOrderDetails = !participant.eventOrderId.isNullOrBlank()
             || !participant.buyerName.isNullOrBlank()
@@ -417,11 +375,10 @@ private fun OrderSection(participant: Participant) {
     Surface(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
         shape = RoundedCornerShape(14.dp),
-        color = CardBg,
-        border = BorderStroke(1.dp, CardBorder)
+        color = cs.surface,
+        border = BorderStroke(1.dp, cs.outlineVariant)
     ) {
         Column {
-            // Header — always visible, clickable to expand
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -429,25 +386,21 @@ private fun OrderSection(participant: Participant) {
                     .padding(horizontal = 16.dp, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(Icons.Outlined.Receipt, null, modifier = Modifier.size(18.dp), tint = AccentBlue)
+                Icon(Icons.Outlined.Receipt, null, modifier = Modifier.size(18.dp), tint = cs.primary)
                 Spacer(Modifier.width(12.dp))
                 Text(
                     "Szczegóły zamówienia",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = ValueColor,
+                    color = cs.onSurface,
                     modifier = Modifier.weight(1f)
                 )
 
-                // Summary pills when collapsed
                 if (!expanded) {
                     val orderRaw = participant.orderStatus?.lowercase() ?: ""
                     val (statusText, statusColor) = translateStatus(orderRaw)
                     if (statusText.isNotBlank()) {
-                        Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = statusColor.copy(alpha = 0.12f)
-                        ) {
+                        Surface(shape = RoundedCornerShape(6.dp), color = statusColor.copy(alpha = 0.12f)) {
                             Text(
                                 statusText,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
@@ -461,56 +414,45 @@ private fun OrderSection(participant: Participant) {
                 }
 
                 Icon(
-                    Icons.Default.ExpandMore,
-                    null,
+                    Icons.Default.ExpandMore, null,
                     modifier = Modifier.size(20.dp).rotate(if (expanded) 180f else 0f),
-                    tint = LabelColor
+                    tint = cs.onSurfaceVariant
                 )
             }
 
-            // Expandable content
-            AnimatedVisibility(
-                visible = expanded,
-                enter = expandVertically(),
-                exit = shrinkVertically()
-            ) {
+            AnimatedVisibility(visible = expanded, enter = expandVertically(), exit = shrinkVertically()) {
                 Column(modifier = Modifier.padding(bottom = 8.dp)) {
-                    HorizontalDivider(color = CardBorder.copy(alpha = 0.5f), modifier = Modifier.padding(horizontal = 16.dp))
+                    HorizontalDivider(color = cs.outlineVariant.copy(alpha = 0.5f), modifier = Modifier.padding(horizontal = 16.dp))
                     Spacer(Modifier.height(4.dp))
 
-                    // Order ID
                     if (!participant.eventOrderId.isNullOrBlank()) {
                         DetailRow(Icons.Outlined.Tag, "Zamówienie", participant.eventOrderId!!)
                     }
 
-                    // Payment status
                     val orderRaw = participant.orderStatus?.lowercase() ?: ""
                     if (orderRaw.isNotBlank() && orderRaw != "n/a") {
                         val (statusText, statusColor) = translateStatus(orderRaw)
                         DetailRowWithPill(Icons.Outlined.Payments, "Płatność", statusText, statusColor)
                     }
 
-                    // RSVP
                     val rsvpRaw = participant.attendanceStatus?.lowercase() ?: ""
                     if (rsvpRaw.isNotBlank() && rsvpRaw != "n/a") {
                         val (rsvpText, rsvpColor) = translateRsvp(rsvpRaw)
                         DetailRowWithPill(Icons.Outlined.EventAvailable, "RSVP", rsvpText, rsvpColor)
                     }
 
-                    // Buyer section
                     val bName = participant.buyerName
                     val bEmail = participant.buyerEmail
-                    val hasBuyer = !bName.isNullOrBlank() || !bEmail.isNullOrBlank()
-                    if (hasBuyer) {
+                    if (!bName.isNullOrBlank() || !bEmail.isNullOrBlank()) {
                         Spacer(Modifier.height(4.dp))
-                        HorizontalDivider(color = CardBorder.copy(alpha = 0.3f), modifier = Modifier.padding(horizontal = 16.dp))
+                        HorizontalDivider(color = cs.outlineVariant.copy(alpha = 0.3f), modifier = Modifier.padding(horizontal = 16.dp))
                         Spacer(Modifier.height(4.dp))
                         Text(
                             "PŁATNIK",
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
-                            color = LabelColor.copy(alpha = 0.6f),
+                            color = cs.onSurfaceVariant.copy(alpha = 0.6f),
                             letterSpacing = 1.sp
                         )
                         if (!bName.isNullOrBlank()) {
@@ -528,50 +470,38 @@ private fun OrderSection(participant: Participant) {
 
 @Composable
 private fun DetailRow(icon: ImageVector, label: String, value: String) {
+    val cs = MaterialTheme.colorScheme
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(icon, null, modifier = Modifier.size(16.dp), tint = LabelColor.copy(alpha = 0.6f))
+        Icon(icon, null, modifier = Modifier.size(16.dp), tint = cs.onSurfaceVariant.copy(alpha = 0.6f))
         Spacer(Modifier.width(10.dp))
-        Text(label, fontSize = 12.sp, color = LabelColor, fontWeight = FontWeight.Medium, modifier = Modifier.width(80.dp))
+        Text(label, fontSize = 12.sp, color = cs.onSurfaceVariant, fontWeight = FontWeight.Medium, modifier = Modifier.width(80.dp))
         Text(
-            value,
-            fontSize = 13.sp,
-            color = ValueColor,
-            fontWeight = FontWeight.Medium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f),
-            textAlign = TextAlign.End
+            value, fontSize = 13.sp, color = cs.onSurface, fontWeight = FontWeight.Medium,
+            maxLines = 1, overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f), textAlign = TextAlign.End
         )
     }
 }
 
 @Composable
 private fun DetailRowWithPill(icon: ImageVector, label: String, value: String, pillColor: Color) {
+    val cs = MaterialTheme.colorScheme
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(icon, null, modifier = Modifier.size(16.dp), tint = LabelColor.copy(alpha = 0.6f))
+        Icon(icon, null, modifier = Modifier.size(16.dp), tint = cs.onSurfaceVariant.copy(alpha = 0.6f))
         Spacer(Modifier.width(10.dp))
-        Text(label, fontSize = 12.sp, color = LabelColor, fontWeight = FontWeight.Medium, modifier = Modifier.width(80.dp))
+        Text(label, fontSize = 12.sp, color = cs.onSurfaceVariant, fontWeight = FontWeight.Medium, modifier = Modifier.width(80.dp))
         Spacer(Modifier.weight(1f))
-        Surface(
-            shape = RoundedCornerShape(6.dp),
-            color = pillColor.copy(alpha = 0.12f)
-        ) {
+        Surface(shape = RoundedCornerShape(6.dp), color = pillColor.copy(alpha = 0.12f)) {
             Text(
                 value,
                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = pillColor
+                fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = pillColor
             )
         }
     }
@@ -579,24 +509,24 @@ private fun DetailRowWithPill(icon: ImageVector, label: String, value: String, p
 
 private fun translateStatus(raw: String): Pair<String, Color> {
     return when (raw.replace(" ", "_")) {
-        "paid" -> "Opłacone" to AccentGreen
-        "free" -> "Bezpłatne" to AccentGreen
-        "unpaid" -> "Nieopłacone" to AccentAmber
-        "pending_payment" -> "Oczekuje na płatność" to AccentAmber
-        "payment_expired" -> "Płatność wygasła" to AccentGray
-        "cancelled" -> "Anulowane" to AccentRed
-        "refunded" -> "Zwrócone" to AccentRed
-        else -> if (raw.isNotBlank()) raw.replaceFirstChar { it.uppercaseChar() } to AccentGray else "" to AccentGray
+        "paid" -> "Opłacone" to StatusGreen
+        "free" -> "Bezpłatne" to StatusGreen
+        "unpaid" -> "Nieopłacone" to StatusAmber
+        "pending_payment" -> "Oczekuje na płatność" to StatusAmber
+        "payment_expired" -> "Płatność wygasła" to StatusGray
+        "cancelled" -> "Anulowane" to StatusRed
+        "refunded" -> "Zwrócone" to StatusRed
+        else -> if (raw.isNotBlank()) raw.replaceFirstChar { it.uppercaseChar() } to StatusGray else "" to StatusGray
     }
 }
 
 private fun translateRsvp(raw: String): Pair<String, Color> {
     return when (raw.replace(" ", "_")) {
-        "attending", "confirmed", "rsvp_confirmed" -> "Potwierdzony" to AccentGreen
+        "attending", "confirmed", "rsvp_confirmed" -> "Potwierdzony" to StatusGreen
         "registered" -> "Zarejestrowany" to AccentBlue
-        "declined", "rsvp_declined" -> "Odrzucony" to AccentRed
-        "cancelled" -> "Anulowany" to AccentRed
-        else -> if (raw.isNotBlank()) raw.replaceFirstChar { it.uppercaseChar() } to AccentGray else "" to AccentGray
+        "declined", "rsvp_declined" -> "Odrzucony" to StatusRed
+        "cancelled" -> "Anulowany" to StatusRed
+        else -> if (raw.isNotBlank()) raw.replaceFirstChar { it.uppercaseChar() } to StatusGray else "" to StatusGray
     }
 }
 
