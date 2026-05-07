@@ -32,6 +32,9 @@ interface MobileApiService {
     @POST("api/mobile/checkin")
     suspend fun checkin(@Body request: CheckinRequest): Response<CheckinResponse>
 
+    @POST("api/mobile/checkin/undo")
+    suspend fun undoCheckin(@Body request: UndoCheckinRequest): Response<CheckinResponse>
+
     @POST("api/mobile/checkin/sync")
     suspend fun syncCheckins(@Body request: CheckinSyncRequest): Response<CheckinSyncResponse>
 

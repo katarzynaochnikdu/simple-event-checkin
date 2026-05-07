@@ -8,6 +8,7 @@ import androidx.camera.view.PreviewView
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -70,10 +71,8 @@ fun ScannerScreen(
             }
         }
 
-        // Scan result overlay
-        ScanResultOverlay(uiState = uiState)
+        ScanResultOverlay(uiState = uiState, onUndo = { viewModel.undoLastScan() })
 
-        // Sync status badge
         if (uiState.syncState.totalPending > 0) {
             Surface(
                 modifier = Modifier.align(Alignment.TopEnd).padding(16.dp),
@@ -91,9 +90,10 @@ fun ScannerScreen(
 }
 
 @Composable
-private fun ScanResultOverlay(uiState: ScannerUiState) {
+private fun ScanResultOverlay(uiState: ScannerUiState, onUndo: () -> Unit) {
+    val showOverlay = uiState.feedback != ScanFeedback.NONE && uiState.feedback != ScanFeedback.PROCESSING
     AnimatedVisibility(
-        visible = uiState.feedback != ScanFeedback.NONE && uiState.feedback != ScanFeedback.PROCESSING,
+        visible = showOverlay,
         enter = fadeIn(),
         exit = fadeOut()
     ) {
@@ -103,8 +103,12 @@ private fun ScanResultOverlay(uiState: ScannerUiState) {
             ScanFeedback.DUPLICATE -> ScanDuplicate.copy(alpha = 0.92f) to "JUŻ ZAREJESTROWANY"
             ScanFeedback.NOT_FOUND -> ScanError.copy(alpha = 0.92f) to "NIE ZNALEZIONO"
             ScanFeedback.ERROR -> ScanError.copy(alpha = 0.92f) to "BŁĄD"
+            ScanFeedback.UNDOING -> ScanDuplicate.copy(alpha = 0.92f) to "COFANIE..."
+            ScanFeedback.UNDONE -> ScanSuccess.copy(alpha = 0.92f) to "COFNIĘTO"
             else -> Color.Transparent to ""
         }
+
+        val showUndoButton = uiState.feedback == ScanFeedback.SUCCESS || uiState.feedback == ScanFeedback.SUCCESS_OFFLINE
 
         Box(
             modifier = Modifier
@@ -141,6 +145,16 @@ private fun ScanResultOverlay(uiState: ScannerUiState) {
                             color = Color.White.copy(alpha = 0.75f),
                             textAlign = TextAlign.Center
                         )
+                    }
+                }
+                if (showUndoButton) {
+                    Spacer(Modifier.height(24.dp))
+                    OutlinedButton(
+                        onClick = onUndo,
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.7f))
+                    ) {
+                        Text("Cofnij wejście", style = MaterialTheme.typography.titleMedium)
                     }
                 }
             }

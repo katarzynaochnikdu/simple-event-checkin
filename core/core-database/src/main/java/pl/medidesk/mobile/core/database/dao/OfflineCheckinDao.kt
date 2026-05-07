@@ -30,4 +30,7 @@ interface OfflineCheckinDao {
 
     @Query("DELETE FROM offline_checkins WHERE synced = 1")
     suspend fun deleteSynced()
+
+    @Query("DELETE FROM offline_checkins WHERE backstage_ticket_id = :ticketId AND synced = 0 AND action = 'checkin'")
+    suspend fun deleteUnsyncedCheckin(ticketId: String): Int
 }

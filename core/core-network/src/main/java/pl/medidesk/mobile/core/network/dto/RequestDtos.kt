@@ -18,6 +18,13 @@ data class CheckinRequest(
 )
 
 @JsonClass(generateAdapter = true)
+data class UndoCheckinRequest(
+    @Json(name = "backstage_ticket_id") val backstageTicketId: String,
+    @Json(name = "event_id") val eventId: String,
+    @Json(name = "device_id") val deviceId: String = "android"
+)
+
+@JsonClass(generateAdapter = true)
 data class CheckinSyncRequest(
     val items: List<CheckinSyncItem>
 )
