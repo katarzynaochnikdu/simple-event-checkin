@@ -50,14 +50,14 @@ fun LoginScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .imePadding()
-                .verticalScroll(scrollState),
-            contentAlignment = Alignment.Center
+                .verticalScroll(scrollState)
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 32.dp, vertical = 48.dp)
+                    .padding(horizontal = 32.dp)
+                    .padding(top = 60.dp, bottom = 48.dp)
             ) {
                 // Logo from assets - Increased size by ~15% (180dp -> 210dp)
                 MdAsyncImage(
