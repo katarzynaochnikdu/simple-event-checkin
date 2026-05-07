@@ -1,0 +1,5 @@
+# Copy this file to local.properties and fill in values (do NOT commit local.properties)
+sdk.dir=/path/to/android/sdk
+
+# API base URL (no trailing slash)
+BASE_URL=https://md-order-portal-backend.onrender.com
