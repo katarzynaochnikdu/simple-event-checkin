@@ -8,12 +8,14 @@ import androidx.room.PrimaryKey
 @Entity(
     tableName = "participants",
     indices = [
+        Index("ticket_id"),
         Index("backstage_ticket_id"),
         Index("event_id")
     ]
 )
 data class ParticipantEntity(
     @PrimaryKey val id: Long,
+    @ColumnInfo(name = "ticket_id") val ticketId: String?,
     @ColumnInfo(name = "backstage_ticket_id") val backstageTicketId: String?,
     @ColumnInfo(name = "first_name") val firstName: String?,
     @ColumnInfo(name = "last_name") val lastName: String?,

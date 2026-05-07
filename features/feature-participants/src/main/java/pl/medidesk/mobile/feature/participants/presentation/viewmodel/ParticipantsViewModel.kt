@@ -54,6 +54,7 @@ class ParticipantsViewModel @Inject constructor(
                 val participants = entities.map { e ->
                     Participant(
                         id = e.id,
+                        ticketId = e.ticketId,
                         backstageTicketId = e.backstageTicketId,
                         firstName = e.firstName,
                         lastName = e.lastName,
@@ -149,27 +150,23 @@ class ParticipantsViewModel @Inject constructor(
     fun performManualCheckin(participant: Participant) {
         viewModelScope.launch {
             val now = Instant.now().toString()
-            Log.d("ParticipantsVM", "Performing manual check-in for ID: ${participant.id}, TicketID: ${participant.backstageTicketId}")
-            
-            // 1. Update local DB immediately by ID (guaranteed to work locally)
+            val identifier = participant.ticketId ?: participant.backstageTicketId
+            Log.d("ParticipantsVM", "Performing manual check-in for ID: ${participant.id}, TicketID: $identifier")
+
             participantDao.markCheckedInById(participant.id, now)
-            
-            // 2. Add to offline queue for server sync
-            // Use ticketId if available, fallback to participant ID string if absolutely necessary
-            val identifier = participant.backstageTicketId
+
             if (identifier != null) {
                 offlineCheckinDao.insert(
                     OfflineCheckinEntity(
-                        backstageTicketId = identifier,
+                        ticketId = identifier,
                         eventId = participant.eventId,
                         scannedAt = now,
                         action = "checkin"
                     )
                 )
-                // 3. Trigger sync to push it to the server
                 syncEngine.triggerImmediateSync(participant.eventId)
             } else {
-                Log.e("ParticipantsVM", "Cannot sync check-in: backstageTicketId is null for participant ${participant.id}")
+                Log.e("ParticipantsVM", "Cannot sync check-in: no ticketId for participant ${participant.id}")
             }
             
             dismissDialogs()
@@ -184,12 +181,11 @@ class ParticipantsViewModel @Inject constructor(
             // 1. Update local DB
             participantDao.markCheckedOutById(participant.id)
             
-            // 2. Add to offline queue
-            val identifier = participant.backstageTicketId
+            val identifier = participant.ticketId ?: participant.backstageTicketId
             if (identifier != null) {
                 offlineCheckinDao.insert(
                     OfflineCheckinEntity(
-                        backstageTicketId = identifier,
+                        ticketId = identifier,
                         eventId = participant.eventId,
                         scannedAt = now,
                         action = "checkout"
@@ -214,6 +210,7 @@ class ParticipantsViewModel @Inject constructor(
                 p.displayName.contains(query, ignoreCase = true) ||
                 p.email?.contains(query, ignoreCase = true) == true ||
                 p.company?.contains(query, ignoreCase = true) == true ||
+                p.ticketId?.contains(query, ignoreCase = true) == true ||
                 p.backstageTicketId?.contains(query, ignoreCase = true) == true ||
                 p.buyerName?.contains(query, ignoreCase = true) == true ||
                 p.tags.any { it.contains(query, ignoreCase = true) }

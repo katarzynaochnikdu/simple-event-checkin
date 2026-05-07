@@ -13,7 +13,7 @@ import pl.medidesk.mobile.core.database.entities.*
         WalkinEntity::class,
         TicketClassEntity::class
     ],
-    version = 5, // Bumped to 5 to force clean state and fix the crash
+    version = 6, // Added ticket_id to offline_checkins, updated queries for ticket_id OR backstage_ticket_id
     exportSchema = true
 )
 abstract class MdDatabase : RoomDatabase() {

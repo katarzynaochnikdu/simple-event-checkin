@@ -46,6 +46,7 @@ class ParticipantDetailsViewModel @Inject constructor(
                     _uiState.value = ParticipantDetailsUiState.Success(
                         Participant(
                             id = entity.id,
+                            ticketId = entity.ticketId,
                             backstageTicketId = entity.backstageTicketId,
                             firstName = entity.firstName,
                             lastName = entity.lastName,

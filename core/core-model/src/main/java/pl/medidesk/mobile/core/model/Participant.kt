@@ -2,6 +2,7 @@ package pl.medidesk.mobile.core.model
 
 data class Participant(
     val id: Long,
+    val ticketId: String?,
     val backstageTicketId: String?,
     val firstName: String?,
     val lastName: String?,

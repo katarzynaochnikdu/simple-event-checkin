@@ -111,6 +111,7 @@ class SyncWorker @AssistedInject constructor(
         val entities = body.participants.map { dto ->
             ParticipantEntity(
                 id = dto.id,
+                ticketId = dto.ticketId,
                 backstageTicketId = dto.backstageTicketId,
                 firstName = dto.firstName,
                 lastName = dto.lastName,
@@ -153,9 +154,9 @@ class SyncWorker @AssistedInject constructor(
 
         Log.d(TAG, "Pushing ${unsynced.size} checkins to server")
         val items = unsynced.mapNotNull { e ->
-            val ticketId = e.backstageTicketId ?: return@mapNotNull null
+            val tid = e.ticketId ?: e.backstageTicketId ?: return@mapNotNull null
             CheckinSyncItem(
-                backstageTicketId = ticketId,
+                ticketId = tid,
                 eventId = e.eventId,
                 scannedAt = e.scannedAt,
                 deviceId = e.deviceId,

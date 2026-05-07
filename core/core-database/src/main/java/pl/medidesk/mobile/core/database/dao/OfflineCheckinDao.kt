@@ -25,12 +25,12 @@ interface OfflineCheckinDao {
     @Query("UPDATE offline_checkins SET synced = 1")
     suspend fun markAllSynced()
 
-    @Query("UPDATE offline_checkins SET retry_count = retry_count + 1, next_retry_at = :nextRetryAt WHERE backstage_ticket_id = :ticketId AND synced = 0")
+    @Query("UPDATE offline_checkins SET retry_count = retry_count + 1, next_retry_at = :nextRetryAt WHERE (ticket_id = :ticketId OR backstage_ticket_id = :ticketId) AND synced = 0")
     suspend fun incrementRetry(ticketId: String, nextRetryAt: String)
 
     @Query("DELETE FROM offline_checkins WHERE synced = 1")
     suspend fun deleteSynced()
 
-    @Query("DELETE FROM offline_checkins WHERE backstage_ticket_id = :ticketId AND synced = 0 AND action = 'checkin'")
+    @Query("DELETE FROM offline_checkins WHERE (ticket_id = :ticketId OR backstage_ticket_id = :ticketId) AND synced = 0 AND action = 'checkin'")
     suspend fun deleteUnsyncedCheckin(ticketId: String): Int
 }

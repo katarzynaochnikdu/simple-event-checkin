@@ -11,7 +11,7 @@ data class LoginRequest(
 
 @JsonClass(generateAdapter = true)
 data class CheckinRequest(
-    @Json(name = "backstage_ticket_id") val backstageTicketId: String,
+    @Json(name = "ticket_id") val ticketId: String,
     @Json(name = "event_id") val eventId: String,
     @Json(name = "scanned_at") val scannedAt: String,
     @Json(name = "device_id") val deviceId: String = "android"
@@ -19,7 +19,7 @@ data class CheckinRequest(
 
 @JsonClass(generateAdapter = true)
 data class UndoCheckinRequest(
-    @Json(name = "backstage_ticket_id") val backstageTicketId: String,
+    @Json(name = "ticket_id") val ticketId: String,
     @Json(name = "event_id") val eventId: String,
     @Json(name = "device_id") val deviceId: String = "android"
 )
@@ -31,7 +31,7 @@ data class CheckinSyncRequest(
 
 @JsonClass(generateAdapter = true)
 data class CheckinSyncItem(
-    @Json(name = "backstage_ticket_id") val backstageTicketId: String,
+    @Json(name = "ticket_id") val ticketId: String,
     @Json(name = "event_id") val eventId: String,
     @Json(name = "scanned_at") val scannedAt: String,
     @Json(name = "device_id") val deviceId: String = "android",

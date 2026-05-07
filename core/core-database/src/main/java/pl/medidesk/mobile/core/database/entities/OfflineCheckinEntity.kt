@@ -11,7 +11,8 @@ import androidx.room.PrimaryKey
 )
 data class OfflineCheckinEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    @ColumnInfo(name = "backstage_ticket_id") val backstageTicketId: String?,
+    @ColumnInfo(name = "ticket_id") val ticketId: String? = null,
+    @ColumnInfo(name = "backstage_ticket_id") val backstageTicketId: String? = null,
     @ColumnInfo(name = "event_id") val eventId: String,
     @ColumnInfo(name = "scanned_at") val scannedAt: String,
     @ColumnInfo(name = "device_id") val deviceId: String = "android",

@@ -59,6 +59,7 @@ data class ParticipantsResponse(
 @JsonClass(generateAdapter = true)
 data class ParticipantDto(
     val id: Long,
+    @Json(name = "ticket_id") val ticketId: String?,
     @Json(name = "backstage_ticket_id") val backstageTicketId: String?,
     @Json(name = "first_name") val firstName: String?,
     @Json(name = "last_name") val lastName: String?,

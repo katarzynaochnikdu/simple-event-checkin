@@ -19,6 +19,9 @@ interface ParticipantDao {
     @Query("SELECT * FROM participants WHERE backstage_ticket_id = :ticketId LIMIT 1")
     suspend fun findByTicketId(ticketId: String): ParticipantEntity?
 
+    @Query("SELECT * FROM participants WHERE ticket_id = :ticketId OR backstage_ticket_id = :ticketId LIMIT 1")
+    suspend fun findByAnyTicketId(ticketId: String): ParticipantEntity?
+
     @Query("SELECT COUNT(*) FROM participants WHERE event_id = :eventId")
     suspend fun countForEvent(eventId: String): Int
     
@@ -40,13 +43,13 @@ interface ParticipantDao {
     @Query("DELETE FROM participants WHERE event_id = :eventId")
     suspend fun deleteAllForEvent(eventId: String)
 
-    @Query("UPDATE participants SET checked_in_at = :checkedInAt, status = 'checked_in' WHERE backstage_ticket_id = :ticketId")
+    @Query("UPDATE participants SET checked_in_at = :checkedInAt, status = 'checked_in' WHERE ticket_id = :ticketId OR backstage_ticket_id = :ticketId")
     suspend fun markCheckedIn(ticketId: String, checkedInAt: String)
 
     @Query("UPDATE participants SET checked_in_at = :checkedInAt, status = 'checked_in' WHERE id = :participantId")
     suspend fun markCheckedInById(participantId: Long, checkedInAt: String)
     
-    @Query("UPDATE participants SET checked_in_at = NULL, status = 'rsvp_confirmed' WHERE backstage_ticket_id = :ticketId")
+    @Query("UPDATE participants SET checked_in_at = NULL, status = 'rsvp_confirmed' WHERE ticket_id = :ticketId OR backstage_ticket_id = :ticketId")
     suspend fun markCheckedOut(ticketId: String)
 
     @Query("UPDATE participants SET checked_in_at = NULL, status = 'rsvp_confirmed' WHERE id = :participantId")

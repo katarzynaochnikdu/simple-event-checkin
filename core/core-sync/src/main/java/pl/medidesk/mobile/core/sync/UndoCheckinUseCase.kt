@@ -18,7 +18,7 @@ class UndoCheckinUseCase @Inject constructor(
         Log.d("UndoCheckinUseCase", "Undoing checkin for ticket: $ticketId, event: $eventId")
 
         return try {
-            val response = apiService.undoCheckin(UndoCheckinRequest(ticketId, eventId))
+            val response = apiService.undoCheckin(UndoCheckinRequest(ticketId = ticketId, eventId = eventId))
             val body = response.body()
             Log.d("UndoCheckinUseCase", "Server response: code=${response.code()}, success=${body?.success}")
 
@@ -44,7 +44,7 @@ class UndoCheckinUseCase @Inject constructor(
     }
 
     private suspend fun localUndo(ticketId: String): CheckinResult {
-        val local = participantDao.findByTicketId(ticketId) ?: return CheckinResult(success = false, error = "not_found", isOffline = true)
+        val local = participantDao.findByAnyTicketId(ticketId) ?: return CheckinResult(success = false, error = "not_found", isOffline = true)
 
         if (local.checkedInAt == null) {
             return CheckinResult(success = false, error = "not_checked_in", isOffline = true)

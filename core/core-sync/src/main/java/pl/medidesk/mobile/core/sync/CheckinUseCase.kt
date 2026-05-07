@@ -22,7 +22,7 @@ class CheckinUseCase @Inject constructor(
         Log.d("CheckinUseCase", "Checking in ticket: $ticketId for event: $eventId")
 
         return try {
-            val response = apiService.checkin(CheckinRequest(ticketId, eventId, scannedAt))
+            val response = apiService.checkin(CheckinRequest(ticketId = ticketId, eventId = eventId, scannedAt = scannedAt))
             val body = response.body()
             Log.d("CheckinUseCase", "Server response: code=${response.code()}, success=${body?.success}, error=${body?.error}")
             if (response.isSuccessful && body != null) {
@@ -53,7 +53,7 @@ class CheckinUseCase @Inject constructor(
 
     private suspend fun localCheckin(ticketId: String, eventId: String, scannedAt: String): CheckinResult {
         Log.d("CheckinUseCase", "Falling back to local/offline checkin for ticket: $ticketId")
-        val local = participantDao.findByTicketId(ticketId)
+        val local = participantDao.findByAnyTicketId(ticketId)
         return if (local != null) {
             if (local.checkedInAt != null) {
                 CheckinResult(success = true, alreadyCheckedIn = true, checkedInAt = local.checkedInAt,
@@ -61,7 +61,7 @@ class CheckinUseCase @Inject constructor(
                         local.email ?: "", local.company ?: "", local.ticketName ?: "", local.ticketClassId ?: ""),
                     isOffline = true)
             } else {
-                offlineCheckinDao.insert(OfflineCheckinEntity(backstageTicketId = ticketId, eventId = eventId, scannedAt = scannedAt))
+                offlineCheckinDao.insert(OfflineCheckinEntity(ticketId = ticketId, eventId = eventId, scannedAt = scannedAt))
                 participantDao.markCheckedIn(ticketId, scannedAt)
                 syncEngine.triggerImmediateSync(eventId)
 
