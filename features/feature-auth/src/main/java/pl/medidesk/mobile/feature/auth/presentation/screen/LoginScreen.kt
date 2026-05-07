@@ -69,8 +69,7 @@ fun LoginScreen(
                     placeholderColor = androidx.compose.ui.graphics.Color.Transparent
                 )
 
-                // Reduced padding between logo and fields (32dp -> 8dp)
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(0.dp))
 
                 OutlinedTextField(
                     value = uiState.email,
