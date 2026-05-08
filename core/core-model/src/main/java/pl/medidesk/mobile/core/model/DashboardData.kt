@@ -14,7 +14,11 @@ data class DashboardData(
     val eventName: String = "",
     val startDate: String = "",
     val venue: String = "",
-    val imageUrl: String? = null // Dodane dla nagłówka Dashboardu
+    val imageUrl: String? = null, // Dodane dla nagłówka Dashboardu
+    val logoUrl: String? = null,
+    val primaryColor: String? = null,
+    val secondaryColor: String? = null,
+    val accentColor: String? = null
 )
 
 data class TicketClassStat(

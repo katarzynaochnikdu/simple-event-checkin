@@ -109,7 +109,7 @@ private fun OrganizerDashboard(
         }
         item {
             Row(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                MenuButton("Skaner QR", "Szybki check-in", Icons.Default.QrCodeScanner, MaterialTheme.colorScheme.primary, onScannerClick, Modifier.weight(1f))
+                MenuButton("Moi podopieczni", "Wkrótce", Icons.Default.SupervisorAccount, MaterialTheme.colorScheme.primary, { /* TODO: ekran do dorobienia */ }, Modifier.weight(1f))
                 MenuButton("Uczestnicy", "Lista i wyszukiwanie", Icons.Default.Group, MaterialTheme.colorScheme.secondary, { onParticipantsClick(null) }, Modifier.weight(1f))
             }
         }
@@ -158,46 +158,24 @@ private fun ParticipantDashboard(data: DashboardData, user: User, onForceOrganiz
 
 @Composable
 private fun DashboardHeader(data: DashboardData, subtitle: String, onBackToEvents: () -> Unit = {}) {
-    val headerColor = MaterialTheme.colorScheme.primary
+    // Kolor wydarzenia (z API) z fallbackiem do theme primary
+    val headerColor = pl.medidesk.mobile.feature.events.presentation.screen.parseHexColor(data.primaryColor)
+        ?: MaterialTheme.colorScheme.primary
     Column(modifier = Modifier.fillMaxWidth()) {
+        // Pasek statusu w kolorze wydarzenia
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(headerColor)
+                .statusBarsPadding()
         ) {
-            MdAsyncImage(
-                model = data.imageUrl,
-                contentDescription = data.eventName,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 120.dp, max = 240.dp),
-                contentScale = ContentScale.FillWidth,
-                initials = data.eventName.take(1),
-            )
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(80.dp)
-                    .align(Alignment.BottomCenter)
-                    .background(Brush.verticalGradient(colors = listOf(
-                        Color.Transparent,
-                        headerColor.copy(alpha = 0.9f)
-                    )))
-            )
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .statusBarsPadding()
-                    .padding(horizontal = 8.dp, vertical = 8.dp)
-                    .align(Alignment.TopCenter),
-                horizontalArrangement = Arrangement.SpaceBetween
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(
-                    onClick = onBackToEvents,
-                    colors = IconButtonDefaults.iconButtonColors(
-                        containerColor = Color.Black.copy(alpha = 0.4f)
-                    )
-                ) {
+                IconButton(onClick = onBackToEvents) {
                     Icon(
                         Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Wróć",
@@ -206,19 +184,38 @@ private fun DashboardHeader(data: DashboardData, subtitle: String, onBackToEvent
                 }
             }
         }
+        // Treść headera (BEZ grafiki / bannera) — tylko dane wydarzenia
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(headerColor)
-                .padding(horizontal = 20.dp, vertical = 12.dp)
+                .padding(horizontal = 20.dp, vertical = 16.dp)
         ) {
-            Text(text = data.eventName.ifEmpty { "Wydarzenie" }, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = Color.White)
-            Text(subtitle, color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Medium, style = MaterialTheme.typography.bodySmall)
-            Spacer(Modifier.height(6.dp))
+            Text(
+                text = data.eventName.ifEmpty { "Wydarzenie" },
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+            Text(
+                subtitle,
+                color = Color.White.copy(alpha = 0.85f),
+                fontWeight = FontWeight.Medium,
+                style = MaterialTheme.typography.bodySmall
+            )
+            Spacer(Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.CalendarToday, null, modifier = Modifier.size(14.dp), tint = Color.White.copy(alpha = 0.7f))
+                Icon(Icons.Default.CalendarToday, null, modifier = Modifier.size(14.dp), tint = Color.White.copy(alpha = 0.8f))
                 Spacer(Modifier.width(6.dp))
-                Text(formatDateLabel(data.startDate), style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.7f))
+                Text(formatDateLabel(data.startDate), style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.8f))
+            }
+            if (data.venue.isNotBlank()) {
+                Spacer(Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.LocationOn, null, modifier = Modifier.size(14.dp), tint = Color.White.copy(alpha = 0.8f))
+                    Spacer(Modifier.width(6.dp))
+                    Text(data.venue, style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.8f))
+                }
             }
         }
     }
@@ -226,7 +223,9 @@ private fun DashboardHeader(data: DashboardData, subtitle: String, onBackToEvent
 
 @Composable
 private fun ProgressCard(data: DashboardData) {
-    Card(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary), shape = RoundedCornerShape(24.dp)) {
+    val cardColor = pl.medidesk.mobile.feature.events.presentation.screen.parseHexColor(data.primaryColor)
+        ?: MaterialTheme.colorScheme.primary
+    Card(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp), colors = CardDefaults.cardColors(containerColor = cardColor), shape = RoundedCornerShape(24.dp)) {
         Box(modifier = Modifier.padding(24.dp)) {
             Column {
                 Text("POSTĘP CHECK-IN", color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.labelMedium)

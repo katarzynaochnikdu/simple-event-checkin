@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -106,10 +107,10 @@ fun EventsScreen(
                 LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp)) {
                     uiState.groupedEvents.forEach { group ->
                         item { MonthHeader(group) }
-                        
-                        items(group.events) { event -> 
-                            EventFullWidthCard(event, { onEventSelected(event.eventId) })
-                            Spacer(Modifier.height(20.dp))
+
+                        items(group.events) { event ->
+                            EventCompactCard(event, { onEventSelected(event.eventId) })
+                            Spacer(Modifier.height(10.dp))
                         }
                     }
                 }
@@ -124,6 +125,92 @@ private fun MonthHeader(group: UiEventGroup) {
         Icon(Icons.Default.CalendarToday, null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(18.dp))
         Spacer(Modifier.width(8.dp))
         Text(group.monthYear, color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+    }
+}
+
+/**
+ * Kompaktowa kostka — logo wydarzenia (mała miniaturka po lewej) + dane po prawej.
+ * Wysokość ~80dp (połowa starej kostki) — żeby na ekranie zmieściło się więcej eventów.
+ * Akcent koloru wydarzenia (primary_color) jako lewy pasek.
+ */
+@Composable
+private fun EventCompactCard(event: EventItem, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val accentColor = parseHexColor(event.primaryColor) ?: MaterialTheme.colorScheme.primary
+    Card(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+            // Lewy kolorowy pasek — akcent koloru wydarzenia
+            Box(
+                modifier = Modifier
+                    .width(4.dp)
+                    .fillMaxHeight()
+                    .background(accentColor)
+            )
+            // Logo (mała miniaturka)
+            Box(
+                modifier = Modifier
+                    .padding(start = 12.dp, top = 12.dp, bottom = 12.dp)
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center
+            ) {
+                MdAsyncImage(
+                    model = event.logoUrl ?: event.imageUrl,
+                    contentDescription = event.eventName,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Fit,
+                    initials = event.eventName.take(1)
+                )
+            }
+            // Dane wydarzenia
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 12.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = event.eventName,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                )
+                Spacer(Modifier.height(2.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.CalendarToday, null, modifier = Modifier.size(11.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        formatDateLabel(event.startDate),
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
+                }
+                if (event.venue.isNotBlank()) {
+                    Spacer(Modifier.height(2.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.LocationOn, null, modifier = Modifier.size(11.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            event.venue,
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -229,6 +316,24 @@ fun parseToDateTime(raw: String?): LocalDateTime {
             LocalDateTime.of(y, m.coerceIn(1, 12), d.coerceIn(1, 31), h.coerceIn(0, 23), min.coerceIn(0, 59))
         } else LocalDateTime.now()
     } catch (e: Exception) { LocalDateTime.now() }
+}
+
+/**
+ * Bezpieczny parser hex koloru — zwraca null gdy format nieprawidłowy.
+ * Akceptuje formaty: "#RRGGBB", "RRGGBB", "#AARRGGBB".
+ */
+fun parseHexColor(hex: String?): Color? {
+    if (hex.isNullOrBlank()) return null
+    val cleaned = hex.trim().removePrefix("#")
+    return try {
+        when (cleaned.length) {
+            6 -> Color(android.graphics.Color.parseColor("#$cleaned"))
+            8 -> Color(android.graphics.Color.parseColor("#$cleaned"))
+            else -> null
+        }
+    } catch (e: Exception) {
+        null
+    }
 }
 
 fun formatDateLabel(raw: String?): String {

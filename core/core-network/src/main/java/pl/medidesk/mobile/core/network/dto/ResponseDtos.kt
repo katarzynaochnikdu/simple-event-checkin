@@ -46,7 +46,11 @@ data class EventDto(
     val address: String?,
     @Json(name = "image_url") val imageUrl: String?,
     val image: String?,
-    val thumbnail: String?
+    val thumbnail: String?,
+    @Json(name = "logo_url") val logoUrl: String? = null,
+    @Json(name = "primary_color") val primaryColor: String? = null,
+    @Json(name = "secondary_color") val secondaryColor: String? = null,
+    @Json(name = "accent_color") val accentColor: String? = null
 )
 
 @JsonClass(generateAdapter = true)
@@ -128,7 +132,11 @@ data class DashboardResponse(
     @Json(name = "check_in_rate") val checkInRate: Double?,
     @Json(name = "by_ticket_class") val byTicketClass: List<TicketClassStatDto>?,
     val timeline: List<TimelineEntryDto>?,
-    @Json(name = "top_scanners") val topScanners: List<TopScannerDto>?
+    @Json(name = "top_scanners") val topScanners: List<TopScannerDto>?,
+    @Json(name = "logo_url") val logoUrl: String? = null,
+    @Json(name = "primary_color") val primaryColor: String? = null,
+    @Json(name = "secondary_color") val secondaryColor: String? = null,
+    @Json(name = "accent_color") val accentColor: String? = null
 )
 
 @JsonClass(generateAdapter = true)

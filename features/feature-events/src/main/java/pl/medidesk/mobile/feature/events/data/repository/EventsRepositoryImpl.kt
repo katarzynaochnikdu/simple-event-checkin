@@ -20,7 +20,11 @@ class EventsRepositoryImpl @Inject constructor(
                     startDate = dto.startDate ?: dto.startsAt ?: dto.startAt ?: dto.date ?: dto.start ?: dto.startTime ?: dto.eventDate ?: "",
                     endDate = dto.endDate ?: "",
                     venue = dto.venue ?: dto.location ?: dto.address ?: "",
-                    imageUrl = dto.imageUrl ?: dto.image ?: dto.thumbnail
+                    imageUrl = dto.imageUrl ?: dto.image ?: dto.thumbnail,
+                    logoUrl = dto.logoUrl,
+                    primaryColor = dto.primaryColor,
+                    secondaryColor = dto.secondaryColor,
+                    accentColor = dto.accentColor
                 )
             })
         } else {

@@ -121,7 +121,11 @@ class DashboardViewModel @Inject constructor(
                     eventName = eventInfo?.eventName ?: body?.eventId ?: "Wydarzenie",
                     startDate = eventInfo?.startDate ?: "",
                     venue = eventInfo?.venue ?: "",
-                    imageUrl = eventInfo?.imageUrl
+                    imageUrl = eventInfo?.imageUrl,
+                    logoUrl = body?.logoUrl ?: eventInfo?.logoUrl,
+                    primaryColor = body?.primaryColor ?: eventInfo?.primaryColor,
+                    secondaryColor = body?.secondaryColor ?: eventInfo?.secondaryColor,
+                    accentColor = body?.accentColor ?: eventInfo?.accentColor
                 )
                 
                 DashboardUiState.Success(data, syncState, user)
