@@ -99,15 +99,22 @@ private fun MainScreen(eventId: String, onLogout: () -> Unit, onBackToEvents: ()
                 
                 items.forEach { (route, label, icon) ->
                     val baseRoute = route.substringBefore("/")
+                    val isSelected = currentDestination?.hierarchy?.any { it.route?.startsWith(baseRoute) == true } == true
+                    val isDashboardTab = baseRoute == "dashboard"
                     NavigationBarItem(
                         icon = { Icon(icon, contentDescription = label) },
                         label = { Text(label) },
-                        selected = currentDestination?.hierarchy?.any { it.route?.startsWith(baseRoute) == true } == true,
+                        selected = isSelected,
                         onClick = {
                             innerNav.navigate(route) {
-                                popUpTo(innerNav.graph.findStartDestination().id) { saveState = true }
+                                popUpTo(innerNav.graph.findStartDestination().id) {
+                                    // Dla "Wydarzenie": pop ze świeżym Dashboardem (inclusive=true).
+                                    // Dla innych tabów: zachowaj stan (saveState=true).
+                                    inclusive = isDashboardTab
+                                    saveState = !isDashboardTab
+                                }
                                 launchSingleTop = true
-                                restoreState = true
+                                restoreState = !isDashboardTab
                             }
                         }
                     )
