@@ -3,6 +3,8 @@ package pl.medidesk.mobile.feature.participants.presentation.screen
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -132,70 +134,106 @@ private fun StickyTopBar(
     onCheckinClick: () -> Unit
 ) {
     val cs = MaterialTheme.colorScheme
-    TopAppBar(
-        navigationIcon = {
-            IconButton(onClick = onBackClick) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Wróć")
-            }
-        },
-        title = {
-            AnimatedVisibility(visible = showContent, enter = fadeIn(), exit = fadeOut()) {
-                Text(
-                    text = participantName ?: "",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-        },
-        actions = {
-            AnimatedVisibility(visible = showContent, enter = fadeIn(), exit = fadeOut()) {
-                if (isCheckedIn) {
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = StatusGreen.copy(alpha = 0.12f),
-                        modifier = Modifier.padding(end = 12.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
+
+    // Płynna animacja tła — brak skoku przy pojawieniu się baru
+    val containerColor by animateColorAsState(
+        targetValue = if (showContent) cs.surface else Color.Transparent,
+        animationSpec = tween(durationMillis = 200),
+        label = "stickyBarBg"
+    )
+    val contentColor by animateColorAsState(
+        targetValue = if (showContent) cs.onSurface else cs.onSurface,
+        animationSpec = tween(durationMillis = 200),
+        label = "stickyBarContent"
+    )
+
+    Column {
+        TopAppBar(
+            navigationIcon = {
+                IconButton(onClick = onBackClick) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Wróć", tint = contentColor)
+                }
+            },
+            title = {
+                AnimatedVisibility(visible = showContent, enter = fadeIn(tween(180)), exit = fadeOut(tween(180))) {
+                    Text(
+                        text = participantName ?: "",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        color = cs.onSurface
+                    )
+                }
+            },
+            actions = {
+                AnimatedVisibility(visible = showContent, enter = fadeIn(tween(180)), exit = fadeOut(tween(180))) {
+                    if (isCheckedIn) {
+                        // Badge "odznaczono" — spójny z CheckinBanner
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = StatusGreen.copy(alpha = 0.12f),
+                            modifier = Modifier.padding(end = 12.dp)
                         ) {
-                            Icon(Icons.Default.CheckCircle, null, tint = StatusGreen, modifier = Modifier.size(16.dp))
-                            Spacer(Modifier.width(4.dp))
-                            Text("Odznaczono", fontSize = 12.sp, color = StatusGreen, fontWeight = FontWeight.SemiBold)
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Default.CheckCircle, null, tint = StatusGreen, modifier = Modifier.size(15.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    "Odznaczono",
+                                    fontSize = 12.sp,
+                                    color = StatusGreen,
+                                    fontWeight = FontWeight.SemiBold,
+                                    style = MaterialTheme.typography.labelMedium
+                                )
+                            }
                         }
-                    }
-                } else {
-                    Button(
-                        onClick = onCheckinClick,
-                        enabled = !checkinLoading,
-                        modifier = Modifier.padding(end = 12.dp).height(36.dp),
-                        shape = RoundedCornerShape(18.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = StatusGreen),
-                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp)
-                    ) {
-                        if (checkinLoading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(16.dp),
-                                strokeWidth = 2.dp,
-                                color = Color.White
-                            )
-                        } else {
-                            Icon(Icons.Default.HowToReg, null, modifier = Modifier.size(16.dp))
-                            Spacer(Modifier.width(4.dp))
-                            Text("Check-In", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    } else {
+                        // Przycisk Check-In — contentColor dziedziczony z Button, nie hardkodowany
+                        Button(
+                            onClick = onCheckinClick,
+                            enabled = !checkinLoading,
+                            modifier = Modifier.padding(end = 12.dp).height(36.dp),
+                            shape = RoundedCornerShape(18.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = StatusGreen,
+                                contentColor = Color.White,           // zawsze biały na zielonym — celowe
+                                disabledContainerColor = StatusGreen.copy(alpha = 0.5f),
+                                disabledContentColor = Color.White.copy(alpha = 0.7f)
+                            ),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp)
+                        ) {
+                            if (checkinLoading) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    strokeWidth = 2.dp,
+                                    color = Color.White   // na zielonym tle zawsze biały — nie zależy od trybu
+                                )
+                            } else {
+                                Icon(Icons.Default.HowToReg, null, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text("Check-In", style = MaterialTheme.typography.labelLarge)
+                            }
                         }
                     }
                 }
-            }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = if (showContent) cs.surface else Color.Transparent,
-            titleContentColor = cs.onSurface,
-            navigationIconContentColor = cs.onSurface
+            },
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = containerColor,
+                titleContentColor = cs.onSurface,
+                navigationIconContentColor = cs.onSurface
+            )
         )
-    )
+        // Subtelna linia oddzielająca sticky bar od treści gdy jest widoczny
+        AnimatedVisibility(visible = showContent, enter = fadeIn(tween(200)), exit = fadeOut(tween(200))) {
+            HorizontalDivider(
+                color = cs.outlineVariant.copy(alpha = 0.4f),
+                thickness = 0.5.dp
+            )
+        }
+    }
 }
 
 @Composable
@@ -433,7 +471,12 @@ private fun CheckinBanner(
                     onClick = onCheckinClick,
                     enabled = !isLoading,
                     shape = RoundedCornerShape(20.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = StatusGreen),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = StatusGreen,
+                        contentColor = Color.White,
+                        disabledContainerColor = StatusGreen.copy(alpha = 0.5f),
+                        disabledContentColor = Color.White.copy(alpha = 0.7f)
+                    ),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
                 ) {
                     if (isLoading) {
@@ -445,7 +488,7 @@ private fun CheckinBanner(
                     } else {
                         Icon(Icons.Default.HowToReg, null, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(6.dp))
-                        Text("Check-In", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                        Text("Check-In", style = MaterialTheme.typography.labelLarge)
                     }
                 }
             }
