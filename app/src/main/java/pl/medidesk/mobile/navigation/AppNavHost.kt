@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material3.Icon
@@ -91,13 +92,25 @@ private fun MainScreen(eventId: String, onLogout: () -> Unit, onBackToEvents: ()
     Scaffold(
         bottomBar = {
             NavigationBar {
-                // Pierwszy tab — "Lista" — wychodzi z eventu i wraca do listy wszystkich wydarzeń.
-                // To NIE jest tab nawigacyjny w innerNav — to jest akcja "back" do EventsScreen.
+                val isDashboard = currentDestination?.route?.startsWith("dashboard") == true
                 NavigationBarItem(
-                    icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Lista") },
-                    label = { Text("Lista") },
+                    icon = {
+                        if (isDashboard) Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Lista")
+                        else Icon(Icons.Default.Home, contentDescription = "Wydarzenie")
+                    },
+                    label = { Text(if (isDashboard) "Lista" else "Wydarzenie") },
                     selected = false,
-                    onClick = { onBackToEvents() }
+                    onClick = {
+                        if (isDashboard) {
+                            onBackToEvents()
+                        } else {
+                            innerNav.navigate(Screen.Dashboard.createRoute(eventId)) {
+                                popUpTo(innerNav.graph.findStartDestination().id) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        }
+                    }
                 )
 
                 // Pozostałe taby — wewnętrzne nawigacja w eventu

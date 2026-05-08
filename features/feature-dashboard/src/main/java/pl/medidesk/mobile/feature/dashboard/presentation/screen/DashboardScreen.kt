@@ -161,61 +161,59 @@ private fun DashboardHeader(data: DashboardData, subtitle: String, onBackToEvent
     // Kolor wydarzenia (z API) z fallbackiem do theme primary
     val headerColor = pl.medidesk.mobile.feature.events.presentation.screen.parseHexColor(data.primaryColor)
         ?: MaterialTheme.colorScheme.primary
-    Column(modifier = Modifier.fillMaxWidth()) {
-        // Pasek statusu w kolorze wydarzenia
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(headerColor)
-                .statusBarsPadding()
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(headerColor)
+            .statusBarsPadding()
+            .padding(start = 4.dp, end = 20.dp, top = 4.dp, bottom = 16.dp)
+    ) {
+        // Wiersz: strzałka wstecz
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = onBackToEvents) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Wróć",
-                        tint = Color.White
-                    )
-                }
+            IconButton(onClick = onBackToEvents) {
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Wróć",
+                    tint = Color.White
+                )
             }
         }
-        // Treść headera (BEZ grafiki / bannera) — tylko dane wydarzenia
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(headerColor)
-                .padding(horizontal = 20.dp, vertical = 16.dp)
+        // Nazwa wydarzenia i meta-dane
+        Text(
+            text = data.eventName.ifEmpty { "Wydarzenie" },
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            color = Color.White,
+            modifier = Modifier.padding(start = 16.dp)
+        )
+        Text(
+            subtitle,
+            color = Color.White.copy(alpha = 0.85f),
+            fontWeight = FontWeight.Medium,
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.padding(start = 16.dp)
+        )
+        Spacer(Modifier.height(8.dp))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(start = 16.dp)
         ) {
-            Text(
-                text = data.eventName.ifEmpty { "Wydarzenie" },
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
-            Text(
-                subtitle,
-                color = Color.White.copy(alpha = 0.85f),
-                fontWeight = FontWeight.Medium,
-                style = MaterialTheme.typography.bodySmall
-            )
-            Spacer(Modifier.height(8.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.CalendarToday, null, modifier = Modifier.size(14.dp), tint = Color.White.copy(alpha = 0.8f))
+            Icon(Icons.Default.CalendarToday, null, modifier = Modifier.size(14.dp), tint = Color.White.copy(alpha = 0.8f))
+            Spacer(Modifier.width(6.dp))
+            Text(formatDateLabel(data.startDate), style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.8f))
+        }
+        if (data.venue.isNotBlank()) {
+            Spacer(Modifier.height(4.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(start = 16.dp)
+            ) {
+                Icon(Icons.Default.LocationOn, null, modifier = Modifier.size(14.dp), tint = Color.White.copy(alpha = 0.8f))
                 Spacer(Modifier.width(6.dp))
-                Text(formatDateLabel(data.startDate), style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.8f))
-            }
-            if (data.venue.isNotBlank()) {
-                Spacer(Modifier.height(4.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.LocationOn, null, modifier = Modifier.size(14.dp), tint = Color.White.copy(alpha = 0.8f))
-                    Spacer(Modifier.width(6.dp))
-                    Text(data.venue, style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.8f))
-                }
+                Text(data.venue, style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.8f))
             }
         }
     }
