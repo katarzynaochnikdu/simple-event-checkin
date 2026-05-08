@@ -27,6 +27,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import pl.medidesk.mobile.core.ui.components.MdAsyncImage
 import pl.medidesk.mobile.core.model.*
 import pl.medidesk.mobile.core.ui.components.LoadingScreen
+import pl.medidesk.mobile.core.ui.theme.StatusColors
 import pl.medidesk.mobile.feature.dashboard.presentation.viewmodel.DashboardUiState
 import pl.medidesk.mobile.feature.dashboard.presentation.viewmodel.DashboardViewModel
 import pl.medidesk.mobile.feature.events.presentation.screen.formatDateLabel
@@ -100,21 +101,21 @@ private fun OrganizerDashboard(
             Column(modifier = Modifier.padding(top = 16.dp)) {
                 ProgressCard(data)
                 Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    SummaryCard(data.checkedIn.toString(), "ODZNACZENI", Color(0xFF2E7D32), Modifier.weight(1f)) { onParticipantsClick("checkedIn") }
-                    SummaryCard((data.totalRegistered - data.checkedIn).toString(), "OCZEKUJĄCY", Color(0xFFF57C00), Modifier.weight(1f)) { onParticipantsClick("pending") }
+                    SummaryCard(data.checkedIn.toString(), "ODZNACZENI", StatusColors.Paid, Modifier.weight(1f)) { onParticipantsClick("checkedIn") }
+                    SummaryCard((data.totalRegistered - data.checkedIn).toString(), "OCZEKUJĄCY", StatusColors.Pending, Modifier.weight(1f)) { onParticipantsClick("pending") }
                     SummaryCard(data.totalRegistered.toString(), "ŁĄCZNIE", MaterialTheme.colorScheme.onBackground, Modifier.weight(1f)) { onParticipantsClick(null) }
                 }
             }
         }
         item {
             Row(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                MenuButton("Skaner QR", "Szybki check-in", Icons.Default.QrCodeScanner, Color(0xFF2196F3), onScannerClick, Modifier.weight(1f))
-                MenuButton("Uczestnicy", "Lista i wyszukiwanie", Icons.Default.Group, Color(0xFF3F51B5), { onParticipantsClick(null) }, Modifier.weight(1f))
+                MenuButton("Skaner QR", "Szybki check-in", Icons.Default.QrCodeScanner, MaterialTheme.colorScheme.primary, onScannerClick, Modifier.weight(1f))
+                MenuButton("Uczestnicy", "Lista i wyszukiwanie", Icons.Default.Group, MaterialTheme.colorScheme.secondary, { onParticipantsClick(null) }, Modifier.weight(1f))
             }
         }
         item {
             Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
-                MenuButton("Statystyki", "Analiza frekwencji", Icons.Default.BarChart, Color(0xFF00BFA5), onStatsClick, Modifier.fillMaxWidth())
+                MenuButton("Statystyki", "Analiza frekwencji", Icons.Default.BarChart, MaterialTheme.colorScheme.tertiary, onStatsClick, Modifier.fillMaxWidth())
             }
         }
         item { SyncButton(syncState, onSyncClick) }

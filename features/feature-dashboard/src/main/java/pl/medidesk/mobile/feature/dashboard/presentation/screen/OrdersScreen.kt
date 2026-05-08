@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import pl.medidesk.mobile.core.network.MobileApiService
 import pl.medidesk.mobile.core.network.dto.OrderDto
+import pl.medidesk.mobile.core.ui.theme.StatusColors
 import javax.inject.Inject
 
 // ─── ViewModel ────────────────────────────────────────────────────────────────
@@ -174,14 +175,14 @@ fun OrdersScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF152C5B),
-                    titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 actions = {
                     Text(
                         "${state.totalOrders} zam.",
-                        color = Color.White.copy(alpha = 0.7f),
+                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.75f),
                         fontSize = 13.sp,
                         modifier = Modifier.padding(end = 16.dp)
                     )
@@ -189,12 +190,12 @@ fun OrdersScreen(
             )
         }
     ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding).background(Color(0xFFF8F9FA))) {
+        Box(modifier = Modifier.fillMaxSize().padding(padding).background(MaterialTheme.colorScheme.background)) {
             when {
                 state.isLoading -> {
                     CircularProgressIndicator(
                         modifier = Modifier.align(Alignment.Center),
-                        color = Color(0xFF00BFA5)
+                        color = MaterialTheme.colorScheme.secondary
                     )
                 }
                 state.error != null -> {
@@ -202,9 +203,9 @@ fun OrdersScreen(
                         modifier = Modifier.align(Alignment.Center).padding(32.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Icon(Icons.Default.ErrorOutline, null, tint = Color.Red, modifier = Modifier.size(48.dp))
+                        Icon(Icons.Default.ErrorOutline, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(48.dp))
                         Spacer(Modifier.height(12.dp))
-                        Text(state.error ?: "", color = Color.Gray, fontSize = 14.sp)
+                        Text(state.error ?: "", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                         Spacer(Modifier.height(16.dp))
                         OutlinedButton(onClick = { viewModel.load(eventId) }) { Text("Ponów") }
                     }
@@ -214,9 +215,9 @@ fun OrdersScreen(
                         modifier = Modifier.align(Alignment.Center).padding(32.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Icon(Icons.Default.ShoppingCart, null, tint = Color.Gray.copy(alpha = 0.5f), modifier = Modifier.size(64.dp))
+                        Icon(Icons.Default.ShoppingCart, null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f), modifier = Modifier.size(64.dp))
                         Spacer(Modifier.height(12.dp))
-                        Text("Brak zamówień", color = Color.Gray, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                        Text("Brak zamówień", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 16.sp, fontWeight = FontWeight.Medium)
                     }
                 }
                 else -> {
@@ -250,8 +251,8 @@ fun OrdersScreen(
 @Composable
 private fun SummaryRow(state: OrdersUiState) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        SumCard("Przychód", "%.2f %s".format(state.totalRevenue, state.currency), Color(0xFF2E7D32), Modifier.weight(1f))
-        SumCard("Opłacone", "${state.paidCount}/${state.totalOrders}", Color(0xFF1565C0), Modifier.weight(1f))
+        SumCard("Przychód", "%.2f %s".format(state.totalRevenue, state.currency), StatusColors.Paid, Modifier.weight(1f))
+        SumCard("Opłacone", "${state.paidCount}/${state.totalOrders}", MaterialTheme.colorScheme.primary, Modifier.weight(1f))
     }
 }
 
@@ -315,12 +316,12 @@ private fun OrderCard(
     }
 
     val statusColor = when (order.status) {
-        "paid" -> Color(0xFF4CAF50)
-        "received" -> Color(0xFFFFA000)
-        "pending_payment" -> Color(0xFFFF9800)
-        "cancelled" -> Color(0xFFF44336)
-        "failed" -> Color(0xFFF44336)
-        else -> Color.Gray
+        "paid" -> StatusColors.Paid
+        "received" -> StatusColors.Pending
+        "pending_payment" -> StatusColors.Pending
+        "cancelled" -> StatusColors.Cancelled
+        "failed" -> StatusColors.Cancelled
+        else -> StatusColors.Neutral
     }
     val statusLabel = when (order.status) {
         "paid" -> "Opłacone"
@@ -333,8 +334,8 @@ private fun OrderCard(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(10.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
@@ -345,12 +346,12 @@ private fun OrderCard(
                         order.purchaserName?.ifBlank { order.purchaserEmail ?: "—" } ?: "—",
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 14.sp,
-                        color = Color(0xFF1A1C1E),
+                        color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1
                     )
                     val company = order.purchaserCompany
                     if (!company.isNullOrBlank()) {
-                        Text(company, fontSize = 12.sp, color = Color.Gray, maxLines = 1)
+                        Text(company, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
                     }
                 }
                 // Status pill
@@ -366,7 +367,7 @@ private fun OrderCard(
                 // 3-dot menu actions
                 Box {
                     IconButton(onClick = { expanded = true }, modifier = Modifier.size(24.dp).padding(start = 4.dp)) {
-                        Icon(Icons.Default.MoreVert, "Opcje", tint = Color.Gray, modifier = Modifier.size(20.dp))
+                        Icon(Icons.Default.MoreVert, "Opcje", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
                     }
                     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                         DropdownMenuItem(
@@ -407,20 +408,20 @@ private fun OrderCard(
                     "%.2f %s".format(order.total, order.currency),
                     fontWeight = FontWeight.Bold,
                     fontSize = 15.sp,
-                    color = Color(0xFF1A1C1E)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(Modifier.width(12.dp))
                 // Participants
-                Icon(Icons.Default.People, null, modifier = Modifier.size(14.dp), tint = Color.Gray)
+                Icon(Icons.Default.People, null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.width(3.dp))
-                Text("${order.participantCount}", fontSize = 12.sp, color = Color.Gray)
+                Text("${order.participantCount}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (order.checkedInCount > 0) {
-                    Text(" (${order.checkedInCount}✓)", fontSize = 11.sp, color = Color(0xFF4CAF50))
+                    Text(" (${order.checkedInCount}✓)", fontSize = 11.sp, color = StatusColors.Paid)
                 }
                 Spacer(Modifier.weight(1f))
                 // Date
                 val dateShort = order.createdAt?.take(10) ?: ""
-                Text(dateShort, fontSize = 11.sp, color = Color.Gray)
+                Text(dateShort, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
 
             // Payment method / promo
@@ -430,11 +431,11 @@ private fun OrderCard(
                 Spacer(Modifier.height(4.dp))
                 Row {
                     if (!pMethod.isNullOrBlank()) {
-                        Text("💳 $pMethod", fontSize = 10.sp, color = Color.Gray)
+                        Text("💳 $pMethod", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     if (!promo.isNullOrBlank()) {
                         Spacer(Modifier.width(8.dp))
-                        Text("🏷️ $promo", fontSize = 10.sp, color = Color(0xFF9C27B0))
+                        Text("🏷️ $promo", fontSize = 10.sp, color = MaterialTheme.colorScheme.tertiary)
                     }
                 }
             }

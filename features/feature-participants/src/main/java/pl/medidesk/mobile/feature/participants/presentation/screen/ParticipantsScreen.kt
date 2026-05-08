@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import pl.medidesk.mobile.core.model.Participant
+import pl.medidesk.mobile.core.ui.theme.StatusColors
 import pl.medidesk.mobile.feature.participants.presentation.viewmodel.ParticipantsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -292,7 +293,7 @@ private fun ParticipantItem(participant: Participant, onClick: () -> Unit, onSta
                     Icon(
                         Icons.Default.CheckCircle,
                         contentDescription = "Zameldowany",
-                        tint = Color(0xFF4CAF50),
+                        tint = StatusColors.Paid,
                         modifier = Modifier.size(26.dp)
                     )
                 } else {
@@ -374,13 +375,13 @@ private fun ParticipantItem(participant: Participant, onClick: () -> Unit, onSta
 
 private fun translateOrderStatus(raw: String): Pair<String, Color> {
     return when (raw.lowercase().replace(" ", "_")) {
-        "paid" -> "Opłacone" to Color(0xFF2E7D32)
-        "unpaid" -> "Nieopłacone" to Color(0xFFC62828)
-        "pending_payment" -> "Oczekuje" to Color(0xFFEF6C00)
-        "payment_expired" -> "Wygasło" to Color(0xFF78909C)
-        "cancelled" -> "Anulowane" to Color(0xFF546E7A)
-        "refunded" -> "Zwrot" to Color(0xFF546E7A)
-        "free" -> "Bezpłatne" to Color(0xFF2E7D32)
-        else -> raw to Color(0xFF78909C)
+        "paid" -> "Opłacone" to StatusColors.Paid
+        "unpaid" -> "Nieopłacone" to StatusColors.Cancelled
+        "pending_payment" -> "Oczekuje" to StatusColors.Pending
+        "payment_expired" -> "Wygasło" to StatusColors.Neutral
+        "cancelled" -> "Anulowane" to StatusColors.Neutral
+        "refunded" -> "Zwrot" to StatusColors.Neutral
+        "free" -> "Bezpłatne" to StatusColors.Paid
+        else -> raw to StatusColors.Neutral
     }
 }

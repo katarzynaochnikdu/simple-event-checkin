@@ -15,6 +15,7 @@ val MdGreenSurface = Color(0xFFE8F5E9)
 val MdOrange = Color(0xFFE65100)
 val MdOrangeLight = Color(0xFFFF9800)
 val MdOrangeSurface = Color(0xFFFFF3E0)
+val MdAmber = Color(0xFFF57C00)
 
 val MdRed = Color(0xFFC62828)
 val MdRedLight = Color(0xFFEF5350)
