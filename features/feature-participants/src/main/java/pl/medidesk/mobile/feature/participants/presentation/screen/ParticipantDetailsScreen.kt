@@ -446,7 +446,8 @@ private fun StatusIconsRow(participant: Participant) {
             val orderRaw = participant.orderStatus?.lowercase() ?: ""
             val (payIcon, payColor) = when {
                 orderRaw in listOf("paid", "free") -> Icons.Default.Paid to StatusGreen
-                orderRaw == "unpaid" || orderRaw.contains("pending") -> Icons.Outlined.Payments to StatusAmber
+                orderRaw == "unpaid" -> Icons.Outlined.Description to StatusRed   // nieopłacone = proforma, czerwony
+                orderRaw.contains("pending") -> Icons.Outlined.Description to StatusAmber  // oczekuje na płatność
                 orderRaw in listOf("cancelled", "refunded") -> Icons.Default.MoneyOff to StatusRed
                 orderRaw.contains("expired") -> Icons.Default.TimerOff to StatusGray
                 orderRaw.isNotBlank() && orderRaw != "n/a" -> Icons.Outlined.Payments to StatusGray
