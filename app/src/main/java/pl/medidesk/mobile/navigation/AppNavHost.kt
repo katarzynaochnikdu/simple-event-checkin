@@ -3,7 +3,7 @@ package pl.medidesk.mobile.navigation
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.Icon
@@ -92,7 +92,7 @@ private fun MainScreen(eventId: String, onLogout: () -> Unit, onBackToEvents: ()
         bottomBar = {
             NavigationBar {
                 val items = listOf(
-                    Triple(Screen.Dashboard.createRoute(eventId), "Główna", Icons.Default.Home),
+                    Triple(Screen.Dashboard.createRoute(eventId), "Wydarzenie", Icons.Default.Event),
                     Triple(Screen.Participants.createRoute(eventId), "Uczestnicy", Icons.Default.Group),
                     Triple(Screen.Scanner.createRoute(eventId), "Skaner", Icons.Default.QrCodeScanner),
                 )
