@@ -35,7 +35,7 @@ class CheckinUseCase @Inject constructor(
                     alreadyCheckedIn = body.alreadyCheckedIn,
                     checkedInAt = body.checkedInAt,
                     participant = body.participant?.let {
-                        ParticipantSummary(it.id, it.firstName, it.lastName, it.email, it.company, it.ticketName, it.ticketClassId)
+                        ParticipantSummary(it.id, it.firstName.orEmpty(), it.lastName.orEmpty(), it.email.orEmpty(), it.company.orEmpty(), it.ticketName.orEmpty(), it.ticketClassId.orEmpty())
                     },
                     error = body.error,
                     isOffline = false
