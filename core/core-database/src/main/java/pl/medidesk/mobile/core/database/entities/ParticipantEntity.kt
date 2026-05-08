@@ -33,5 +33,10 @@ data class ParticipantEntity(
     @ColumnInfo(name = "is_walkin") val isWalkin: Boolean = false,
     val tags: String? = null, // Comma separated
     @ColumnInfo(name = "buyer_name") val buyerName: String? = null,
-    @ColumnInfo(name = "buyer_email") val buyerEmail: String? = null
+    @ColumnInfo(name = "buyer_email") val buyerEmail: String? = null,
+    @ColumnInfo(name = "payment_method") val paymentMethod: String? = null,
+    @ColumnInfo(name = "purchaser_nip") val purchaserNip: String? = null,
+    @ColumnInfo(name = "purchaser_company") val purchaserCompany: String? = null,
+    @ColumnInfo(name = "order_participants_total") val orderParticipantsTotal: Int? = null,
+    @ColumnInfo(name = "order_participants_checked_in") val orderParticipantsCheckedIn: Int? = null
 )

@@ -129,7 +129,12 @@ class SyncWorker @AssistedInject constructor(
                 isWalkin = dto.isWalkin,
                 tags = dto.tags?.joinToString(","),
                 buyerName = dto.buyerName,
-                buyerEmail = dto.buyerEmail
+                buyerEmail = dto.buyerEmail,
+                paymentMethod = dto.paymentMethod,
+                purchaserNip = dto.purchaserNip,
+                purchaserCompany = dto.purchaserCompany,
+                orderParticipantsTotal = dto.orderParticipantsTotal,
+                orderParticipantsCheckedIn = dto.orderParticipantsCheckedIn
             )
         }
 

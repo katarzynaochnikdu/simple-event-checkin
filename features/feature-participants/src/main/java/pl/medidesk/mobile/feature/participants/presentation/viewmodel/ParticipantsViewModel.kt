@@ -72,7 +72,12 @@ class ParticipantsViewModel @Inject constructor(
                         isWalkin = e.isWalkin,
                         tags = e.tags?.split(",")?.filter { it.isNotBlank() } ?: emptyList(),
                         buyerName = e.buyerName,
-                        buyerEmail = e.buyerEmail
+                        buyerEmail = e.buyerEmail,
+                        paymentMethod = e.paymentMethod,
+                        purchaserNip = e.purchaserNip,
+                        purchaserCompany = e.purchaserCompany,
+                        orderParticipantsTotal = e.orderParticipantsTotal,
+                        orderParticipantsCheckedIn = e.orderParticipantsCheckedIn
                     )
                 }
                 val current = _uiState.value

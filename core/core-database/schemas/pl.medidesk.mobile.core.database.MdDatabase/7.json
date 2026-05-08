@@ -1,0 +1,441 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 7,
+    "identityHash": "d6b3808fdbaf05e51b95d77e1c8ff557",
+    "entities": [
+      {
+        "tableName": "participants",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `ticket_id` TEXT, `backstage_ticket_id` TEXT, `first_name` TEXT, `last_name` TEXT, `email` TEXT, `phone` TEXT, `company` TEXT, `ticket_class_id` TEXT, `ticket_name` TEXT, `status` TEXT, `attendance_status` TEXT, `event_order_id` TEXT, `event_id` TEXT NOT NULL, `checked_in_at` TEXT, `order_status` TEXT, `is_walkin` INTEGER NOT NULL, `tags` TEXT, `buyer_name` TEXT, `buyer_email` TEXT, `payment_method` TEXT, `purchaser_nip` TEXT, `purchaser_company` TEXT, `order_participants_total` INTEGER, `order_participants_checked_in` INTEGER, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ticketId",
+            "columnName": "ticket_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "backstageTicketId",
+            "columnName": "backstage_ticket_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "firstName",
+            "columnName": "first_name",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "lastName",
+            "columnName": "last_name",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "email",
+            "columnName": "email",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "phone",
+            "columnName": "phone",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "company",
+            "columnName": "company",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "ticketClassId",
+            "columnName": "ticket_class_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "ticketName",
+            "columnName": "ticket_name",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "attendanceStatus",
+            "columnName": "attendance_status",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "eventOrderId",
+            "columnName": "event_order_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "eventId",
+            "columnName": "event_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "checkedInAt",
+            "columnName": "checked_in_at",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "orderStatus",
+            "columnName": "order_status",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "isWalkin",
+            "columnName": "is_walkin",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tags",
+            "columnName": "tags",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "buyerName",
+            "columnName": "buyer_name",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "buyerEmail",
+            "columnName": "buyer_email",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "paymentMethod",
+            "columnName": "payment_method",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "purchaserNip",
+            "columnName": "purchaser_nip",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "purchaserCompany",
+            "columnName": "purchaser_company",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "orderParticipantsTotal",
+            "columnName": "order_participants_total",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "orderParticipantsCheckedIn",
+            "columnName": "order_participants_checked_in",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_participants_ticket_id",
+            "unique": false,
+            "columnNames": [
+              "ticket_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_participants_ticket_id` ON `${TABLE_NAME}` (`ticket_id`)"
+          },
+          {
+            "name": "index_participants_backstage_ticket_id",
+            "unique": false,
+            "columnNames": [
+              "backstage_ticket_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_participants_backstage_ticket_id` ON `${TABLE_NAME}` (`backstage_ticket_id`)"
+          },
+          {
+            "name": "index_participants_event_id",
+            "unique": false,
+            "columnNames": [
+              "event_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_participants_event_id` ON `${TABLE_NAME}` (`event_id`)"
+          }
+        ]
+      },
+      {
+        "tableName": "offline_checkins",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `ticket_id` TEXT, `backstage_ticket_id` TEXT, `event_id` TEXT NOT NULL, `scanned_at` TEXT NOT NULL, `device_id` TEXT NOT NULL, `synced` INTEGER NOT NULL, `retry_count` INTEGER NOT NULL, `next_retry_at` TEXT, `action` TEXT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ticketId",
+            "columnName": "ticket_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "backstageTicketId",
+            "columnName": "backstage_ticket_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "eventId",
+            "columnName": "event_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "scannedAt",
+            "columnName": "scanned_at",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deviceId",
+            "columnName": "device_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "synced",
+            "columnName": "synced",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "retryCount",
+            "columnName": "retry_count",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nextRetryAt",
+            "columnName": "next_retry_at",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "action",
+            "columnName": "action",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_offline_checkins_synced",
+            "unique": false,
+            "columnNames": [
+              "synced"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_offline_checkins_synced` ON `${TABLE_NAME}` (`synced`)"
+          }
+        ]
+      },
+      {
+        "tableName": "sync_metadata",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`event_id` TEXT NOT NULL, `last_participants_sync` TEXT, `last_checkin_push` TEXT, `last_walkin_push` TEXT, PRIMARY KEY(`event_id`))",
+        "fields": [
+          {
+            "fieldPath": "eventId",
+            "columnName": "event_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastParticipantsSync",
+            "columnName": "last_participants_sync",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "lastCheckinPush",
+            "columnName": "last_checkin_push",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "lastWalkinPush",
+            "columnName": "last_walkin_push",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "event_id"
+          ]
+        }
+      },
+      {
+        "tableName": "walkin_participants",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `walk_in_code` TEXT NOT NULL, `event_id` TEXT NOT NULL, `first_name` TEXT NOT NULL, `last_name` TEXT NOT NULL, `email` TEXT, `phone` TEXT, `company` TEXT, `ticket_class_id` TEXT, `ticket_name` TEXT, `notes` TEXT, `checked_in_at` TEXT, `status` TEXT NOT NULL, `created_at` TEXT NOT NULL, `sync_status` TEXT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "walkInCode",
+            "columnName": "walk_in_code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "eventId",
+            "columnName": "event_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "firstName",
+            "columnName": "first_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastName",
+            "columnName": "last_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "email",
+            "columnName": "email",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "phone",
+            "columnName": "phone",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "company",
+            "columnName": "company",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "ticketClassId",
+            "columnName": "ticket_class_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "ticketName",
+            "columnName": "ticket_name",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "notes",
+            "columnName": "notes",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "checkedInAt",
+            "columnName": "checked_in_at",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "syncStatus",
+            "columnName": "sync_status",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_walkin_participants_event_id",
+            "unique": false,
+            "columnNames": [
+              "event_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_walkin_participants_event_id` ON `${TABLE_NAME}` (`event_id`)"
+          },
+          {
+            "name": "index_walkin_participants_walk_in_code",
+            "unique": true,
+            "columnNames": [
+              "walk_in_code"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_walkin_participants_walk_in_code` ON `${TABLE_NAME}` (`walk_in_code`)"
+          }
+        ]
+      },
+      {
+        "tableName": "ticket_classes",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`ticket_class_id` TEXT NOT NULL, `event_id` TEXT NOT NULL, `ticket_name` TEXT NOT NULL, PRIMARY KEY(`ticket_class_id`, `event_id`))",
+        "fields": [
+          {
+            "fieldPath": "ticketClassId",
+            "columnName": "ticket_class_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "eventId",
+            "columnName": "event_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ticketName",
+            "columnName": "ticket_name",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "ticket_class_id",
+            "event_id"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'd6b3808fdbaf05e51b95d77e1c8ff557')"
+    ]
+  }
+}

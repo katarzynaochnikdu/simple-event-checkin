@@ -13,7 +13,7 @@ import pl.medidesk.mobile.core.database.entities.*
         WalkinEntity::class,
         TicketClassEntity::class
     ],
-    version = 6, // Added ticket_id to offline_checkins, updated queries for ticket_id OR backstage_ticket_id
+    version = 7, // v7: added payment_method, purchaser_nip, purchaser_company, order_participants_total/checked_in to participants
     exportSchema = true
 )
 abstract class MdDatabase : RoomDatabase() {

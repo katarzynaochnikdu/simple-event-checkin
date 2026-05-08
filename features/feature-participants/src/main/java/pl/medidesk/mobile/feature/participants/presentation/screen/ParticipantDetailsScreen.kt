@@ -240,7 +240,7 @@ private fun StatusIconsRow(participant: Participant) {
             } else {
                 Icons.Outlined.Schedule to StatusGray
             }
-            StatusIcon(ciIcon, ciColor, "Wejście")
+            StatusIcon(ciIcon, ciColor, "Check-In")
         }
     }
 }
@@ -397,16 +397,18 @@ private fun OrderSection(participant: Participant) {
                 )
 
                 if (!expanded) {
-                    val orderRaw = participant.orderStatus?.lowercase() ?: ""
-                    val (statusText, statusColor) = translateStatus(orderRaw)
-                    if (statusText.isNotBlank()) {
-                        Surface(shape = RoundedCornerShape(6.dp), color = statusColor.copy(alpha = 0.12f)) {
+                    // Collapsed preview — pokazuj licznik osób z zamówienia (1/2 odznacz.) zamiast duplikatu statusu z ikonek powyżej
+                    val total = participant.orderParticipantsTotal ?: 0
+                    val checkedIn = participant.orderParticipantsCheckedIn ?: 0
+                    if (total > 1) {
+                        val pillColor = if (checkedIn >= total) StatusGreen else StatusAmber
+                        Surface(shape = RoundedCornerShape(6.dp), color = pillColor.copy(alpha = 0.12f)) {
                             Text(
-                                statusText,
+                                "$checkedIn/$total odzn.",
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = statusColor
+                                color = pillColor
                             )
                         }
                         Spacer(Modifier.width(8.dp))
@@ -429,21 +431,33 @@ private fun OrderSection(participant: Participant) {
                         DetailRow(Icons.Outlined.Tag, "Zamówienie", participant.eventOrderId!!)
                     }
 
-                    val orderRaw = participant.orderStatus?.lowercase() ?: ""
-                    if (orderRaw.isNotBlank() && orderRaw != "n/a") {
-                        val (statusText, statusColor) = translateStatus(orderRaw)
-                        DetailRowWithPill(Icons.Outlined.Payments, "Płatność", statusText, statusColor)
+                    // Forma płatności (karta / przelew / proforma / FOC) — z dopasowaną ikoną
+                    val (payIcon, payText) = paymentMethodDisplay(participant.paymentMethod, participant.orderStatus)
+                    if (payText.isNotBlank()) {
+                        DetailRow(payIcon, "Forma", payText)
                     }
 
-                    val rsvpRaw = participant.attendanceStatus?.lowercase() ?: ""
-                    if (rsvpRaw.isNotBlank() && rsvpRaw != "n/a") {
-                        val (rsvpText, rsvpColor) = translateRsvp(rsvpRaw)
-                        DetailRowWithPill(Icons.Outlined.EventAvailable, "RSVP", rsvpText, rsvpColor)
+                    // Licznik osób z tego samego zamówienia (np. 1/2)
+                    val total = participant.orderParticipantsTotal ?: 0
+                    val checkedIn = participant.orderParticipantsCheckedIn ?: 0
+                    if (total > 0) {
+                        val pillColor = if (checkedIn >= total) StatusGreen else StatusAmber
+                        DetailRowWithPill(
+                            Icons.Outlined.Group,
+                            "Osoby",
+                            "$checkedIn / $total odznaczono",
+                            pillColor
+                        )
                     }
 
+                    // PŁATNIK / ZAMAWIAJĄCY
                     val bName = participant.buyerName
                     val bEmail = participant.buyerEmail
-                    if (!bName.isNullOrBlank() || !bEmail.isNullOrBlank()) {
+                    val pCompany = participant.purchaserCompany
+                    val pNip = participant.purchaserNip
+                    val hasPayer = !bName.isNullOrBlank() || !bEmail.isNullOrBlank()
+                            || !pCompany.isNullOrBlank() || !pNip.isNullOrBlank()
+                    if (hasPayer) {
                         Spacer(Modifier.height(4.dp))
                         HorizontalDivider(color = cs.outlineVariant.copy(alpha = 0.3f), modifier = Modifier.padding(horizontal = 16.dp))
                         Spacer(Modifier.height(4.dp))
@@ -455,6 +469,12 @@ private fun OrderSection(participant: Participant) {
                             color = cs.onSurfaceVariant.copy(alpha = 0.6f),
                             letterSpacing = 1.sp
                         )
+                        if (!pCompany.isNullOrBlank()) {
+                            DetailRow(Icons.Outlined.Business, "Firma", pCompany)
+                        }
+                        if (!pNip.isNullOrBlank()) {
+                            DetailRow(Icons.Outlined.Badge, "NIP", pNip)
+                        }
                         if (!bName.isNullOrBlank()) {
                             DetailRow(Icons.Outlined.Person, "Nazwa", bName)
                         }
@@ -505,6 +525,29 @@ private fun DetailRowWithPill(icon: ImageVector, label: String, value: String, p
             )
         }
     }
+}
+
+/**
+ * Mapuje payment_option_name (z backendu) na (ikona, czytelny tekst).
+ * Heurystyka tekstowa — backend zwraca nazwy typu "BLIK", "Karta", "Przelew tradycyjny", "Faktura proforma".
+ * orderStatus = "free" → FOC (Free of Charge), niezależnie od paymentMethod.
+ */
+private fun paymentMethodDisplay(raw: String?, orderStatus: String?): Pair<ImageVector, String> {
+    if (orderStatus?.lowercase() == "free") {
+        return Icons.Outlined.CardGiftcard to "FOC (bezpłatne)"
+    }
+    val txt = raw?.trim().orEmpty()
+    if (txt.isBlank()) return Icons.Outlined.Payments to ""
+    val low = txt.lowercase()
+    val icon = when {
+        "blik" in low -> Icons.Outlined.Smartphone
+        "karta" in low || "card" in low -> Icons.Outlined.CreditCard
+        "przelew" in low || "transfer" in low -> Icons.Outlined.AccountBalance
+        "faktura" in low || "proforma" in low || "invoice" in low -> Icons.Outlined.Receipt
+        "gotów" in low || "gotowk" in low || "cash" in low -> Icons.Outlined.Payments
+        else -> Icons.Outlined.Payments
+    }
+    return icon to txt
 }
 
 private fun translateStatus(raw: String): Pair<String, Color> {
