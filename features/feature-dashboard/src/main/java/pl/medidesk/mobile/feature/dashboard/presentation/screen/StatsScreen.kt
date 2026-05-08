@@ -169,7 +169,7 @@ private fun StatsContent(data: DashboardData, syncState: SyncState, onSyncClick:
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("WYDAJNOŚĆ SKANERÓW", style = MaterialTheme.typography.labelMedium, color = Color.Gray)
+                    Text("SKANERY", style = MaterialTheme.typography.labelMedium, color = Color.Gray)
                     Spacer(Modifier.height(16.dp))
                     
                     if (data.topScanners.isEmpty()) {
