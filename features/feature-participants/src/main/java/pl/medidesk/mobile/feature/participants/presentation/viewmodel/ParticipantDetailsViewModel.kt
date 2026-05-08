@@ -11,6 +11,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import pl.medidesk.mobile.core.database.dao.ParticipantDao
 import pl.medidesk.mobile.core.model.Participant
+import pl.medidesk.mobile.core.network.MobileApiService
+import pl.medidesk.mobile.core.network.dto.CheckinRequest
+import java.time.Instant
 import javax.inject.Inject
 
 sealed class ParticipantDetailsUiState {
@@ -19,9 +22,18 @@ sealed class ParticipantDetailsUiState {
     data class Error(val message: String) : ParticipantDetailsUiState()
 }
 
+sealed class CheckinResult {
+    data object Idle : CheckinResult()
+    data object Loading : CheckinResult()
+    data object Success : CheckinResult()
+    data object AlreadyCheckedIn : CheckinResult()
+    data class Failure(val message: String) : CheckinResult()
+}
+
 @HiltViewModel
 class ParticipantDetailsViewModel @Inject constructor(
     private val participantDao: ParticipantDao,
+    private val apiService: MobileApiService,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -30,11 +42,57 @@ class ParticipantDetailsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<ParticipantDetailsUiState>(ParticipantDetailsUiState.Loading)
     val uiState: StateFlow<ParticipantDetailsUiState> = _uiState.asStateFlow()
 
+    private val _checkinResult = MutableStateFlow<CheckinResult>(CheckinResult.Idle)
+    val checkinResult: StateFlow<CheckinResult> = _checkinResult.asStateFlow()
+
     init {
         Log.d("ParticipantDetails", "Init with ID: $participantId")
         participantId?.let { loadParticipant(it) } ?: run {
             _uiState.value = ParticipantDetailsUiState.Error("Błędne ID uczestnika")
         }
+    }
+
+    fun performCheckin() {
+        val participant = (_uiState.value as? ParticipantDetailsUiState.Success)?.participant ?: return
+        if (participant.isCheckedIn) {
+            _checkinResult.value = CheckinResult.AlreadyCheckedIn
+            return
+        }
+        val ticketId = participant.backstageTicketId ?: participant.ticketId ?: return
+
+        viewModelScope.launch {
+            _checkinResult.value = CheckinResult.Loading
+            try {
+                val response = apiService.checkin(
+                    CheckinRequest(
+                        ticketId = ticketId,
+                        eventId = participant.eventId,
+                        scannedAt = Instant.now().toString(),
+                        deviceId = "manual"
+                    )
+                )
+                if (response.isSuccessful) {
+                    val body = response.body()
+                    if (body?.success == true) {
+                        val ts = body.checkedInAt ?: Instant.now().toString()
+                        participantDao.markCheckedInById(participant.id, ts)
+                        loadParticipant(participant.id)
+                        _checkinResult.value = if (body.alreadyCheckedIn)
+                            CheckinResult.AlreadyCheckedIn else CheckinResult.Success
+                    } else {
+                        _checkinResult.value = CheckinResult.Failure(body?.error ?: "Błąd check-in")
+                    }
+                } else {
+                    _checkinResult.value = CheckinResult.Failure("Błąd sieci: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                _checkinResult.value = CheckinResult.Failure(e.message ?: "Nieznany błąd")
+            }
+        }
+    }
+
+    fun resetCheckinResult() {
+        _checkinResult.value = CheckinResult.Idle
     }
 
     fun loadParticipant(id: Long) {

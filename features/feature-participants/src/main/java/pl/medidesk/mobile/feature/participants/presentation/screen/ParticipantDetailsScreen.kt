@@ -4,6 +4,8 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -28,6 +30,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -37,6 +40,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import pl.medidesk.mobile.core.model.Participant
 import pl.medidesk.mobile.core.ui.components.LoadingScreen
+import pl.medidesk.mobile.feature.participants.presentation.viewmodel.CheckinResult
 import pl.medidesk.mobile.feature.participants.presentation.viewmodel.ParticipantDetailsUiState
 import pl.medidesk.mobile.feature.participants.presentation.viewmodel.ParticipantDetailsViewModel
 import java.time.LocalDateTime
@@ -57,18 +61,46 @@ fun ParticipantDetailsScreen(
     viewModel: ParticipantDetailsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val checkinResult by viewModel.checkinResult.collectAsStateWithLifecycle()
+
+    // Snackbar dla błędów i potwierdzeń check-in
+    val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(checkinResult) {
+        when (val r = checkinResult) {
+            is CheckinResult.Success -> {
+                snackbarHostState.showSnackbar("✓ Check-in wykonany")
+                viewModel.resetCheckinResult()
+            }
+            is CheckinResult.AlreadyCheckedIn -> {
+                snackbarHostState.showSnackbar("Uczestnik już jest odznaczony")
+                viewModel.resetCheckinResult()
+            }
+            is CheckinResult.Failure -> {
+                snackbarHostState.showSnackbar("Błąd: ${r.message}")
+                viewModel.resetCheckinResult()
+            }
+            else -> Unit
+        }
+    }
+
+    val scrollState = rememberScrollState()
+    val density = LocalDensity.current
+    val stickyThresholdPx = with(density) { 140.dp.toPx() }
+    val showStickyBar by remember(scrollState) { derivedStateOf { scrollState.value > stickyThresholdPx } }
+
+    val participant = (uiState as? ParticipantDetailsUiState.Success)?.participant
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            TopAppBar(
-                title = {},
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, null)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+            StickyTopBar(
+                onBackClick = onBackClick,
+                participantName = participant?.displayName,
+                isCheckedIn = participant?.isCheckedIn ?: false,
+                checkinLoading = checkinResult is CheckinResult.Loading,
+                showContent = showStickyBar,
+                onCheckinClick = { viewModel.performCheckin() }
             )
         }
     ) { padding ->
@@ -80,26 +112,112 @@ fun ParticipantDetailsScreen(
             ) { Text(state.message, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             is ParticipantDetailsUiState.Success -> ParticipantDetailsContent(
                 participant = state.participant,
+                scrollState = scrollState,
+                checkinResult = checkinResult,
+                onCheckinClick = { viewModel.performCheckin() },
                 modifier = Modifier.padding(padding)
             )
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ParticipantDetailsContent(participant: Participant, modifier: Modifier = Modifier) {
+private fun StickyTopBar(
+    onBackClick: () -> Unit,
+    participantName: String?,
+    isCheckedIn: Boolean,
+    checkinLoading: Boolean,
+    showContent: Boolean,
+    onCheckinClick: () -> Unit
+) {
+    val cs = MaterialTheme.colorScheme
+    TopAppBar(
+        navigationIcon = {
+            IconButton(onClick = onBackClick) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Wróć")
+            }
+        },
+        title = {
+            AnimatedVisibility(visible = showContent, enter = fadeIn(), exit = fadeOut()) {
+                Text(
+                    text = participantName ?: "",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        },
+        actions = {
+            AnimatedVisibility(visible = showContent, enter = fadeIn(), exit = fadeOut()) {
+                if (isCheckedIn) {
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = StatusGreen.copy(alpha = 0.12f),
+                        modifier = Modifier.padding(end = 12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Default.CheckCircle, null, tint = StatusGreen, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Odznaczono", fontSize = 12.sp, color = StatusGreen, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+                } else {
+                    Button(
+                        onClick = onCheckinClick,
+                        enabled = !checkinLoading,
+                        modifier = Modifier.padding(end = 12.dp).height(36.dp),
+                        shape = RoundedCornerShape(18.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = StatusGreen),
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp)
+                    ) {
+                        if (checkinLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp,
+                                color = Color.White
+                            )
+                        } else {
+                            Icon(Icons.Default.HowToReg, null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Check-In", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+                }
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = if (showContent) cs.surface else Color.Transparent,
+            titleContentColor = cs.onSurface,
+            navigationIconContentColor = cs.onSurface
+        )
+    )
+}
+
+@Composable
+private fun ParticipantDetailsContent(
+    participant: Participant,
+    scrollState: androidx.compose.foundation.ScrollState,
+    checkinResult: CheckinResult,
+    onCheckinClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     val context = LocalContext.current
 
     Column(
         modifier = modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scrollState)
     ) {
         HeroHeader(participant)
         Spacer(Modifier.height(20.dp))
         StatusIconsRow(participant)
         Spacer(Modifier.height(16.dp))
-        CheckinBanner(participant)
+        CheckinBanner(participant, checkinResult, onCheckinClick)
         Spacer(Modifier.height(16.dp))
         ContactCard(participant, context)
         Spacer(Modifier.height(12.dp))
@@ -260,9 +378,14 @@ private fun StatusIcon(icon: ImageVector, color: Color, label: String) {
 }
 
 @Composable
-private fun CheckinBanner(participant: Participant) {
+private fun CheckinBanner(
+    participant: Participant,
+    checkinResult: CheckinResult,
+    onCheckinClick: () -> Unit
+) {
     val cs = MaterialTheme.colorScheme
     val isCheckedIn = participant.isCheckedIn
+    val isLoading = checkinResult is CheckinResult.Loading
 
     Surface(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
@@ -270,7 +393,10 @@ private fun CheckinBanner(participant: Participant) {
         color = if (isCheckedIn) StatusGreen.copy(alpha = 0.08f) else cs.surface,
         border = BorderStroke(1.dp, if (isCheckedIn) StatusGreen.copy(alpha = 0.3f) else cs.outlineVariant)
     ) {
-        Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            modifier = Modifier.padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Box(
                 modifier = Modifier
                     .size(38.dp)
@@ -286,9 +412,9 @@ private fun CheckinBanner(participant: Participant) {
                 )
             }
             Spacer(Modifier.width(12.dp))
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    if (isCheckedIn) "Zameldowany" else "Oczekujący na wejście",
+                    if (isCheckedIn) "Check-In wykonany" else "Oczekujący na Check-In",
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 14.sp,
                     color = if (isCheckedIn) StatusGreen else cs.onSurface
@@ -297,8 +423,30 @@ private fun CheckinBanner(participant: Participant) {
                     Text(
                         formatDateTime(participant.checkedInAt!!),
                         fontSize = 12.sp,
-                        color = if (isCheckedIn) StatusGreen.copy(alpha = 0.7f) else cs.onSurfaceVariant
+                        color = StatusGreen.copy(alpha = 0.7f)
                     )
+                }
+            }
+            if (!isCheckedIn) {
+                Spacer(Modifier.width(8.dp))
+                Button(
+                    onClick = onCheckinClick,
+                    enabled = !isLoading,
+                    shape = RoundedCornerShape(20.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = StatusGreen),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = Color.White
+                        )
+                    } else {
+                        Icon(Icons.Default.HowToReg, null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Check-In", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
         }
