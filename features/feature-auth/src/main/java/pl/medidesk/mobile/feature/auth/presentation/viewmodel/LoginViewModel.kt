@@ -11,8 +11,9 @@ import pl.medidesk.mobile.feature.auth.domain.usecase.LoginUseCase
 import javax.inject.Inject
 
 data class LoginUiState(
-    val email: String = "",
-    val password: String = "",
+    // DEV prefill — usuń przed releasem produkcyjnym
+    val email: String = "testapki@medidesk.pl",
+    val password: String = "V3Xfhkp0sqTA",
     val isLoading: Boolean = false,
     val error: String? = null,
     val isSuccess: Boolean = false
