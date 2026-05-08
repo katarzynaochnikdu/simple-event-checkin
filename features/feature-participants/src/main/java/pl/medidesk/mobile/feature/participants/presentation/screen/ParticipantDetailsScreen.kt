@@ -427,17 +427,20 @@ private fun OrderSection(participant: Participant) {
                     HorizontalDivider(color = cs.outlineVariant.copy(alpha = 0.5f), modifier = Modifier.padding(horizontal = 16.dp))
                     Spacer(Modifier.height(4.dp))
 
-                    if (!participant.eventOrderId.isNullOrBlank()) {
-                        DetailRow(Icons.Outlined.Tag, "Zamówienie", participant.eventOrderId!!)
+                    // 1) Płatnik — firma i osoba zamawiająca
+                    val bName = participant.buyerName
+                    val bEmail = participant.buyerEmail
+                    val pCompany = participant.purchaserCompany
+                    if (!pCompany.isNullOrBlank()) {
+                        DetailRow(Icons.Outlined.Business, "Płatnik", pCompany)
+                    } else if (!bName.isNullOrBlank()) {
+                        DetailRow(Icons.Outlined.Person, "Płatnik", bName)
+                    }
+                    if (!bEmail.isNullOrBlank()) {
+                        DetailRow(Icons.Outlined.AlternateEmail, "Email", bEmail)
                     }
 
-                    // Forma płatności (karta / przelew / proforma / FOC) — z dopasowaną ikoną
-                    val (payIcon, payText) = paymentMethodDisplay(participant.paymentMethod, participant.orderStatus)
-                    if (payText.isNotBlank()) {
-                        DetailRow(payIcon, "Forma", payText)
-                    }
-
-                    // Licznik osób z tego samego zamówienia (np. 1/2)
+                    // 2) Osoby z zamówienia
                     val total = participant.orderParticipantsTotal ?: 0
                     val checkedIn = participant.orderParticipantsCheckedIn ?: 0
                     if (total > 0) {
@@ -450,37 +453,21 @@ private fun OrderSection(participant: Participant) {
                         )
                     }
 
-                    // PŁATNIK / ZAMAWIAJĄCY
-                    val bName = participant.buyerName
-                    val bEmail = participant.buyerEmail
-                    val pCompany = participant.purchaserCompany
+                    // 3) NIP
                     val pNip = participant.purchaserNip
-                    val hasPayer = !bName.isNullOrBlank() || !bEmail.isNullOrBlank()
-                            || !pCompany.isNullOrBlank() || !pNip.isNullOrBlank()
-                    if (hasPayer) {
-                        Spacer(Modifier.height(4.dp))
-                        HorizontalDivider(color = cs.outlineVariant.copy(alpha = 0.3f), modifier = Modifier.padding(horizontal = 16.dp))
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            "PŁATNIK",
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = cs.onSurfaceVariant.copy(alpha = 0.6f),
-                            letterSpacing = 1.sp
-                        )
-                        if (!pCompany.isNullOrBlank()) {
-                            DetailRow(Icons.Outlined.Business, "Firma", pCompany)
-                        }
-                        if (!pNip.isNullOrBlank()) {
-                            DetailRow(Icons.Outlined.Badge, "NIP", pNip)
-                        }
-                        if (!bName.isNullOrBlank()) {
-                            DetailRow(Icons.Outlined.Person, "Nazwa", bName)
-                        }
-                        if (!bEmail.isNullOrBlank()) {
-                            DetailRow(Icons.Outlined.AlternateEmail, "Email", bEmail)
-                        }
+                    if (!pNip.isNullOrBlank()) {
+                        DetailRow(Icons.Outlined.Badge, "NIP", pNip)
+                    }
+
+                    // 4) Forma płatności
+                    val (payIcon, payText) = paymentMethodDisplay(participant.paymentMethod, participant.orderStatus)
+                    if (payText.isNotBlank()) {
+                        DetailRow(payIcon, "Forma", payText)
+                    }
+
+                    // 5) Nr zamówienia
+                    if (!participant.eventOrderId.isNullOrBlank()) {
+                        DetailRow(Icons.Outlined.Tag, "Nr zamówienia", participant.eventOrderId!!)
                     }
                 }
             }
