@@ -96,12 +96,12 @@ data class CheckinResponse(
 @JsonClass(generateAdapter = true)
 data class ParticipantSummaryDto(
     val id: Long,
-    @Json(name = "first_name") val firstName: String,
-    @Json(name = "last_name") val lastName: String,
-    val email: String,
-    val company: String,
-    @Json(name = "ticket_name") val ticketName: String,
-    @Json(name = "ticket_class_id") val ticketClassId: String
+    @Json(name = "first_name") val firstName: String? = null,
+    @Json(name = "last_name") val lastName: String? = null,
+    val email: String? = null,
+    val company: String? = null,
+    @Json(name = "ticket_name") val ticketName: String? = null,
+    @Json(name = "ticket_class_id") val ticketClassId: String? = null
 )
 
 @JsonClass(generateAdapter = true)
