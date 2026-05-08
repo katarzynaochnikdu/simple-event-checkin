@@ -3,9 +3,9 @@ package pl.medidesk.mobile.navigation
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -91,30 +91,33 @@ private fun MainScreen(eventId: String, onLogout: () -> Unit, onBackToEvents: ()
     Scaffold(
         bottomBar = {
             NavigationBar {
+                // Pierwszy tab — "Lista" — wychodzi z eventu i wraca do listy wszystkich wydarzeń.
+                // To NIE jest tab nawigacyjny w innerNav — to jest akcja "back" do EventsScreen.
+                NavigationBarItem(
+                    icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Lista") },
+                    label = { Text("Lista") },
+                    selected = false,
+                    onClick = { onBackToEvents() }
+                )
+
+                // Pozostałe taby — wewnętrzne nawigacja w eventu
                 val items = listOf(
-                    Triple(Screen.Dashboard.createRoute(eventId), "Wydarzenie", Icons.Default.Event),
                     Triple(Screen.Participants.createRoute(eventId), "Uczestnicy", Icons.Default.Group),
                     Triple(Screen.Scanner.createRoute(eventId), "Skaner", Icons.Default.QrCodeScanner),
                 )
-                
+
                 items.forEach { (route, label, icon) ->
                     val baseRoute = route.substringBefore("/")
                     val isSelected = currentDestination?.hierarchy?.any { it.route?.startsWith(baseRoute) == true } == true
-                    val isDashboardTab = baseRoute == "dashboard"
                     NavigationBarItem(
                         icon = { Icon(icon, contentDescription = label) },
                         label = { Text(label) },
                         selected = isSelected,
                         onClick = {
                             innerNav.navigate(route) {
-                                popUpTo(innerNav.graph.findStartDestination().id) {
-                                    // Dla "Wydarzenie": pop ze świeżym Dashboardem (inclusive=true).
-                                    // Dla innych tabów: zachowaj stan (saveState=true).
-                                    inclusive = isDashboardTab
-                                    saveState = !isDashboardTab
-                                }
+                                popUpTo(innerNav.graph.findStartDestination().id) { saveState = true }
                                 launchSingleTop = true
-                                restoreState = !isDashboardTab
+                                restoreState = true
                             }
                         }
                     )

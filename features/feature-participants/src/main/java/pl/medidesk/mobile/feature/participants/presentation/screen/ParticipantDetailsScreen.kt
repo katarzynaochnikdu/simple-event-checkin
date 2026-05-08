@@ -55,7 +55,6 @@ private val StatusRed = Color(0xFFEF4444)
 private val StatusGray = Color(0xFF64748B)
 private val AccentBlue = Color(0xFF3B82F6)
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ParticipantDetailsScreen(
     participantId: Long,
@@ -94,10 +93,6 @@ fun ParticipantDetailsScreen(
     var showUndoDialog by remember { mutableStateOf(false) }
 
     val scrollState = rememberScrollState()
-    val density = LocalDensity.current
-    val stickyThresholdPx = with(density) { 140.dp.toPx() }
-    val showStickyBar by remember(scrollState) { derivedStateOf { scrollState.value > stickyThresholdPx } }
-
     val participant = (uiState as? ParticipantDetailsUiState.Success)?.participant
 
     // Dialog — potwierdź Check-In
@@ -148,25 +143,17 @@ fun ParticipantDetailsScreen(
         )
     }
 
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            StickyTopBar(
-                onBackClick = onBackClick,
-                participantName = participant?.displayName,
-                isCheckedIn = participant?.isCheckedIn ?: false,
-                checkinLoading = checkinResult is CheckinResult.Loading,
-                showContent = showStickyBar,
-                onCheckinClick = { showCheckinDialog = true },
-                onUndoClick = { showUndoDialog = true }
-            )
-        }
-    ) { padding ->
+    // Bez Scaffold/TopBar — zamiast tego Box z treścią + IconButton "wróć" jako overlay w lewym
+    // górnym rogu (na wysokości avatara) + SnackbarHost na dole. Brak wypełniaczy / sticky barów.
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
         when (val state = uiState) {
             is ParticipantDetailsUiState.Loading -> LoadingScreen("Ładowanie...")
             is ParticipantDetailsUiState.Error -> Box(
-                Modifier.fillMaxSize().padding(padding),
+                Modifier.fillMaxSize().statusBarsPadding(),
                 contentAlignment = Alignment.Center
             ) { Text(state.message, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             is ParticipantDetailsUiState.Success -> ParticipantDetailsContent(
@@ -175,126 +162,16 @@ fun ParticipantDetailsScreen(
                 checkinResult = checkinResult,
                 onCheckinClick = { showCheckinDialog = true },
                 onUndoClick = { showUndoDialog = true },
-                modifier = Modifier.padding(padding)
+                onBackClick = onBackClick,
+                modifier = Modifier.fillMaxSize()
             )
         }
-    }
-}
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun StickyTopBar(
-    onBackClick: () -> Unit,
-    participantName: String?,
-    isCheckedIn: Boolean,
-    checkinLoading: Boolean,
-    showContent: Boolean,
-    onCheckinClick: () -> Unit,
-    onUndoClick: () -> Unit
-) {
-    val cs = MaterialTheme.colorScheme
-
-    // Płynna animacja tła — brak skoku przy pojawieniu się baru
-    val containerColor by animateColorAsState(
-        targetValue = if (showContent) cs.surface else Color.Transparent,
-        animationSpec = tween(durationMillis = 200),
-        label = "stickyBarBg"
-    )
-    val contentColor by animateColorAsState(
-        targetValue = if (showContent) cs.onSurface else cs.onSurface,
-        animationSpec = tween(durationMillis = 200),
-        label = "stickyBarContent"
-    )
-
-    Column {
-        TopAppBar(
-            navigationIcon = {
-                IconButton(onClick = onBackClick) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Wróć", tint = contentColor)
-                }
-            },
-            title = {
-                AnimatedVisibility(visible = showContent, enter = fadeIn(tween(180)), exit = fadeOut(tween(180))) {
-                    Text(
-                        text = participantName ?: "",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        color = cs.onSurface
-                    )
-                }
-            },
-            actions = {
-                AnimatedVisibility(visible = showContent, enter = fadeIn(tween(180)), exit = fadeOut(tween(180))) {
-                    if (isCheckedIn) {
-                        // Przycisk "Cofnij" — widoczny gdy już odznaczono (umożliwia cofnięcie pomyłki)
-                        OutlinedButton(
-                            onClick = onUndoClick,
-                            enabled = !checkinLoading,
-                            modifier = Modifier.padding(end = 12.dp).height(36.dp),
-                            shape = RoundedCornerShape(18.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = StatusRed
-                            ),
-                            border = BorderStroke(1.dp, StatusRed.copy(alpha = 0.6f)),
-                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp)
-                        ) {
-                            if (checkinLoading) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(16.dp),
-                                    strokeWidth = 2.dp,
-                                    color = StatusRed
-                                )
-                            } else {
-                                Icon(Icons.Default.Undo, null, modifier = Modifier.size(16.dp))
-                                Spacer(Modifier.width(4.dp))
-                                Text("Cofnij", style = MaterialTheme.typography.labelLarge)
-                            }
-                        }
-                    } else {
-                        // Przycisk Check-In — contentColor dziedziczony z Button, nie hardkodowany
-                        Button(
-                            onClick = onCheckinClick,
-                            enabled = !checkinLoading,
-                            modifier = Modifier.padding(end = 12.dp).height(36.dp),
-                            shape = RoundedCornerShape(18.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = StatusGreen,
-                                contentColor = Color.White,           // zawsze biały na zielonym — celowe
-                                disabledContainerColor = StatusGreen.copy(alpha = 0.5f),
-                                disabledContentColor = Color.White.copy(alpha = 0.7f)
-                            ),
-                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp)
-                        ) {
-                            if (checkinLoading) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(16.dp),
-                                    strokeWidth = 2.dp,
-                                    color = Color.White   // na zielonym tle zawsze biały — nie zależy od trybu
-                                )
-                            } else {
-                                Icon(Icons.Default.HowToReg, null, modifier = Modifier.size(16.dp))
-                                Spacer(Modifier.width(4.dp))
-                                Text("Check-In", style = MaterialTheme.typography.labelLarge)
-                            }
-                        }
-                    }
-                }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = containerColor,
-                titleContentColor = cs.onSurface,
-                navigationIconContentColor = cs.onSurface
-            )
+        // Snackbar overlay
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter)
         )
-        // Subtelna linia oddzielająca sticky bar od treści gdy jest widoczny
-        AnimatedVisibility(visible = showContent, enter = fadeIn(tween(200)), exit = fadeOut(tween(200))) {
-            HorizontalDivider(
-                color = cs.outlineVariant.copy(alpha = 0.4f),
-                thickness = 0.5.dp
-            )
-        }
     }
 }
 
@@ -305,6 +182,7 @@ private fun ParticipantDetailsContent(
     checkinResult: CheckinResult,
     onCheckinClick: () -> Unit,
     onUndoClick: () -> Unit,
+    onBackClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -313,8 +191,9 @@ private fun ParticipantDetailsContent(
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(scrollState)
+            .statusBarsPadding()
     ) {
-        HeroHeader(participant)
+        HeroHeader(participant, onBackClick)
         Spacer(Modifier.height(20.dp))
         StatusIconsRow(participant)
         Spacer(Modifier.height(16.dp))
@@ -328,20 +207,35 @@ private fun ParticipantDetailsContent(
 }
 
 @Composable
-private fun HeroHeader(participant: Participant) {
+private fun HeroHeader(participant: Participant, onBackClick: () -> Unit) {
     val cs = MaterialTheme.colorScheme
 
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        val initials = buildString {
-            participant.firstName?.firstOrNull()?.let { append(it.uppercaseChar()) }
-            participant.lastName?.firstOrNull()?.let { append(it.uppercaseChar()) }
-        }.ifEmpty { "?" }
+    val initials = buildString {
+        participant.firstName?.firstOrNull()?.let { append(it.uppercaseChar()) }
+        participant.lastName?.firstOrNull()?.let { append(it.uppercaseChar()) }
+    }.ifEmpty { "?" }
 
+    // Górny "rząd" z avatarem — strzałka wstecz w lewym górnym rogu, NA TEJ SAMEJ wysokości co avatar.
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 8.dp)
+    ) {
+        // Strzałka po lewej, zakotwiczona pionowo do środka avatara (avatar 72dp, IconButton 48dp)
+        IconButton(
+            onClick = onBackClick,
+            modifier = Modifier.align(Alignment.CenterStart)
+        ) {
+            Icon(
+                Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "Wróć",
+                tint = cs.onBackground
+            )
+        }
+        // Avatar wycentrowany
         Box(
             modifier = Modifier
+                .align(Alignment.Center)
                 .size(72.dp)
                 .clip(CircleShape)
                 .background(Brush.linearGradient(listOf(cs.primary, Color(0xFF8B5CF6)))),
@@ -349,6 +243,13 @@ private fun HeroHeader(participant: Participant) {
         ) {
             Text(initials, fontSize = 26.sp, fontWeight = FontWeight.Bold, color = cs.onPrimary)
         }
+    }
+
+    // Reszta nagłówka (imię, firma, bilet, tagi) — wycentrowana
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
 
         Spacer(Modifier.height(14.dp))
 
