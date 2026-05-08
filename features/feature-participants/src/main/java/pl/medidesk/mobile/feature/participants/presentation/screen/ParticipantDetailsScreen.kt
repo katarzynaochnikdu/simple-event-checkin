@@ -73,6 +73,10 @@ fun ParticipantDetailsScreen(
                 snackbarHostState.showSnackbar("✓ Check-in wykonany")
                 viewModel.resetCheckinResult()
             }
+            is CheckinResult.UndoSuccess -> {
+                snackbarHostState.showSnackbar("↩ Check-in cofnięty")
+                viewModel.resetCheckinResult()
+            }
             is CheckinResult.AlreadyCheckedIn -> {
                 snackbarHostState.showSnackbar("Uczestnik już jest odznaczony")
                 viewModel.resetCheckinResult()
@@ -85,12 +89,64 @@ fun ParticipantDetailsScreen(
         }
     }
 
+    // Stany dialogów potwierdzenia
+    var showCheckinDialog by remember { mutableStateOf(false) }
+    var showUndoDialog by remember { mutableStateOf(false) }
+
     val scrollState = rememberScrollState()
     val density = LocalDensity.current
     val stickyThresholdPx = with(density) { 140.dp.toPx() }
     val showStickyBar by remember(scrollState) { derivedStateOf { scrollState.value > stickyThresholdPx } }
 
     val participant = (uiState as? ParticipantDetailsUiState.Success)?.participant
+
+    // Dialog — potwierdź Check-In
+    if (showCheckinDialog) {
+        AlertDialog(
+            onDismissRequest = { showCheckinDialog = false },
+            icon = { Icon(Icons.Default.HowToReg, null, tint = StatusGreen) },
+            title = { Text("Potwierdzenie Check-In", style = MaterialTheme.typography.titleMedium) },
+            text = {
+                Text(
+                    "Czy potwierdzasz wykonanie Check-In dla\n${participant?.displayName ?: "uczestnika"}?",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = { showCheckinDialog = false; viewModel.performCheckin() },
+                    colors = ButtonDefaults.buttonColors(containerColor = StatusGreen, contentColor = Color.White)
+                ) { Text("Tak, Check-In") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCheckinDialog = false }) { Text("Anuluj") }
+            }
+        )
+    }
+
+    // Dialog — potwierdź odwołanie Check-In
+    if (showUndoDialog) {
+        AlertDialog(
+            onDismissRequest = { showUndoDialog = false },
+            icon = { Icon(Icons.Default.Undo, null, tint = StatusRed) },
+            title = { Text("Odwołanie Check-In", style = MaterialTheme.typography.titleMedium) },
+            text = {
+                Text(
+                    "Czy na pewno chcesz cofnąć Check-In dla\n${participant?.displayName ?: "uczestnika"}?",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = { showUndoDialog = false; viewModel.performUndoCheckin() },
+                    colors = ButtonDefaults.buttonColors(containerColor = StatusRed, contentColor = Color.White)
+                ) { Text("Tak, cofnij") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showUndoDialog = false }) { Text("Anuluj") }
+            }
+        )
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -102,7 +158,8 @@ fun ParticipantDetailsScreen(
                 isCheckedIn = participant?.isCheckedIn ?: false,
                 checkinLoading = checkinResult is CheckinResult.Loading,
                 showContent = showStickyBar,
-                onCheckinClick = { viewModel.performCheckin() }
+                onCheckinClick = { showCheckinDialog = true },
+                onUndoClick = { showUndoDialog = true }
             )
         }
     ) { padding ->
@@ -116,7 +173,8 @@ fun ParticipantDetailsScreen(
                 participant = state.participant,
                 scrollState = scrollState,
                 checkinResult = checkinResult,
-                onCheckinClick = { viewModel.performCheckin() },
+                onCheckinClick = { showCheckinDialog = true },
+                onUndoClick = { showUndoDialog = true },
                 modifier = Modifier.padding(padding)
             )
         }
@@ -131,7 +189,8 @@ private fun StickyTopBar(
     isCheckedIn: Boolean,
     checkinLoading: Boolean,
     showContent: Boolean,
-    onCheckinClick: () -> Unit
+    onCheckinClick: () -> Unit,
+    onUndoClick: () -> Unit
 ) {
     val cs = MaterialTheme.colorScheme
 
@@ -169,25 +228,28 @@ private fun StickyTopBar(
             actions = {
                 AnimatedVisibility(visible = showContent, enter = fadeIn(tween(180)), exit = fadeOut(tween(180))) {
                     if (isCheckedIn) {
-                        // Badge "odznaczono" — spójny z CheckinBanner
-                        Surface(
-                            shape = RoundedCornerShape(20.dp),
-                            color = StatusGreen.copy(alpha = 0.12f),
-                            modifier = Modifier.padding(end = 12.dp)
+                        // Przycisk "Cofnij" — widoczny gdy już odznaczono (umożliwia cofnięcie pomyłki)
+                        OutlinedButton(
+                            onClick = onUndoClick,
+                            enabled = !checkinLoading,
+                            modifier = Modifier.padding(end = 12.dp).height(36.dp),
+                            shape = RoundedCornerShape(18.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = StatusRed
+                            ),
+                            border = BorderStroke(1.dp, StatusRed.copy(alpha = 0.6f)),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp)
                         ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(Icons.Default.CheckCircle, null, tint = StatusGreen, modifier = Modifier.size(15.dp))
-                                Spacer(Modifier.width(4.dp))
-                                Text(
-                                    "Odznaczono",
-                                    fontSize = 12.sp,
-                                    color = StatusGreen,
-                                    fontWeight = FontWeight.SemiBold,
-                                    style = MaterialTheme.typography.labelMedium
+                            if (checkinLoading) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    strokeWidth = 2.dp,
+                                    color = StatusRed
                                 )
+                            } else {
+                                Icon(Icons.Default.Undo, null, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text("Cofnij", style = MaterialTheme.typography.labelLarge)
                             }
                         }
                     } else {
@@ -242,6 +304,7 @@ private fun ParticipantDetailsContent(
     scrollState: androidx.compose.foundation.ScrollState,
     checkinResult: CheckinResult,
     onCheckinClick: () -> Unit,
+    onUndoClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -255,7 +318,7 @@ private fun ParticipantDetailsContent(
         Spacer(Modifier.height(20.dp))
         StatusIconsRow(participant)
         Spacer(Modifier.height(16.dp))
-        CheckinBanner(participant, checkinResult, onCheckinClick)
+        CheckinBanner(participant, checkinResult, onCheckinClick, onUndoClick)
         Spacer(Modifier.height(16.dp))
         ContactCard(participant, context)
         Spacer(Modifier.height(12.dp))
@@ -419,7 +482,8 @@ private fun StatusIcon(icon: ImageVector, color: Color, label: String) {
 private fun CheckinBanner(
     participant: Participant,
     checkinResult: CheckinResult,
-    onCheckinClick: () -> Unit
+    onCheckinClick: () -> Unit,
+    onUndoClick: () -> Unit
 ) {
     val cs = MaterialTheme.colorScheme
     val isCheckedIn = participant.isCheckedIn
@@ -465,8 +529,30 @@ private fun CheckinBanner(
                     )
                 }
             }
-            if (!isCheckedIn) {
-                Spacer(Modifier.width(8.dp))
+            Spacer(Modifier.width(8.dp))
+            if (isCheckedIn) {
+                // Cofnij check-in — dla pomyłek
+                OutlinedButton(
+                    onClick = onUndoClick,
+                    enabled = !isLoading,
+                    shape = RoundedCornerShape(20.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = StatusRed),
+                    border = BorderStroke(1.dp, StatusRed.copy(alpha = 0.6f)),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = StatusRed
+                        )
+                    } else {
+                        Icon(Icons.Default.Undo, null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Cofnij", style = MaterialTheme.typography.labelLarge)
+                    }
+                }
+            } else {
                 Button(
                     onClick = onCheckinClick,
                     enabled = !isLoading,

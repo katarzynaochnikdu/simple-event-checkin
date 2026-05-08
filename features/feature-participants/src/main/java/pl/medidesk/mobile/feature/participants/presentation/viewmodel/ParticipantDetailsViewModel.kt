@@ -13,6 +13,7 @@ import pl.medidesk.mobile.core.database.dao.ParticipantDao
 import pl.medidesk.mobile.core.model.Participant
 import pl.medidesk.mobile.core.network.MobileApiService
 import pl.medidesk.mobile.core.network.dto.CheckinRequest
+import pl.medidesk.mobile.core.network.dto.UndoCheckinRequest
 import java.time.Instant
 import javax.inject.Inject
 
@@ -26,6 +27,7 @@ sealed class CheckinResult {
     data object Idle : CheckinResult()
     data object Loading : CheckinResult()
     data object Success : CheckinResult()
+    data object UndoSuccess : CheckinResult()
     data object AlreadyCheckedIn : CheckinResult()
     data class Failure(val message: String) : CheckinResult()
 }
@@ -84,6 +86,35 @@ class ParticipantDetailsViewModel @Inject constructor(
                     }
                 } else {
                     _checkinResult.value = CheckinResult.Failure("Błąd sieci: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                _checkinResult.value = CheckinResult.Failure(e.message ?: "Nieznany błąd")
+            }
+        }
+    }
+
+    fun performUndoCheckin() {
+        val participant = (_uiState.value as? ParticipantDetailsUiState.Success)?.participant ?: return
+        if (!participant.isCheckedIn) return
+        val ticketId = participant.backstageTicketId ?: participant.ticketId ?: return
+
+        viewModelScope.launch {
+            _checkinResult.value = CheckinResult.Loading
+            try {
+                val response = apiService.undoCheckin(
+                    UndoCheckinRequest(
+                        ticketId = ticketId,
+                        eventId = participant.eventId,
+                        deviceId = "manual"
+                    )
+                )
+                if (response.isSuccessful && response.body()?.success == true) {
+                    participantDao.markCheckedOutById(participant.id)
+                    loadParticipant(participant.id)
+                    _checkinResult.value = CheckinResult.UndoSuccess
+                } else {
+                    val err = response.body()?.error ?: "Błąd cofania check-in"
+                    _checkinResult.value = CheckinResult.Failure(err)
                 }
             } catch (e: Exception) {
                 _checkinResult.value = CheckinResult.Failure(e.message ?: "Nieznany błąd")
