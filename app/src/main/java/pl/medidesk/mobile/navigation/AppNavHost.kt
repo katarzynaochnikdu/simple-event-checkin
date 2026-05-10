@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -223,7 +224,12 @@ private fun MainScreen(eventId: String, onLogout: () -> Unit, onBackToEvents: ()
     val navBackStackEntry by innerNav.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
     var eventAccentColor by remember { mutableStateOf<androidx.compose.ui.graphics.Color?>(null) }
-    val isDark = isSystemInDarkTheme()
+    // Detect dark mode from MdTheme's actual surface (not isSystemInDarkTheme directly).
+    // isSystemInDarkTheme can desync from app theme on per-app dark mode / forced themes —
+    // surface luminance is the source of truth for what we're actually rendering.
+    val surfaceColor = MaterialTheme.colorScheme.surface
+    val isDark = surfaceColor.luminance() < 0.5f
+    android.util.Log.d("NavBarTheme", "isSystemInDarkTheme=${isSystemInDarkTheme()} surface=$surfaceColor luminance=${surfaceColor.luminance()} isDark=$isDark")
 
     Scaffold(
         bottomBar = {

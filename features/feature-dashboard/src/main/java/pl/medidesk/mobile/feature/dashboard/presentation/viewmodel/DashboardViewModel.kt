@@ -57,11 +57,14 @@ class DashboardViewModel @Inject constructor(
 
     fun loadDashboard(eventId: String) {
         if (eventId == "0" || eventId.isBlank()) return
-        
-        syncEngine.triggerImmediateSync(eventId)
-        
+
         viewModelScope.launch {
             _uiState.value = DashboardUiState.Loading
+
+            // Wait for sync (push pending checkins, then full pull) BEFORE asking backend
+            // for dashboard stats — otherwise getDashboard may return stale numbers that
+            // don't reflect the user's last actions yet.
+            try { syncEngine.runImmediateSyncAndWait(eventId) } catch (_: Exception) {}
             
             val userFlow = combine(
                 authDataStore.userEmailFlow,

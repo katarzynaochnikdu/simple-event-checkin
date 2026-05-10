@@ -132,10 +132,15 @@ class ParticipantsViewModel @Inject constructor(
 
     fun refresh(eventId: String) {
         _uiState.value = _uiState.value.copy(isRefreshing = true)
-        syncEngine.triggerImmediateSync(eventId)
         viewModelScope.launch {
-            kotlinx.coroutines.delay(1000)
-            _uiState.value = _uiState.value.copy(isRefreshing = false)
+            try {
+                syncEngine.runImmediateSyncAndWait(eventId)
+                Log.d("ParticipantsVM", "Sync finished — local DB should now reflect server state")
+            } catch (e: Exception) {
+                Log.e("ParticipantsVM", "Sync wait failed: ${e.message}", e)
+            } finally {
+                _uiState.value = _uiState.value.copy(isRefreshing = false)
+            }
         }
     }
 
