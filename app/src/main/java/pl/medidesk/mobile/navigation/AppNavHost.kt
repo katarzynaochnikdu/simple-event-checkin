@@ -227,16 +227,19 @@ private fun MainScreen(eventId: String, onLogout: () -> Unit, onBackToEvents: ()
 
     Scaffold(
         bottomBar = {
-            NavigationBar {
+            NavigationBar(
+                containerColor = if (isDark) androidx.compose.ui.graphics.Color(0xFF1C1C1E)
+                    else MaterialTheme.colorScheme.surface
+            ) {
                 val isDashboard = currentDestination?.route?.startsWith("dashboard") == true
                 val accent = if (isDark) androidx.compose.ui.graphics.Color.White
                     else eventAccentColor ?: MaterialTheme.colorScheme.secondary
                 val navColors = NavigationBarItemDefaults.colors(
                     selectedIconColor = accent,
                     selectedTextColor = accent,
-                    unselectedIconColor = accent,
-                    unselectedTextColor = accent,
-                    indicatorColor = accent.copy(alpha = 0.12f)
+                    unselectedIconColor = if (isDark) androidx.compose.ui.graphics.Color.White.copy(alpha = 0.7f) else accent,
+                    unselectedTextColor = if (isDark) androidx.compose.ui.graphics.Color.White.copy(alpha = 0.7f) else accent,
+                    indicatorColor = if (isDark) androidx.compose.ui.graphics.Color.White.copy(alpha = 0.15f) else accent.copy(alpha = 0.12f)
                 )
                 NavigationBarItem(
                     icon = {
