@@ -211,6 +211,8 @@ class ParticipantsViewModel @Inject constructor(
         classIdFilter: String?
     ): List<Participant> {
         return all.filter { p ->
+            val notCancelled = p.orderStatus?.lowercase() !in listOf("cancelled", "refunded")
+
             val matchesQuery = query.isBlank() ||
                 p.displayName.contains(query, ignoreCase = true) ||
                 p.email?.contains(query, ignoreCase = true) == true ||
@@ -219,16 +221,16 @@ class ParticipantsViewModel @Inject constructor(
                 p.backstageTicketId?.contains(query, ignoreCase = true) == true ||
                 p.buyerName?.contains(query, ignoreCase = true) == true ||
                 p.tags.any { it.contains(query, ignoreCase = true) }
-            
+
             val matchesChecked = when (checkedInFilter) {
                 true -> p.isCheckedIn
                 false -> !p.isCheckedIn
                 null -> true
             }
-            
+
             val matchesClass = classIdFilter == null || p.ticketClassId == classIdFilter
-            
-            matchesQuery && matchesChecked && matchesClass
+
+            notCancelled && matchesQuery && matchesChecked && matchesClass
         }
     }
 }

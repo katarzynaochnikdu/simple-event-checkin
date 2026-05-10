@@ -19,6 +19,7 @@ import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -54,6 +55,11 @@ fun ParticipantsScreen(
             else -> viewModel.onFilterCheckedIn(null)
         }
         viewModel.onFilterTicketClass(ticketClassId)
+    }
+
+    LifecycleResumeEffect(eventId) {
+        viewModel.refresh(eventId)
+        onPauseOrDispose {}
     }
 
     if (uiState.checkinDialogParticipant != null) {
@@ -105,7 +111,7 @@ fun ParticipantsScreen(
                             shape = RoundedCornerShape(8.dp)
                         ) {
                             Text(
-                                uiState.participants.size.toString(),
+                                uiState.filteredParticipants.size.toString(),
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold
