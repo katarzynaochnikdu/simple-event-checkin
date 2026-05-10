@@ -14,6 +14,8 @@ import pl.medidesk.mobile.core.model.Participant
 import pl.medidesk.mobile.core.network.MobileApiService
 import pl.medidesk.mobile.core.network.dto.CheckinRequest
 import pl.medidesk.mobile.core.network.dto.UndoCheckinRequest
+import pl.medidesk.mobile.core.sync.ParticipantStatusChange
+import pl.medidesk.mobile.core.sync.SyncEngine
 import java.time.Instant
 import javax.inject.Inject
 
@@ -36,6 +38,7 @@ sealed class CheckinResult {
 class ParticipantDetailsViewModel @Inject constructor(
     private val participantDao: ParticipantDao,
     private val apiService: MobileApiService,
+    private val syncEngine: SyncEngine,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -49,8 +52,33 @@ class ParticipantDetailsViewModel @Inject constructor(
 
     init {
         Log.d("ParticipantDetails", "Init with ID: $participantId")
-        participantId?.let { loadParticipant(it) } ?: run {
+        if (participantId == null) {
             _uiState.value = ParticipantDetailsUiState.Error("Błędne ID uczestnika")
+        } else {
+            // Subscribe to SQLite Flow — any local update (checkin/undo from any
+            // screen, sync from backend) re-emits and we reflect it instantly.
+            viewModelScope.launch {
+                participantDao.getParticipantByIdFlow(participantId).collect { entity ->
+                    if (entity != null) {
+                        _uiState.value = ParticipantDetailsUiState.Success(entity.toParticipant())
+                    } else if (_uiState.value is ParticipantDetailsUiState.Loading) {
+                        _uiState.value = ParticipantDetailsUiState.Error("Nie znaleziono uczestnika w bazie")
+                    }
+                }
+            }
+            // Also listen for in-app status changes (someone else's tap on Scanner /
+            // ParticipantsList): mirror to local DB so the Flow above re-emits.
+            viewModelScope.launch {
+                syncEngine.participantChanges.collect { change ->
+                    if (change.participantId == participantId) {
+                        if (change.isCheckedIn) {
+                            participantDao.markCheckedInById(participantId, change.checkedInAt ?: Instant.now().toString())
+                        } else {
+                            participantDao.markCheckedOutById(participantId)
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -78,7 +106,9 @@ class ParticipantDetailsViewModel @Inject constructor(
                     if (body?.success == true) {
                         val ts = body.checkedInAt ?: Instant.now().toString()
                         participantDao.markCheckedInById(participant.id, ts)
-                        loadParticipant(participant.id)
+                        syncEngine.notifyParticipantChanged(
+                            ParticipantStatusChange(ticketId, participant.id, isCheckedIn = true, checkedInAt = ts)
+                        )
                         _checkinResult.value = if (body.alreadyCheckedIn)
                             CheckinResult.AlreadyCheckedIn else CheckinResult.Success
                     } else {
@@ -110,7 +140,9 @@ class ParticipantDetailsViewModel @Inject constructor(
                 )
                 if (response.isSuccessful && response.body()?.success == true) {
                     participantDao.markCheckedOutById(participant.id)
-                    loadParticipant(participant.id)
+                    syncEngine.notifyParticipantChanged(
+                        ParticipantStatusChange(ticketId, participant.id, isCheckedIn = false, checkedInAt = null)
+                    )
                     _checkinResult.value = CheckinResult.UndoSuccess
                 } else {
                     val err = response.body()?.error ?: "Błąd cofania check-in"
@@ -121,6 +153,33 @@ class ParticipantDetailsViewModel @Inject constructor(
             }
         }
     }
+
+    private fun pl.medidesk.mobile.core.database.entities.ParticipantEntity.toParticipant() = Participant(
+        id = id,
+        ticketId = ticketId,
+        backstageTicketId = backstageTicketId,
+        firstName = firstName,
+        lastName = lastName,
+        email = email,
+        company = company,
+        ticketClassId = ticketClassId,
+        ticketName = ticketName,
+        status = status,
+        attendanceStatus = attendanceStatus,
+        eventOrderId = eventOrderId,
+        eventId = eventId,
+        checkedInAt = checkedInAt,
+        orderStatus = orderStatus,
+        isWalkin = isWalkin,
+        tags = tags?.split(",")?.filter { it.isNotBlank() } ?: emptyList(),
+        buyerName = buyerName,
+        buyerEmail = buyerEmail,
+        paymentMethod = paymentMethod,
+        purchaserNip = purchaserNip,
+        purchaserCompany = purchaserCompany,
+        orderParticipantsTotal = orderParticipantsTotal,
+        orderParticipantsCheckedIn = orderParticipantsCheckedIn
+    )
 
     fun resetCheckinResult() {
         _checkinResult.value = CheckinResult.Idle

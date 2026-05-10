@@ -16,6 +16,9 @@ interface ParticipantDao {
     @Query("SELECT * FROM participants WHERE id = :participantId LIMIT 1")
     suspend fun getParticipantById(participantId: Long): ParticipantEntity?
 
+    @Query("SELECT * FROM participants WHERE id = :participantId LIMIT 1")
+    fun getParticipantByIdFlow(participantId: Long): Flow<ParticipantEntity?>
+
     @Query("SELECT * FROM participants WHERE backstage_ticket_id = :ticketId LIMIT 1")
     suspend fun findByTicketId(ticketId: String): ParticipantEntity?
 
