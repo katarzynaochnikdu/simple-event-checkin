@@ -746,8 +746,17 @@ private fun translateRsvp(raw: String): Pair<String, Color> {
 private fun formatDateTime(raw: String): String {
     if (raw.isBlank()) return "Brak danych"
     return try {
-        val cleanRaw = if (raw.length >= 19) raw.substring(0, 19).replace(" ", "T") else raw
-        val dt = LocalDateTime.parse(cleanRaw)
+        val stripped = raw.replace(" ", "T")
+        val dt = try {
+            java.time.ZonedDateTime.parse(stripped).toLocalDateTime()
+        } catch (_: Exception) {
+            try {
+                java.time.OffsetDateTime.parse(stripped).toLocalDateTime()
+            } catch (_: Exception) {
+                val clean = if (stripped.length >= 19) stripped.substring(0, 19) else stripped
+                LocalDateTime.parse(clean)
+            }
+        }
         dt.format(DateTimeFormatter.ofPattern("dd.MM.yyyy, HH:mm"))
-    } catch (e: Exception) { raw }
+    } catch (_: Exception) { raw }
 }
