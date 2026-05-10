@@ -43,7 +43,6 @@ import pl.medidesk.mobile.core.network.dto.DeleteCompanyAssignmentRequest
 import pl.medidesk.mobile.core.network.dto.MenteeDto
 import java.time.Instant
 import javax.inject.Inject
-import javax.inject.Named
 
 // ─── Domain models ────────────────────────────────────────────────────────────
 
@@ -73,11 +72,8 @@ data class MyMenteesUiState(
 
 @HiltViewModel
 class MyMenteesViewModel @Inject constructor(
-    private val api: MobileApiService,
-    @Named("baseUrl") private val baseUrl: String
+    private val api: MobileApiService
 ) : ViewModel() {
-
-    val reviewBaseUrl: String = baseUrl.trimEnd('/')
 
     private val _uiState = MutableStateFlow(MyMenteesUiState())
     val uiState = _uiState.asStateFlow()
@@ -401,7 +397,6 @@ fun MyMenteesScreen(
                                 group = group,
                                 isWithdrawing = state.withdrawingCompany == group.companyName,
                                 checkingInParticipantId = state.checkingInParticipantId,
-                                baseUrl = viewModel.reviewBaseUrl,
                                 onWithdraw = {
                                     viewModel.withdrawGuardianship(eventId, group.companyName)
                                 },
@@ -431,7 +426,6 @@ private fun CompanyCard(
     group: CompanyGroup,
     isWithdrawing: Boolean,
     checkingInParticipantId: Long?,
-    baseUrl: String,
     onWithdraw: () -> Unit,
     onParticipantClick: (Long) -> Unit,
     onCheckInRequest: (MenteeDto) -> Unit
@@ -520,7 +514,7 @@ private fun CompanyCard(
                 if (group.crmAccountId != null) {
                     IconButton(
                         onClick = {
-                            uriHandler.openUri("$baseUrl/api/crm/accounts/${group.crmAccountId}/review360/view")
+                            uriHandler.openUri("https://panel.medidesk.edu.pl/admin/crm/accounts/${group.crmAccountId}")
                         },
                         modifier = Modifier
                             .size(36.dp)

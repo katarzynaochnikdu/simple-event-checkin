@@ -278,6 +278,9 @@ private fun MainScreen(eventId: String, onLogout: () -> Unit, onBackToEvents: ()
                 restoreState = true
             }
         }
+        // Stats i MyMentees są zawsze pushowane bezpośrednio z Dashboardu (nie przez bottom-nav),
+        // więc popBackStack() jest poprawne — Dashboard jest zawsze w stosie nad nimi.
+        val goBack: () -> Unit = { innerNav.popBackStack() }
 
         NavHost(
             navController = innerNav,
@@ -307,7 +310,7 @@ private fun MainScreen(eventId: String, onLogout: () -> Unit, onBackToEvents: ()
             ) {
                 MyMenteesScreen(
                     eventId = eventId,
-                    onBackClick = goToDashboard,
+                    onBackClick = goBack,
                     onParticipantClick = { participantId ->
                         innerNav.navigate(Screen.ParticipantDetails.createRoute(participantId))
                     }
@@ -344,7 +347,7 @@ private fun MainScreen(eventId: String, onLogout: () -> Unit, onBackToEvents: ()
             ) {
                 StatsScreen(
                     eventId = eventId,
-                    onBackClick = goToDashboard
+                    onBackClick = goBack
                 )
             }
 
