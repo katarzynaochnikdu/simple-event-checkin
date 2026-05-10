@@ -218,18 +218,19 @@ private fun MainScreen(eventId: String, onLogout: () -> Unit, onBackToEvents: ()
     val innerNav = rememberNavController()
     val navBackStackEntry by innerNav.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
+    var eventAccentColor by remember { mutableStateOf<androidx.compose.ui.graphics.Color?>(null) }
 
     Scaffold(
         bottomBar = {
             NavigationBar {
                 val isDashboard = currentDestination?.route?.startsWith("dashboard") == true
-                val teal = MaterialTheme.colorScheme.secondary
+                val accent = eventAccentColor ?: MaterialTheme.colorScheme.secondary
                 val navColors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = teal,
-                    selectedTextColor = teal,
-                    unselectedIconColor = teal,
-                    unselectedTextColor = teal,
-                    indicatorColor = teal.copy(alpha = 0.12f)
+                    selectedIconColor = accent,
+                    selectedTextColor = accent,
+                    unselectedIconColor = accent,
+                    unselectedTextColor = accent,
+                    indicatorColor = accent.copy(alpha = 0.12f)
                 )
                 NavigationBarItem(
                     icon = {
@@ -309,7 +310,8 @@ private fun MainScreen(eventId: String, onLogout: () -> Unit, onBackToEvents: ()
                     onNavigateToInHub = { /* Disabled */ },
                     onNavigateToStats = { innerNav.navigate(Screen.Stats.createRoute(eventId)) },
                     onNavigateToMyMentees = { innerNav.navigate(Screen.MyMentees.createRoute(eventId)) },
-                    onBackToEvents = onBackToEvents
+                    onBackToEvents = onBackToEvents,
+                    onEventColorLoaded = { color -> eventAccentColor = color }
                 )
             }
 

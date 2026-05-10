@@ -42,6 +42,7 @@ fun DashboardScreen(
     onNavigateToOrders: () -> Unit = {},
     onNavigateToMyMentees: () -> Unit = {},
     onBackToEvents: () -> Unit = {},
+    onEventColorLoaded: (Color) -> Unit = {},
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -53,6 +54,8 @@ fun DashboardScreen(
             is DashboardUiState.Loading -> LoadingScreen("Ładowanie...")
             is DashboardUiState.Error -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(state.message) }
             is DashboardUiState.Success -> {
+                val eventColor = pl.medidesk.mobile.feature.events.presentation.screen.parseHexColor(state.data.primaryColor)
+                LaunchedEffect(eventColor) { if (eventColor != null) onEventColorLoaded(eventColor) }
                 // simple-event-checkin to apka tylko dla operatorów/organizatorów —
                 // każdy zalogowany user widzi panel zarządzania, bez "trybu uczestnika".
                 OrganizerDashboard(
