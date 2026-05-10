@@ -42,50 +42,33 @@ fun EventsScreen(
 
     Scaffold(
         topBar = {
-            Column(modifier = Modifier.background(Color(0xFF152C5B))) {
+            Column(modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
                 TopAppBar(
-                    title = { Text("Wydarzenia", color = Color.White, fontWeight = FontWeight.Bold) },
+                    title = { Text("Wydarzenia", fontWeight = FontWeight.Bold) },
                     actions = {
                         IconButton(onClick = onNavigateToSettings) {
-                            Icon(Icons.Default.Settings, contentDescription = "Ustawienia", tint = Color.White)
+                            Icon(Icons.Default.Settings, contentDescription = "Ustawienia")
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
                 )
-                
-                // Search Bar
+
+                // Search Bar — używa tokenów theme (zamiast wymuszania bieli na granacie)
                 OutlinedTextField(
                     value = uiState.searchQuery,
                     onValueChange = viewModel::onSearchQueryChange,
-                    placeholder = { Text("Szukaj po nazwie lub miejscu...", color = Color.White.copy(alpha = 0.7f)) },
-                    leadingIcon = { Icon(Icons.Default.Search, null, tint = Color.White) },
+                    placeholder = { Text("Szukaj po nazwie lub miejscu...") },
+                    leadingIcon = { Icon(Icons.Default.Search, null) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 8.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        cursorColor = Color.White,
-                        focusedBorderColor = Color.White,
-                        unfocusedBorderColor = Color.White.copy(alpha = 0.5f),
-                        focusedContainerColor = Color.White.copy(alpha = 0.1f),
-                        unfocusedContainerColor = Color.White.copy(alpha = 0.1f)
-                    ),
                     shape = RoundedCornerShape(12.dp),
                     singleLine = true
                 )
 
-                // Tabs
+                // Tabs — domyślne kolory M3 (primary indicator + onSurface text)
                 TabRow(
-                    selectedTabIndex = uiState.selectedTab.ordinal,
-                    containerColor = Color.Transparent,
-                    contentColor = Color.White,
-                    indicator = { tabPositions ->
-                        TabRowDefaults.SecondaryIndicator(
-                            Modifier.tabIndicatorOffset(tabPositions[uiState.selectedTab.ordinal]),
-                            color = Color.White
-                        )
-                    }
+                    selectedTabIndex = uiState.selectedTab.ordinal
                 ) {
                     EventTab.entries.forEach { tab ->
                         val label = when(tab) {

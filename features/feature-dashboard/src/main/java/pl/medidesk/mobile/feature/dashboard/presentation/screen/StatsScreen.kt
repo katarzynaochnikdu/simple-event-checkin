@@ -30,6 +30,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import pl.medidesk.mobile.core.model.DashboardData
 import pl.medidesk.mobile.core.model.SyncState
 import pl.medidesk.mobile.core.ui.components.LoadingScreen
+import pl.medidesk.mobile.core.ui.theme.StatusColors
 import pl.medidesk.mobile.feature.dashboard.presentation.viewmodel.DashboardUiState
 import pl.medidesk.mobile.feature.dashboard.presentation.viewmodel.DashboardViewModel
 
@@ -63,7 +64,7 @@ fun StatsScreen(
     ) { padding ->
         Surface(
             modifier = Modifier.fillMaxSize().padding(padding),
-            color = Color(0xFFF8F9FA)
+            color = MaterialTheme.colorScheme.background
         ) {
             when (val state = uiState) {
                 is DashboardUiState.Loading -> LoadingScreen("Ładowanie danych...")
@@ -80,6 +81,14 @@ fun StatsScreen(
 
 @Composable
 private fun StatsContent(data: DashboardData, syncState: SyncState, onSyncClick: () -> Unit) {
+    // Theme color reads — wyciągnięte ponad LazyColumn (LazyListScope nie jest @Composable).
+    val labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val mutedColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+    val cardColors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    val dividerColor = MaterialTheme.colorScheme.surfaceVariant
+    val barColor = MaterialTheme.colorScheme.primary
+    val accentColor = MaterialTheme.colorScheme.secondary
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
@@ -89,16 +98,16 @@ private fun StatsContent(data: DashboardData, syncState: SyncState, onSyncClick:
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
+                colors = cardColors,
                 elevation = CardDefaults.cardElevation(2.dp),
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("PRZYBYCIE W CZASIE", style = MaterialTheme.typography.labelMedium, color = Color.Gray)
+                    Text("PRZYBYCIE W CZASIE", style = MaterialTheme.typography.labelMedium, color = labelColor)
                     Spacer(Modifier.height(16.dp))
                     if (data.timeline.isEmpty()) {
                         Box(Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
-                            Text("Brak danych czasowych", color = Color.LightGray)
+                            Text("Brak danych czasowych", color = mutedColor)
                         }
                     } else {
                         Row(
@@ -115,10 +124,10 @@ private fun StatsContent(data: DashboardData, syncState: SyncState, onSyncClick:
                                             .width(24.dp)
                                             .height(barHeight)
                                             .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
-                                            .background(Color(0xFF152C5B))
+                                            .background(barColor)
                                     )
                                     Spacer(Modifier.height(4.dp))
-                                    Text(entry.hour, fontSize = 9.sp, color = Color.Gray)
+                                    Text(entry.hour, fontSize = 9.sp, color = labelColor)
                                 }
                             }
                         }
@@ -131,14 +140,14 @@ private fun StatsContent(data: DashboardData, syncState: SyncState, onSyncClick:
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
+                colors = cardColors,
                 elevation = CardDefaults.cardElevation(2.dp),
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("TOP FIRMY / ORGANIZACJE", style = MaterialTheme.typography.labelMedium, color = Color.Gray)
+                    Text("TOP FIRMY / ORGANIZACJE", style = MaterialTheme.typography.labelMedium, color = labelColor)
                     Spacer(Modifier.height(16.dp))
-                    
+
                     val companyStats = data.recentCheckins
                         .mapNotNull { it.company }
                         .filter { it.isNotBlank() }
@@ -149,16 +158,16 @@ private fun StatsContent(data: DashboardData, syncState: SyncState, onSyncClick:
                         .take(5)
 
                     if (companyStats.isEmpty()) {
-                        Text("Brak danych o firmach", color = Color.LightGray, modifier = Modifier.padding(vertical = 8.dp))
+                        Text("Brak danych o firmach", color = mutedColor, modifier = Modifier.padding(vertical = 8.dp))
                     } else {
                         companyStats.forEach { (name, count) ->
                             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 8.dp)) {
-                                Icon(Icons.Default.Business, null, tint = Color(0xFF1565C0), modifier = Modifier.size(16.dp))
+                                Icon(Icons.Default.Business, null, tint = accentColor, modifier = Modifier.size(16.dp))
                                 Spacer(Modifier.width(12.dp))
                                 Text(name, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
                                 Text("$count osób", fontWeight = FontWeight.Bold)
                             }
-                            HorizontalDivider(color = Color(0xFFF1F3F5))
+                            HorizontalDivider(color = dividerColor)
                         }
                     }
                 }
@@ -169,16 +178,16 @@ private fun StatsContent(data: DashboardData, syncState: SyncState, onSyncClick:
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
+                colors = cardColors,
                 elevation = CardDefaults.cardElevation(2.dp),
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("SKANERY", style = MaterialTheme.typography.labelMedium, color = Color.Gray)
+                    Text("SKANERY", style = MaterialTheme.typography.labelMedium, color = labelColor)
                     Spacer(Modifier.height(16.dp))
-                    
+
                     if (data.topScanners.isEmpty()) {
-                        Text("Czekam na pierwsze skany...", color = Color.LightGray)
+                        Text("Czekam na pierwsze skany...", color = mutedColor)
                     } else {
                         data.topScanners.forEach { scanner ->
                             ScannerBarRow(scanner.email, scanner.count, data.checkedIn)
@@ -193,14 +202,14 @@ private fun StatsContent(data: DashboardData, syncState: SyncState, onSyncClick:
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
+                colors = cardColors,
                 elevation = CardDefaults.cardElevation(2.dp),
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("STRUKTURA BILETÓW (WEJŚCIA)", style = MaterialTheme.typography.labelMedium, color = Color.Gray)
+                    Text("STRUKTURA BILETÓW (WEJŚCIA)", style = MaterialTheme.typography.labelMedium, color = labelColor)
                     Spacer(Modifier.height(16.dp))
-                    
+
                     data.byTicketClass.forEach { stat ->
                         Column(Modifier.padding(vertical = 4.dp)) {
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -210,8 +219,8 @@ private fun StatsContent(data: DashboardData, syncState: SyncState, onSyncClick:
                             LinearProgressIndicator(
                                 progress = { if (stat.total > 0) stat.checkedIn.toFloat() / stat.total else 0f },
                                 modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape),
-                                color = Color(0xFF2E7D32),
-                                trackColor = Color(0xFFF1F3F5)
+                                color = StatusColors.Paid,
+                                trackColor = dividerColor
                             )
                         }
                     }
@@ -226,15 +235,15 @@ private fun ScannerBarRow(label: String, count: Int, total: Int) {
     val name = label.substringBefore("@")
     Column {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(name, style = MaterialTheme.typography.bodySmall, color = Color.DarkGray)
+            Text(name, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f))
             Text("$count skanów", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
         }
         Spacer(Modifier.height(4.dp))
         LinearProgressIndicator(
             progress = { if (total > 0) count.toFloat() / total else 0f },
             modifier = Modifier.fillMaxWidth().height(16.dp).clip(RoundedCornerShape(4.dp)),
-            color = Color(0xFF152C5B),
-            trackColor = Color(0xFFF8F9FA)
+            color = MaterialTheme.colorScheme.primary,
+            trackColor = MaterialTheme.colorScheme.surfaceVariant
         )
     }
 }

@@ -27,7 +27,9 @@ private val LightColorScheme = lightColorScheme(
     surfaceVariant = Color(0xFFF1F3F5),
     onSurfaceVariant = Color.Gray,
     error = MdRed,
-    onError = Color.White
+    onError = Color.White,
+    errorContainer = MdRedSurface,
+    onErrorContainer = MdRed
 )
 
 private val DarkColorScheme = darkColorScheme(
@@ -45,7 +47,9 @@ private val DarkColorScheme = darkColorScheme(
     surfaceVariant = Color(0xFF2C2C2C),
     onSurfaceVariant = Color.LightGray,
     error = MdRedLight,
-    onError = Color.Black
+    onError = Color.Black,
+    errorContainer = Color(0xFF3A1414),
+    onErrorContainer = MdRedLight
 )
 
 @Composable
@@ -59,7 +63,8 @@ fun MdTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.primary.toArgb()
+            // Status bar wpasowuje się w tło ekranu — bez "kolorowego paska" nad UI.
+            window.statusBarColor = colorScheme.background.toArgb()
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
         }
     }

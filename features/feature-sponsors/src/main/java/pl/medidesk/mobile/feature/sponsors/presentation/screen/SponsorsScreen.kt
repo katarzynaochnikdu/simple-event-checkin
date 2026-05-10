@@ -24,6 +24,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import pl.medidesk.mobile.core.ui.components.MdAsyncImage
+import pl.medidesk.mobile.core.ui.theme.StatusColors
 import pl.medidesk.mobile.core.model.EventSponsor
 import pl.medidesk.mobile.feature.sponsors.presentation.viewmodel.SponsorsViewModel
 
@@ -205,11 +206,11 @@ private fun SponsorCard(sponsor: EventSponsor, onClick: () -> Unit) {
 private fun StatusChip(status: String) {
     if (status.isBlank()) return
     val (label, color) = when (status) {
-        "won" -> "Potwierdzony" to Color(0xFF22C55E)
-        "lead" -> "Lead" to Color(0xFF3B82F6)
-        "negotiation" -> "Negocjacje" to Color(0xFFF59E0B)
-        "proposal_sent" -> "Oferta" to Color(0xFF8B5CF6)
-        "lost" -> "Utracony" to Color(0xFFEF4444)
+        "won" -> "Potwierdzony" to StatusColors.Paid
+        "lead" -> "Lead" to MaterialTheme.colorScheme.secondary
+        "negotiation" -> "Negocjacje" to StatusColors.Pending
+        "proposal_sent" -> "Oferta" to MaterialTheme.colorScheme.tertiary
+        "lost" -> "Utracony" to StatusColors.Cancelled
         else -> status.replaceFirstChar { it.uppercase() } to MaterialTheme.colorScheme.outline
     }
     Surface(

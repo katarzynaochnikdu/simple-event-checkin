@@ -42,18 +42,22 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import pl.medidesk.mobile.core.model.Participant
 import pl.medidesk.mobile.core.ui.components.LoadingScreen
+import pl.medidesk.mobile.core.ui.theme.MdBlue
+import pl.medidesk.mobile.core.ui.theme.StatusColors
 import pl.medidesk.mobile.feature.participants.presentation.viewmodel.CheckinResult
 import pl.medidesk.mobile.feature.participants.presentation.viewmodel.ParticipantDetailsUiState
 import pl.medidesk.mobile.feature.participants.presentation.viewmodel.ParticipantDetailsViewModel
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-// Semantic status colors — same in light and dark
-private val StatusGreen = Color(0xFF22C55E)
-private val StatusAmber = Color(0xFFF59E0B)
-private val StatusRed = Color(0xFFEF4444)
-private val StatusGray = Color(0xFF64748B)
-private val AccentBlue = Color(0xFF3B82F6)
+// Aliasy do theme palette — patrz core-ui/theme/StatusColors.kt + Color.kt.
+// Trzymamy lokalne nazwy żeby nie przepisywać wszystkich call-site'ów,
+// ale pochodzą one z jednego źródła prawdy (theme), nie hardcode'ów.
+private val StatusGreen = StatusColors.Paid
+private val StatusAmber = StatusColors.Pending
+private val StatusRed = StatusColors.Cancelled
+private val StatusGray = StatusColors.Neutral
+private val AccentBlue = MdBlue
 
 @Composable
 fun ParticipantDetailsScreen(
@@ -238,7 +242,7 @@ private fun HeroHeader(participant: Participant, onBackClick: () -> Unit) {
                 .align(Alignment.Center)
                 .size(72.dp)
                 .clip(CircleShape)
-                .background(Brush.linearGradient(listOf(cs.primary, Color(0xFF8B5CF6)))),
+                .background(Brush.linearGradient(listOf(cs.primary, cs.secondary))),
             contentAlignment = Alignment.Center
         ) {
             Text(initials, fontSize = 26.sp, fontWeight = FontWeight.Bold, color = cs.onPrimary)

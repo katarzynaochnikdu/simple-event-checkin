@@ -144,16 +144,16 @@ private fun InHubSetupScreen(
             
             if (error != null) {
                 Card(
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE)),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(Modifier.padding(12.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Warning, null, tint = Color.Red, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.Warning, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(8.dp))
-                            Text("Błąd serwera", fontWeight = FontWeight.Bold, color = Color.Red)
+                            Text("Błąd serwera", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
                         }
-                        Text(error, style = MaterialTheme.typography.bodySmall, color = Color.DarkGray)
+                        Text(error, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onErrorContainer)
                         TextButton(onClick = onBypass, modifier = Modifier.align(Alignment.End)) {
                             Text("Uruchom mimo błędu (tryb lokalny)")
                         }

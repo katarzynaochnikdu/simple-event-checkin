@@ -1,7 +1,6 @@
 package pl.medidesk.mobile.feature.dashboard.presentation.screen
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -42,6 +41,7 @@ import pl.medidesk.mobile.core.network.MobileApiService
 import pl.medidesk.mobile.core.network.dto.CheckinRequest
 import pl.medidesk.mobile.core.network.dto.DeleteCompanyAssignmentRequest
 import pl.medidesk.mobile.core.network.dto.MenteeDto
+import pl.medidesk.mobile.core.ui.theme.StatusColors
 import java.time.Instant
 import javax.inject.Inject
 
@@ -331,7 +331,7 @@ fun MyMenteesScreen(
                 state.isLoading -> {
                     CircularProgressIndicator(
                         modifier = Modifier.align(Alignment.Center),
-                        color = Color(0xFF00897B)
+                        color = MaterialTheme.colorScheme.secondary
                     )
                 }
 
@@ -345,11 +345,11 @@ fun MyMenteesScreen(
                         Icon(
                             Icons.Default.ErrorOutline,
                             contentDescription = null,
-                            tint = Color.Red,
+                            tint = MaterialTheme.colorScheme.error,
                             modifier = Modifier.size(48.dp)
                         )
                         Spacer(Modifier.height(12.dp))
-                        Text(state.error ?: "", color = Color.Gray, fontSize = 14.sp)
+                        Text(state.error ?: "", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                         Spacer(Modifier.height(16.dp))
                         OutlinedButton(onClick = { viewModel.load(eventId) }) {
                             Text("Ponów")
@@ -367,19 +367,19 @@ fun MyMenteesScreen(
                         Icon(
                             Icons.Default.SupervisorAccount,
                             contentDescription = null,
-                            tint = Color.Gray.copy(alpha = 0.5f),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                             modifier = Modifier.size(64.dp)
                         )
                         Spacer(Modifier.height(12.dp))
                         Text(
                             "Brak podopiecznych",
-                            color = Color.Gray,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium
                         )
                         Text(
                             "Nie masz przypisanych uczestników do tego wydarzenia",
-                            color = Color.Gray.copy(alpha = 0.7f),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                             fontSize = 13.sp
                         )
                     }
@@ -470,14 +470,14 @@ private fun CompanyCard(
                             Box(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(4.dp))
-                                    .background(Color(0xFF152C5B).copy(alpha = 0.1f))
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
                                     .padding(horizontal = 5.dp, vertical = 2.dp)
                             ) {
                                 Text(
                                     "PARTNER",
                                     fontSize = 9.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF152C5B)
+                                    color = MaterialTheme.colorScheme.primary
                                 )
                             }
                         }
@@ -513,7 +513,7 @@ private fun CompanyCard(
                             Icon(
                                 Icons.Default.Analytics,
                                 contentDescription = "Analityka CRM",
-                                tint = Color(0xFF1565C0),
+                                tint = MaterialTheme.colorScheme.secondary,
                                 modifier = Modifier.size(16.dp)
                             )
                         }
@@ -539,7 +539,7 @@ private fun CompanyCard(
                                 text = {
                                     Text(
                                         if (isWithdrawing) "Wycofywanie…" else "Wycofaj opiekę",
-                                        color = Color(0xFFE65100)
+                                        color = MaterialTheme.colorScheme.error
                                     )
                                 },
                                 onClick = {
@@ -550,7 +550,7 @@ private fun CompanyCard(
                                     Icon(
                                         Icons.Default.RemoveModerator,
                                         contentDescription = null,
-                                        tint = Color(0xFFE65100)
+                                        tint = MaterialTheme.colorScheme.error
                                     )
                                 },
                                 enabled = !isWithdrawing
@@ -592,52 +592,34 @@ private fun CompanyCard(
 @Composable
 private fun StatusBadge(group: CompanyGroup) {
     when {
-        group.pendingCount > 0 -> {
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(Color(0xFFFFF8E1))
-                    .border(1.dp, Color(0xFFFFB74D), RoundedCornerShape(4.dp))
-                    .padding(horizontal = 6.dp, vertical = 2.dp)
-            ) {
-                Text(
-                    "OCZEKUJE",
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFFF57C00)
-                )
-            }
-        }
-        group.freeCount == group.count -> {
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(Color(0xFFE2E8F0)) // slate-200
-                    .padding(horizontal = 6.dp, vertical = 2.dp)
-            ) {
-                Text(
-                    "FREE",
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF475569) // slate-600
-                )
-            }
-        }
-        else -> {
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(Color(0xFFE8F5E9))
-                    .padding(horizontal = 6.dp, vertical = 2.dp)
-            ) {
-                Text(
-                    "OPŁACONE",
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF2E7D32)
-                )
-            }
-        }
+        group.pendingCount > 0 -> StatusPill("OCZEKUJE", StatusColors.Pending)
+        group.freeCount == group.count -> StatusPill(
+            label = "FREE",
+            fg = MaterialTheme.colorScheme.onSurfaceVariant,
+            bg = MaterialTheme.colorScheme.surfaceVariant
+        )
+        else -> StatusPill("OPŁACONE", StatusColors.Paid)
+    }
+}
+
+@Composable
+private fun StatusPill(
+    label: String,
+    fg: Color,
+    bg: Color = fg.copy(alpha = 0.15f)
+) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(4.dp))
+            .background(bg)
+            .padding(horizontal = 6.dp, vertical = 2.dp)
+    ) {
+        Text(
+            label,
+            fontSize = 9.sp,
+            fontWeight = FontWeight.Bold,
+            color = fg
+        )
     }
 }
 
@@ -669,13 +651,13 @@ private fun ParticipantRow(
                 color = MaterialTheme.colorScheme.onSurface
             )
             if (!participant.phone.isNullOrBlank()) {
-                Text(participant.phone!!, fontSize = 12.sp, color = Color.Gray)
+                Text(participant.phone!!, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             if (!participant.email.isNullOrBlank()) {
                 Text(
                     participant.email!!,
                     fontSize = 12.sp,
-                    color = Color.Gray,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -691,14 +673,14 @@ private fun ParticipantRow(
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(10.dp))
-                        .background(Color(0xFFF1F3F4))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
                         .padding(horizontal = 6.dp, vertical = 2.dp)
                 ) {
                     Text(
                         ticketLabel.uppercase(),
                         fontSize = 9.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF5F6368),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -706,12 +688,13 @@ private fun ParticipantRow(
                 Spacer(Modifier.width(4.dp))
             }
             Box {
+                val accent = MaterialTheme.colorScheme.secondary
                 when {
                 participant.checkedIn -> {
                     Icon(
                         Icons.Default.HowToReg,
                         contentDescription = "Zarejestrowany",
-                        tint = Color(0xFF00897B),
+                        tint = accent,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -719,7 +702,7 @@ private fun ParticipantRow(
                     CircularProgressIndicator(
                         modifier = Modifier.size(20.dp),
                         strokeWidth = 2.dp,
-                        color = Color(0xFF00897B)
+                        color = accent
                     )
                 }
                 else -> {
@@ -728,12 +711,12 @@ private fun ParticipantRow(
                         modifier = Modifier
                             .size(36.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFF00897B).copy(alpha = 0.12f))
+                            .background(accent.copy(alpha = 0.12f))
                     ) {
                         Icon(
                             Icons.Default.HowToReg,
                             contentDescription = "Potwierdź przybycie",
-                            tint = Color(0xFF00897B),
+                            tint = accent,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -765,7 +748,7 @@ private fun WithdrawGuardianshipDialog(
             TextButton(
                 onClick = onConfirm,
                 enabled = !isPending,
-                colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFE65100))
+                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
             ) {
                 Text(if (isPending) "Wycofywanie…" else "Tak, wycofaj")
             }
@@ -796,7 +779,7 @@ private fun CheckInConfirmDialog(
             Icon(
                 Icons.Default.HowToReg,
                 contentDescription = null,
-                tint = Color(0xFF00897B)
+                tint = MaterialTheme.colorScheme.secondary
             )
         },
         title = { Text("Potwierdzić przybycie?") },
@@ -806,18 +789,18 @@ private fun CheckInConfirmDialog(
                 Spacer(Modifier.height(8.dp))
                 Text(name, fontWeight = FontWeight.Bold, fontSize = 15.sp)
                 if (!companyName.isNullOrBlank()) {
-                    Text(companyName, fontSize = 13.sp, color = Color.Gray)
+                    Text(companyName, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 if (!ticketName.isNullOrBlank()) {
                     Spacer(Modifier.height(4.dp))
-                    Text("Bilet: $ticketName", fontSize = 12.sp, color = Color.Gray)
+                    Text("Bilet: $ticketName", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         },
         confirmButton = {
             TextButton(
                 onClick = onConfirm,
-                colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF00897B))
+                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.secondary)
             ) {
                 Text("Tak, zarejestruj przybycie")
             }
