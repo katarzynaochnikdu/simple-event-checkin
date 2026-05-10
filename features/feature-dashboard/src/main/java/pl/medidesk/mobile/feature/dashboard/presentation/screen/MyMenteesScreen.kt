@@ -510,12 +510,12 @@ private fun CompanyCard(
                     val isLoading = review360Loading == group.crmAccountId
                     IconButton(
                         onClick = { onReview360Click(group.crmAccountId) },
-                        modifier = Modifier.size(32.dp),
+                        modifier = Modifier.size(40.dp),
                         enabled = !isLoading
                     ) {
                         if (isLoading) {
                             CircularProgressIndicator(
-                                modifier = Modifier.size(16.dp),
+                                modifier = Modifier.size(32.dp),
                                 strokeWidth = 2.dp
                             )
                         } else {
@@ -523,7 +523,7 @@ private fun CompanyCard(
                                 Icons.Default.Analytics,
                                 contentDescription = "Otwórz analizę Review360",
                                 tint = MaterialTheme.colorScheme.secondary,
-                                modifier = Modifier.size(16.dp)
+                                modifier = Modifier.size(32.dp)
                             )
                         }
                     }
@@ -532,13 +532,13 @@ private fun CompanyCard(
                 Box {
                     IconButton(
                         onClick = { showMenu = true },
-                        modifier = Modifier.size(32.dp)
+                        modifier = Modifier.size(40.dp)
                     ) {
                         Icon(
                             Icons.Default.MoreVert,
                             contentDescription = "Więcej opcji",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(36.dp)
                         )
                     }
                     DropdownMenu(
