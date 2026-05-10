@@ -278,16 +278,19 @@ class AddOrderViewModel @Inject constructor(
                     "proforma" -> {
                         val r = api.checkoutProforma(eventId, payload)
                         handleResponse(r.isSuccessful, r.code(), r.body()?.eventOrderId,
-                            "Proforma wysłana do ${pEmail}")
+                            r.errorBody()?.string(),
+                            "Proforma wysłana do $pEmail")
                     }
                     "stripe" -> {
                         val r = api.checkoutStripe(eventId, payload)
                         handleResponse(r.isSuccessful, r.code(), r.body()?.eventOrderId,
-                            "Email z linkiem wysłany do ${pEmail}")
+                            r.errorBody()?.string(),
+                            "Email z linkiem wysłany do $pEmail")
                     }
                     "free" -> {
                         val r = api.checkoutFree(eventId, payload)
                         handleResponse(r.isSuccessful, r.code(), r.body()?.eventOrderId,
+                            r.errorBody()?.string(),
                             "Uczestnik dodany")
                     }
                     else -> {
@@ -308,6 +311,7 @@ class AddOrderViewModel @Inject constructor(
         successful: Boolean,
         code: Int,
         orderId: String?,
+        errorBody: String?,
         successMsg: String
     ) {
         if (successful && orderId != null) {
@@ -316,15 +320,34 @@ class AddOrderViewModel @Inject constructor(
                 submitResult = AddOrderResult.Success(orderId, successMsg)
             )
         } else {
-            val errMsg = when (code) {
-                403 -> "Brak uprawnień: tylko administrator może tworzyć zamówienia z aplikacji"
-                401 -> "Sesja wygasła — zaloguj się ponownie"
+            val parsedErr = parseErrorMessage(errorBody)
+            val errMsg = when {
+                parsedErr != null -> parsedErr
+                code == 401 -> "Sesja wygasła — zaloguj się ponownie"
+                code == 403 -> "Brak uprawnień do tej operacji"
                 else -> "Błąd serwera ($code)"
             }
             _uiState.value = _uiState.value.copy(
                 isSubmitting = false,
                 submitResult = AddOrderResult.Error(errMsg)
             )
+        }
+    }
+
+    /**
+     * Parsuje komunikat błędu z JSON body backendu.
+     * Backend zwraca {"error": "..."} lub {"error": "...", "message": "..."}.
+     */
+    private fun parseErrorMessage(body: String?): String? {
+        if (body.isNullOrBlank()) return null
+        return try {
+            // "message" preferowany (user-friendly PL), fallback na "error"
+            val msgRegex = """"message"\s*:\s*"([^"]+)"""".toRegex()
+            msgRegex.find(body)?.groupValues?.get(1)?.takeIf { it.isNotBlank() }
+                ?: """"error"\s*:\s*"([^"]+)"""".toRegex()
+                    .find(body)?.groupValues?.get(1)?.takeIf { it.isNotBlank() }
+        } catch (e: Exception) {
+            null
         }
     }
 

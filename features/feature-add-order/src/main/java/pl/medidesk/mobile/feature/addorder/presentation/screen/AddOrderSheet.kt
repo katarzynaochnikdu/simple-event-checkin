@@ -124,14 +124,31 @@ fun AddOrderSheet(
                                 errors = state.errors,
                                 onToggle = viewModel::toggleConsent
                             )
-                            5 -> PaymentMethodPicker(
-                                methods = cfg.paymentMethods,
-                                selectedId = state.paymentMethodId,
-                                onSelect = viewModel::selectPaymentMethod,
-                                discountCode = state.discountCode,
-                                onDiscountCodeChange = viewModel::updateDiscountCode,
-                                error = state.errors["payment"]
-                            )
+                            5 -> {
+                                // Filtruj "free" gdy ticket ma cenę > 0 i brak kodu rabatowego
+                                // (backend odrzuci 400 "To zamówienie nie jest darmowe").
+                                // Z kodem rabatowym zostaw — może być 100% off, niech backend zweryfikuje.
+                                val selectedTicket = cfg.ticketClasses
+                                    .firstOrNull { it.id == state.selectedTicketClassId }
+                                val hasDiscount = state.discountCode.isNotBlank()
+                                val visibleMethods = if (
+                                    selectedTicket != null &&
+                                    selectedTicket.priceGross > 0 &&
+                                    !hasDiscount
+                                ) {
+                                    cfg.paymentMethods.filterNot { it.id == "free" }
+                                } else {
+                                    cfg.paymentMethods
+                                }
+                                PaymentMethodPicker(
+                                    methods = visibleMethods,
+                                    selectedId = state.paymentMethodId,
+                                    onSelect = viewModel::selectPaymentMethod,
+                                    discountCode = state.discountCode,
+                                    onDiscountCodeChange = viewModel::updateDiscountCode,
+                                    error = state.errors["payment"]
+                                )
+                            }
                         }
                         Spacer(Modifier.height(16.dp))
                     }
