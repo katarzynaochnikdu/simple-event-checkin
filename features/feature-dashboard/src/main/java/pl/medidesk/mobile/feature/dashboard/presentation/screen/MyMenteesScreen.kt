@@ -16,8 +16,10 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.PersonOff
 import androidx.compose.material.icons.filled.RemoveModerator
+import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.SupervisorAccount
 import androidx.compose.material3.*
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,6 +43,7 @@ import pl.medidesk.mobile.core.network.dto.DeleteCompanyAssignmentRequest
 import pl.medidesk.mobile.core.network.dto.MenteeDto
 import java.time.Instant
 import javax.inject.Inject
+import javax.inject.Named
 
 // ─── Domain models ────────────────────────────────────────────────────────────
 
@@ -70,8 +73,11 @@ data class MyMenteesUiState(
 
 @HiltViewModel
 class MyMenteesViewModel @Inject constructor(
-    private val api: MobileApiService
+    private val api: MobileApiService,
+    @Named("baseUrl") private val baseUrl: String
 ) : ViewModel() {
+
+    val reviewBaseUrl: String = baseUrl.trimEnd('/')
 
     private val _uiState = MutableStateFlow(MyMenteesUiState())
     val uiState = _uiState.asStateFlow()
@@ -395,6 +401,7 @@ fun MyMenteesScreen(
                                 group = group,
                                 isWithdrawing = state.withdrawingCompany == group.companyName,
                                 checkingInParticipantId = state.checkingInParticipantId,
+                                baseUrl = viewModel.reviewBaseUrl,
                                 onWithdraw = {
                                     viewModel.withdrawGuardianship(eventId, group.companyName)
                                 },
@@ -424,12 +431,14 @@ private fun CompanyCard(
     group: CompanyGroup,
     isWithdrawing: Boolean,
     checkingInParticipantId: Long?,
+    baseUrl: String,
     onWithdraw: () -> Unit,
     onParticipantClick: (Long) -> Unit,
     onCheckInRequest: (MenteeDto) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
     var showWithdrawDialog by remember { mutableStateOf(false) }
+    val uriHandler = LocalUriHandler.current
 
     Card(
         modifier = Modifier
@@ -506,7 +515,26 @@ private fun CompanyCard(
                     }
                 }
 
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(4.dp))
+
+                if (group.crmAccountId != null) {
+                    IconButton(
+                        onClick = {
+                            uriHandler.openUri("$baseUrl/api/crm/accounts/${group.crmAccountId}/review360/view")
+                        },
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(Color(0xFF1565C0).copy(alpha = 0.08f))
+                    ) {
+                        Icon(
+                            Icons.Default.Analytics,
+                            contentDescription = "Review360",
+                            tint = Color(0xFF1565C0),
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
 
                 IconButton(
                     onClick = { showWithdrawDialog = true },
@@ -614,57 +642,59 @@ private fun ParticipantRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onParticipantClick(participant.participantId) }
-            .padding(vertical = 6.dp, horizontal = 4.dp),
+            .padding(vertical = 5.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Spacer(Modifier.width(32.dp)) // wcięcie pod chevron
+        Spacer(Modifier.width(28.dp))
         Column(modifier = Modifier.weight(1f)) {
             val displayName = "${participant.firstName ?: ""} ${participant.lastName ?: ""}"
                 .trim()
                 .ifEmpty { "—" }
-            Text(
-                displayName,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color(0xFF1A1C1E)
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                val phoneEmpty = participant.phone.isNullOrBlank()
-                val emailEmpty = participant.email.isNullOrBlank()
-                if (!phoneEmpty) {
-                    Text(participant.phone!!, fontSize = 12.sp, color = Color.Gray)
-                }
-                if (!phoneEmpty && !emailEmpty) {
-                    Text("·", fontSize = 12.sp, color = Color.Gray)
-                }
-                if (!emailEmpty) {
-                    Text(
-                        participant.email!!,
-                        fontSize = 12.sp,
-                        color = Color.Gray,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-        }
-        Column(horizontalAlignment = Alignment.End) {
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(4.dp))
-                    .border(1.dp, Color.Gray.copy(alpha = 0.4f), RoundedCornerShape(4.dp))
-                    .padding(horizontal = 6.dp, vertical = 2.dp)
-                    .widthIn(max = 100.dp)
+            // Imię + badge typ biletu w tym samym wierszu
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Text(
-                    (participant.ticketName ?: "Standard").uppercase(),
-                    fontSize = 9.sp,
-                    color = Color.DarkGray,
+                    displayName,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFF1A1C1E),
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+                val ticketLabel = participant.ticketName?.takeIf { it.isNotBlank() }
+                if (ticketLabel != null) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(Color(0xFFF1F3F4))
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            ticketLabel.uppercase(),
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF5F6368),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+            if (!participant.phone.isNullOrBlank()) {
+                Text(participant.phone!!, fontSize = 12.sp, color = Color.Gray)
+            }
+            if (!participant.email.isNullOrBlank()) {
+                Text(
+                    participant.email!!,
+                    fontSize = 12.sp,
+                    color = Color.Gray,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
             }
-            Spacer(Modifier.height(4.dp))
+        }
+        Box(modifier = Modifier.padding(start = 8.dp)) {
             when {
                 participant.checkedIn -> {
                     Icon(
