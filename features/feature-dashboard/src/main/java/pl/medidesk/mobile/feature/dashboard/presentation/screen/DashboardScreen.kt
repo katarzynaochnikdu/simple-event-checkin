@@ -13,7 +13,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -107,50 +106,45 @@ private fun OrganizerDashboard(
 
 @Composable
 private fun DashboardHeader(data: DashboardData, subtitle: String, onBackToEvents: () -> Unit = {}) {
-    // Kolor wydarzenia (z API) z fallbackiem do theme primary
-    val headerColor = pl.medidesk.mobile.feature.events.presentation.screen.parseHexColor(data.primaryColor)
-        ?: MaterialTheme.colorScheme.primary
+    val contentColor = MaterialTheme.colorScheme.onBackground
+    val secondaryColor = contentColor.copy(alpha = 0.7f)
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(headerColor)
             .statusBarsPadding()
-            .padding(start = 4.dp, end = 20.dp, top = 8.dp, bottom = 16.dp),
+            .padding(start = 4.dp, end = 20.dp, top = 8.dp, bottom = 12.dp),
         verticalAlignment = Alignment.Top
     ) {
         IconButton(onClick = onBackToEvents) {
             Icon(
                 Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = "Wróć",
-                tint = Color.White
+                tint = contentColor
             )
         }
-        // Tytuł i meta-dane (inline z back arrow, bez wielkiego pasa nad nazwą)
         Column(modifier = Modifier.weight(1f).padding(top = 10.dp)) {
             Text(
                 text = data.eventName.ifEmpty { "Wydarzenie" },
-                style = MaterialTheme.typography.headlineSmall,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = contentColor
             )
             Text(
                 subtitle,
-                color = Color.White.copy(alpha = 0.85f),
+                color = secondaryColor,
                 fontWeight = FontWeight.Medium,
                 style = MaterialTheme.typography.bodySmall
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(6.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.CalendarToday, null, modifier = Modifier.size(14.dp), tint = Color.White.copy(alpha = 0.8f))
+                Icon(Icons.Default.CalendarToday, null, modifier = Modifier.size(14.dp), tint = secondaryColor)
                 Spacer(Modifier.width(6.dp))
-                Text(formatDateLabel(data.startDate), style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.8f))
-            }
-            if (data.venue.isNotBlank()) {
-                Spacer(Modifier.height(4.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.LocationOn, null, modifier = Modifier.size(14.dp), tint = Color.White.copy(alpha = 0.8f))
-                    Spacer(Modifier.width(6.dp))
-                    Text(data.venue, style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.8f))
+                Text(formatDateLabel(data.startDate), style = MaterialTheme.typography.bodySmall, color = secondaryColor)
+                if (data.venue.isNotBlank()) {
+                    Spacer(Modifier.width(12.dp))
+                    Icon(Icons.Default.LocationOn, null, modifier = Modifier.size(14.dp), tint = secondaryColor)
+                    Spacer(Modifier.width(4.dp))
+                    Text(data.venue, style = MaterialTheme.typography.bodySmall, color = secondaryColor)
                 }
             }
         }

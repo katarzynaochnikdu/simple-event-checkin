@@ -93,7 +93,7 @@ fun ParticipantsScreen(
         contentWindowInsets = WindowInsets(0),
         topBar = {
             TopAppBar(
-                title = { 
+                title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("Uczestnicy", fontWeight = FontWeight.Bold)
                         Spacer(Modifier.width(8.dp))
@@ -114,7 +114,10 @@ fun ParticipantsScreen(
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, null)
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent
+                )
             )
         }
     ) { padding ->

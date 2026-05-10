@@ -175,14 +175,12 @@ fun OrdersScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+                    containerColor = Color.Transparent
                 ),
                 actions = {
                     Text(
                         "${state.totalOrders} zam.",
-                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.75f),
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                         fontSize = 13.sp,
                         modifier = Modifier.padding(end = 16.dp)
                     )

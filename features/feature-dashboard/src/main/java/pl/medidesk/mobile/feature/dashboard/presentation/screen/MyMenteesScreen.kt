@@ -304,16 +304,14 @@ fun MyMenteesScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF152C5B),
-                    titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White
+                    containerColor = Color.Transparent
                 ),
                 actions = {
                     if (state.companies.isNotEmpty()) {
                         val totalPeople = state.companies.sumOf { it.count }
                         Text(
                             "${state.companies.size} firm · $totalPeople os.",
-                            color = Color.White.copy(alpha = 0.7f),
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                             fontSize = 13.sp,
                             modifier = Modifier.padding(end = 16.dp)
                         )

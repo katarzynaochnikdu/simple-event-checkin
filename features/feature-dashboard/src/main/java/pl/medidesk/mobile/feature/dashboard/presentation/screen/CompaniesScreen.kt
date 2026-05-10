@@ -98,14 +98,12 @@ fun CompaniesScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF152C5B),
-                    titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White
+                    containerColor = Color.Transparent
                 ),
                 actions = {
                     Text(
                         "${state.totalCompanies} firm",
-                        color = Color.White.copy(alpha = 0.7f),
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                         fontSize = 13.sp,
                         modifier = Modifier.padding(end = 16.dp)
                     )
