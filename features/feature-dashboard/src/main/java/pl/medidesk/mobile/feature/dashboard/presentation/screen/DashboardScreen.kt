@@ -87,7 +87,7 @@ private fun OrganizerDashboard(
     var showAddOrderSheet by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        DashboardHeader(data, "Panel Zarządzania", onBackToEvents = onBackToEvents)
+        DashboardHeader(data, onBackToEvents = onBackToEvents)
         Column(modifier = Modifier.padding(top = 16.dp)) {
             ProgressCard(data)
             Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -117,7 +117,7 @@ private fun OrganizerDashboard(
 }
 
 @Composable
-private fun DashboardHeader(data: DashboardData, subtitle: String, onBackToEvents: () -> Unit = {}) {
+private fun DashboardHeader(data: DashboardData, onBackToEvents: () -> Unit = {}) {
     val contentColor = MaterialTheme.colorScheme.onBackground
     val secondaryColor = contentColor.copy(alpha = 0.7f)
     Row(
@@ -140,12 +140,6 @@ private fun DashboardHeader(data: DashboardData, subtitle: String, onBackToEvent
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = contentColor
-            )
-            Text(
-                subtitle,
-                color = secondaryColor,
-                fontWeight = FontWeight.Medium,
-                style = MaterialTheme.typography.bodySmall
             )
             Spacer(Modifier.height(6.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
