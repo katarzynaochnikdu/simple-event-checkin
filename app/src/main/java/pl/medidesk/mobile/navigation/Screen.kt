@@ -11,7 +11,6 @@ sealed class Screen(val route: String, val arguments: List<NamedNavArgument> = e
         fun createRoute(role: String) = "login/$role"
     }
 
-    data object RoleSelection : Screen("role_selection")
     data object Home : Screen("home")
     data object Events : Screen("events")
     

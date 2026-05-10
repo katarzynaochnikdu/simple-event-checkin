@@ -2,7 +2,6 @@ package pl.medidesk.mobile.feature.dashboard.presentation.screen
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
@@ -48,7 +47,6 @@ fun DashboardScreen(
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    var forceOrganizerView by remember { mutableStateOf(false) }
 
     LaunchedEffect(eventId) { viewModel.loadDashboard(eventId) }
 
@@ -57,31 +55,18 @@ fun DashboardScreen(
             is DashboardUiState.Loading -> LoadingScreen("Ładowanie...")
             is DashboardUiState.Error -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(state.message) }
             is DashboardUiState.Success -> {
-                val role = state.user.role.uppercase()
-                val isOrganizer = forceOrganizerView || 
-                                 role.contains("ORG") || 
-                                 role.contains("ADM") || 
-                                 role.contains("STAFF")
-
-                if (isOrganizer) {
-                    OrganizerDashboard(
-                        data = state.data,
-                        syncState = state.syncState,
-                        onScannerClick = onNavigateToScanner,
-                        onParticipantsClick = onNavigateToParticipants,
-                        onStatsClick = onNavigateToStats,
-                        onMyMenteesClick = onNavigateToMyMentees,
-                        onSyncClick = { viewModel.triggerSync(eventId) },
-                        onBackToEvents = onBackToEvents
-                    )
-                } else {
-                    ParticipantDashboard(
-                        data = state.data,
-                        user = state.user,
-                        onForceOrganizer = { forceOrganizerView = true },
-                        onBackToEvents = onBackToEvents
-                    )
-                }
+                // simple-event-checkin to apka tylko dla operatorów/organizatorów —
+                // każdy zalogowany user widzi panel zarządzania, bez "trybu uczestnika".
+                OrganizerDashboard(
+                    data = state.data,
+                    syncState = state.syncState,
+                    onScannerClick = onNavigateToScanner,
+                    onParticipantsClick = onNavigateToParticipants,
+                    onStatsClick = onNavigateToStats,
+                    onMyMenteesClick = onNavigateToMyMentees,
+                    onSyncClick = { viewModel.triggerSync(eventId) },
+                    onBackToEvents = onBackToEvents
+                )
             }
         }
     }
@@ -126,97 +111,52 @@ private fun OrganizerDashboard(
 }
 
 @Composable
-private fun ParticipantDashboard(data: DashboardData, user: User, onForceOrganizer: () -> Unit, onBackToEvents: () -> Unit) {
-    LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
-        item { DashboardHeader(data, "Mój Panel", onBackToEvents = onBackToEvents) }
-        item {
-            Card(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(24.dp), elevation = CardDefaults.cardElevation(4.dp)) {
-                Column(modifier = Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("MÓJ BILET", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Spacer(Modifier.height(16.dp))
-                    Box(modifier = Modifier.size(200.dp).background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp)).border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp)), contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.QrCode, null, modifier = Modifier.size(140.dp), tint = MaterialTheme.colorScheme.primary)
-                    }
-                    Spacer(Modifier.height(16.dp))
-                    Text(user.email, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
-                    Text("Standard Ticket", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
-                }
-            }
-        }
-        item {
-            Column(modifier = Modifier.padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("Status: ${user.role}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
-                Spacer(Modifier.height(12.dp))
-                Button(
-                    onClick = onForceOrganizer,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red.copy(alpha = 0.1f), contentColor = Color.Red),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("PRZEŁĄCZ NA TRYB ORGANIZATORA", fontWeight = FontWeight.Bold)
-                }
-            }
-        }
-    }
-}
-
-@Composable
 private fun DashboardHeader(data: DashboardData, subtitle: String, onBackToEvents: () -> Unit = {}) {
     // Kolor wydarzenia (z API) z fallbackiem do theme primary
     val headerColor = pl.medidesk.mobile.feature.events.presentation.screen.parseHexColor(data.primaryColor)
         ?: MaterialTheme.colorScheme.primary
-    Column(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(headerColor)
             .statusBarsPadding()
-            .padding(start = 4.dp, end = 20.dp, top = 4.dp, bottom = 16.dp)
+            .padding(start = 4.dp, end = 20.dp, top = 8.dp, bottom = 16.dp),
+        verticalAlignment = Alignment.Top
     ) {
-        // Wiersz: strzałka wstecz
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBackToEvents) {
-                Icon(
-                    Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Wróć",
-                    tint = Color.White
-                )
-            }
+        IconButton(onClick = onBackToEvents) {
+            Icon(
+                Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "Wróć",
+                tint = Color.White
+            )
         }
-        // Nazwa wydarzenia i meta-dane
-        Text(
-            text = data.eventName.ifEmpty { "Wydarzenie" },
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            color = Color.White,
-            modifier = Modifier.padding(start = 16.dp)
-        )
-        Text(
-            subtitle,
-            color = Color.White.copy(alpha = 0.85f),
-            fontWeight = FontWeight.Medium,
-            style = MaterialTheme.typography.bodySmall,
-            modifier = Modifier.padding(start = 16.dp)
-        )
-        Spacer(Modifier.height(8.dp))
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(start = 16.dp)
-        ) {
-            Icon(Icons.Default.CalendarToday, null, modifier = Modifier.size(14.dp), tint = Color.White.copy(alpha = 0.8f))
-            Spacer(Modifier.width(6.dp))
-            Text(formatDateLabel(data.startDate), style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.8f))
-        }
-        if (data.venue.isNotBlank()) {
-            Spacer(Modifier.height(4.dp))
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(start = 16.dp)
-            ) {
-                Icon(Icons.Default.LocationOn, null, modifier = Modifier.size(14.dp), tint = Color.White.copy(alpha = 0.8f))
+        // Tytuł i meta-dane (inline z back arrow, bez wielkiego pasa nad nazwą)
+        Column(modifier = Modifier.weight(1f).padding(top = 10.dp)) {
+            Text(
+                text = data.eventName.ifEmpty { "Wydarzenie" },
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+            Text(
+                subtitle,
+                color = Color.White.copy(alpha = 0.85f),
+                fontWeight = FontWeight.Medium,
+                style = MaterialTheme.typography.bodySmall
+            )
+            Spacer(Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.CalendarToday, null, modifier = Modifier.size(14.dp), tint = Color.White.copy(alpha = 0.8f))
                 Spacer(Modifier.width(6.dp))
-                Text(data.venue, style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.8f))
+                Text(formatDateLabel(data.startDate), style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.8f))
+            }
+            if (data.venue.isNotBlank()) {
+                Spacer(Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.LocationOn, null, modifier = Modifier.size(14.dp), tint = Color.White.copy(alpha = 0.8f))
+                    Spacer(Modifier.width(6.dp))
+                    Text(data.venue, style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.8f))
+                }
             }
         }
     }

@@ -223,10 +223,10 @@ private fun MainScreen(eventId: String, onLogout: () -> Unit, onBackToEvents: ()
                 val isDashboard = currentDestination?.route?.startsWith("dashboard") == true
                 NavigationBarItem(
                     icon = {
-                        if (isDashboard) Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Lista")
+                        if (isDashboard) Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Lista wydarzeń")
                         else Icon(Icons.Default.Home, contentDescription = "Wydarzenie")
                     },
-                    label = { Text(if (isDashboard) "Lista" else "Wydarzenie") },
+                    label = { Text(if (isDashboard) "Lista wydarzeń" else "Wydarzenie") },
                     selected = false,
                     onClick = {
                         if (isDashboard) {
