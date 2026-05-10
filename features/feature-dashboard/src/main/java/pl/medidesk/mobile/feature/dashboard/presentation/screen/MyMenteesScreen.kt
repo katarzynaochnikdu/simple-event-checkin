@@ -45,6 +45,7 @@ import pl.medidesk.mobile.core.network.dto.CheckinRequest
 import pl.medidesk.mobile.core.network.dto.DeleteCompanyAssignmentRequest
 import pl.medidesk.mobile.core.network.dto.MenteeDto
 import pl.medidesk.mobile.core.sync.SyncEngine
+import pl.medidesk.mobile.core.sync.ParticipantStatusChange
 import pl.medidesk.mobile.core.ui.theme.StatusColors
 import java.time.Instant
 import javax.inject.Inject
@@ -121,6 +122,10 @@ class MyMenteesViewModel @Inject constructor(
                 val response = api.getMyMentees(eventId)
                 val body = response.body()
                 if (response.isSuccessful && body != null) {
+                    android.util.Log.d("MyMentees", "Loaded ${body.data.size} mentees, checked_in=${body.data.count { it.checkedIn }}")
+                    body.data.forEach { m ->
+                        android.util.Log.d("MyMentees", "  pid=${m.participantId} ${m.firstName} ${m.lastName} checked_in=${m.checkedIn}")
+                    }
                     val companies = groupAndSort(body.data)
                     _uiState.update {
                         it.copy(
@@ -238,7 +243,19 @@ class MyMenteesViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(checkingInParticipantId = null, toastMessage = msg)
                     }
-                    load(eventId)
+                    // Tell other screens (Dashboard tile, ParticipantDetails) to flip status.
+                    // applyOptimisticChange (subscribed in init) handles our own list update,
+                    // so we DON'T need to call load() — that would trigger isLoading=true,
+                    // tear down all CompanyCard composables, lose their expanded-state and
+                    // bounce the user out of the company they just checked in to.
+                    syncEngine.notifyParticipantChanged(
+                        ParticipantStatusChange(
+                            ticketId = ticketIdent,
+                            participantId = mentee.participantId,
+                            isCheckedIn = true,
+                            checkedInAt = body.checkedInAt ?: Instant.now().toString()
+                        )
+                    )
                 } else {
                     _uiState.update {
                         it.copy(
