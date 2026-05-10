@@ -45,32 +45,24 @@ class DashboardViewModel @Inject constructor(
             }
         }
 
-        viewModelScope.launch {
-            val user = combine(
-                authDataStore.userEmailFlow,
-                authDataStore.userRoleFlow,
-                authDataStore.userIdFlow,
-                authDataStore.userFirstNameFlow,
-                authDataStore.userLastNameFlow
-            ) { email, role, id, first, last ->
-                User(id?.toIntOrNull() ?: 0, email ?: "", first ?: "", last ?: "", role ?: "PARTICIPANT")
-            }.first()
-            
-            if (_uiState.value is DashboardUiState.Loading) {
-                 _uiState.value = DashboardUiState.Success(
-                    DashboardData("0", 0, 0, 0, 0, 0.0),
-                    SyncState(),
-                    user
-                 )
-            }
-        }
+        // (Removed: empty-Success bootstrap with primaryColor=null. It caused the
+        // ProgressCard to render with MaterialTheme.colorScheme.primary (granat) for
+        // ~1s before the real dashboard arrived with the event's accent — visible
+        // color flash. Now we just stay in Loading until loadDashboard completes,
+        // so the colored card appears in the right color from the first frame.)
     }
 
     fun loadDashboard(eventId: String) {
         if (eventId == "0" || eventId.isBlank()) return
 
         viewModelScope.launch {
-            _uiState.value = DashboardUiState.Loading
+            // Only show Loading on the very first load. On subsequent calls
+            // (LifecycleResumeEffect when user comes back) keep the previous
+            // Success on screen so we don't flash a Loading skeleton — new
+            // numbers will overwrite when sync + getDashboard return.
+            if (_uiState.value !is DashboardUiState.Success) {
+                _uiState.value = DashboardUiState.Loading
+            }
 
             // Wait for sync (push pending checkins, then full pull) BEFORE asking backend
             // for dashboard stats — otherwise getDashboard may return stale numbers that
