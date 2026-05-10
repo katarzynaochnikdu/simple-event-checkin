@@ -74,5 +74,11 @@ data class FormFieldDefDto(
     val visible: Boolean = true,
     val required: Boolean = false,
     val placeholder: String? = null,
-    val options: List<String>? = null
+    val options: List<FormFieldOptionDto>? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class FormFieldOptionDto(
+    val value: String,
+    val label: String
 )

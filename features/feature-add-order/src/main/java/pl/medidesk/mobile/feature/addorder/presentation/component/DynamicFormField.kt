@@ -28,12 +28,13 @@ fun DynamicFormField(
     when (field.type) {
         FormFieldType.SELECT -> {
             var expanded by remember { mutableStateOf(false) }
+            val displayValue = field.options.find { it.value == value }?.label ?: value
             ExposedDropdownMenuBox(
                 expanded = expanded,
                 onExpandedChange = { expanded = it }
             ) {
                 OutlinedTextField(
-                    value = value,
+                    value = displayValue,
                     onValueChange = {},
                     readOnly = true,
                     label = { Text(labelText) },
@@ -49,8 +50,8 @@ fun DynamicFormField(
                 ) {
                     field.options.forEach { opt ->
                         DropdownMenuItem(
-                            text = { Text(opt) },
-                            onClick = { onValueChange(opt); expanded = false }
+                            text = { Text(opt.label) },
+                            onClick = { onValueChange(opt.value); expanded = false }
                         )
                     }
                 }

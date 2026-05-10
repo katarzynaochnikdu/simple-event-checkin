@@ -1,6 +1,7 @@
 package pl.medidesk.mobile.feature.addorder.domain
 
 import pl.medidesk.mobile.core.network.dto.FormFieldDefDto
+import pl.medidesk.mobile.core.network.dto.FormFieldOptionDto
 import pl.medidesk.mobile.core.network.dto.MobileCartConfigDto
 import pl.medidesk.mobile.core.network.dto.MobileCartConsentCheckboxDto
 import pl.medidesk.mobile.core.network.dto.MobileCartConsentInfoBlockDto
@@ -80,8 +81,10 @@ data class FormFieldDefinition(
     val visible: Boolean,
     val required: Boolean,
     val placeholder: String?,
-    val options: List<String>
+    val options: List<FormFieldOption>
 )
+
+data class FormFieldOption(val value: String, val label: String)
 
 // --- Domain extensions: DTO → domain mapping ---
 
@@ -125,5 +128,5 @@ private fun MobileCartConsentInfoBlockDto.toDomain() = OrderConsentInfoBlock(
 private fun FormFieldDefDto.toDomain() = FormFieldDefinition(
     id = id, label = label, type = FormFieldType.parse(type),
     visible = visible, required = required, placeholder = placeholder,
-    options = options.orEmpty()
+    options = options.orEmpty().map { FormFieldOption(it.value, it.label) }
 )
