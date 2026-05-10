@@ -159,18 +159,27 @@ private fun EventCompactCard(event: EventItem, onClick: () -> Unit, modifier: Mo
                     .background(accentColor)
             )
             // Logo (mała miniaturka)
-            val logoModel = if (isSystemInDarkTheme()) {
+            // W dark mode: preferuj logoWhiteUrl (logotyp w wersji białej) → fallback do kolorowego
+            // Gdy w dark mode brak logoWhiteUrl, dodajemy jasne tło pod kolorowe logo (czytelność)
+            val isDark = isSystemInDarkTheme()
+            val logoModel = if (isDark) {
                 (event.logoWhiteUrl ?: event.logoUrl ?: event.imageUrl)
             } else {
                 (event.logoUrl ?: event.imageUrl)
             }
+            val needsLightBgFallback = isDark && event.logoWhiteUrl.isNullOrBlank() && !event.logoUrl.isNullOrBlank()
             MdAsyncImage(
                 model = logoModel,
                 contentDescription = event.eventName,
                 modifier = Modifier
                     .padding(start = 12.dp, top = 12.dp, bottom = 12.dp)
                     .size(56.dp)
-                    .clip(RoundedCornerShape(10.dp)),
+                    .clip(RoundedCornerShape(10.dp))
+                    .then(
+                        if (needsLightBgFallback)
+                            Modifier.background(Color.White.copy(alpha = 0.95f))
+                        else Modifier
+                    ),
                 contentScale = ContentScale.Fit,
                 initials = event.eventName.take(1),
                 placeholderColor = Color.Transparent
