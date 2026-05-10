@@ -271,7 +271,7 @@ fun ImageCropScreen(
                     }
                 },
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00BFA5)),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00897B)),
             ) {
                 Text(if (isLastStep) "Potwierdź" else "Dalej")
                 Spacer(Modifier.width(4.dp))

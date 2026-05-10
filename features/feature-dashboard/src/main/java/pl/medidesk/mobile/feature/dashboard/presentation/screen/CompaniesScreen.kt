@@ -118,7 +118,7 @@ fun CompaniesScreen(
                 state.isLoading -> {
                     CircularProgressIndicator(
                         modifier = Modifier.align(Alignment.Center),
-                        color = Color(0xFF00BFA5)
+                        color = Color(0xFF00897B)
                     )
                 }
                 state.error != null -> {
@@ -230,7 +230,7 @@ private fun CompanyCard(company: CompanyDto) {
                     LinearProgressIndicator(
                         progress = { (rate / 100.0).toFloat() },
                         modifier = Modifier.weight(1f).height(6.dp).clip(RoundedCornerShape(3.dp)),
-                        color = Color(0xFF00BFA5),
+                        color = Color(0xFF00897B),
                         trackColor = Color(0xFFE0E0E0)
                     )
                     Spacer(Modifier.width(8.dp))

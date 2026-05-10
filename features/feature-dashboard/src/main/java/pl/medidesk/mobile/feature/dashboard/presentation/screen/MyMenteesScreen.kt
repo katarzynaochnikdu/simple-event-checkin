@@ -328,7 +328,7 @@ fun MyMenteesScreen(
                 state.isLoading -> {
                     CircularProgressIndicator(
                         modifier = Modifier.align(Alignment.Center),
-                        color = Color(0xFF00BFA5)
+                        color = Color(0xFF00897B)
                     )
                 }
 
@@ -685,7 +685,7 @@ private fun ParticipantRow(
                         modifier = Modifier
                             .size(36.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFF00BFA5).copy(alpha = 0.12f))
+                            .background(Color(0xFF00897B).copy(alpha = 0.12f))
                     ) {
                         Icon(
                             Icons.Default.HowToReg,
