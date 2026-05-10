@@ -32,13 +32,14 @@ class SyncWorker @AssistedInject constructor(
 
     companion object {
         const val KEY_EVENT_ID = "event_id"
+        const val KEY_FORCE_FULL_PULL = "force_full_pull"
         const val WORK_NAME_PERIODIC = "md_sync_periodic"
         const val WORK_NAME_IMMEDIATE = "md_sync_immediate"
         private const val TAG = "SyncWorker"
 
         fun periodicWorkRequest(eventId: String): PeriodicWorkRequest =
             PeriodicWorkRequestBuilder<SyncWorker>(5, java.util.concurrent.TimeUnit.MINUTES)
-                .setInputData(workDataOf(KEY_EVENT_ID to eventId))
+                .setInputData(workDataOf(KEY_EVENT_ID to eventId, KEY_FORCE_FULL_PULL to false))
                 .setConstraints(
                     Constraints.Builder()
                         .setRequiredNetworkType(NetworkType.CONNECTED)
@@ -49,7 +50,7 @@ class SyncWorker @AssistedInject constructor(
 
         fun immediateWorkRequest(eventId: String): OneTimeWorkRequest =
             OneTimeWorkRequestBuilder<SyncWorker>()
-                .setInputData(workDataOf(KEY_EVENT_ID to eventId))
+                .setInputData(workDataOf(KEY_EVENT_ID to eventId, KEY_FORCE_FULL_PULL to true))
                 .setConstraints(
                     Constraints.Builder()
                         .setRequiredNetworkType(NetworkType.CONNECTED)
@@ -60,7 +61,8 @@ class SyncWorker @AssistedInject constructor(
 
     override suspend fun doWork(): Result {
         val eventId = inputData.getString(KEY_EVENT_ID) ?: return Result.failure()
-        
+        val forceFullPull = inputData.getBoolean(KEY_FORCE_FULL_PULL, false)
+
         var hasError = false
 
         // 1. Push Checkins FIRST (so server knows about new checkins)
@@ -73,7 +75,7 @@ class SyncWorker @AssistedInject constructor(
 
         // 2. Pull Participants (to get updated state from server)
         try {
-            pullParticipants(eventId)
+            pullParticipants(eventId, forceFullPull)
         } catch (e: Exception) {
             Log.e(TAG, "Error pulling participants", e)
             hasError = true
@@ -94,11 +96,14 @@ class SyncWorker @AssistedInject constructor(
         }
     }
 
-    private suspend fun pullParticipants(eventId: String) {
+    private suspend fun pullParticipants(eventId: String, forceFullPull: Boolean = false) {
         val meta = syncMetadataDao.get(eventId)
-        val since = meta?.lastParticipantsSync
+        // Force full pull (immediate sync triggered by UI resume / after checkin):
+        // pass since=null so backend returns ALL participants and we replaceAll locally —
+        // ensures deletions and uncheck-ins from the web panel propagate to mobile cache.
+        val since = if (forceFullPull) null else meta?.lastParticipantsSync
 
-        Log.d(TAG, "Pulling participants for $eventId since $since")
+        Log.d(TAG, "Pulling participants for $eventId since=$since (forceFullPull=$forceFullPull)")
         val response = apiService.getParticipants(eventId, since)
         if (!response.isSuccessful) {
             Log.e(TAG, "Failed to fetch participants: ${response.code()}")

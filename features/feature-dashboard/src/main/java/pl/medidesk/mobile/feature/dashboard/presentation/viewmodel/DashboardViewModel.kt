@@ -104,8 +104,8 @@ class DashboardViewModel @Inject constructor(
                 val participants = recentEntities.mapNotNull { it as? Participant }
                 val body = response?.body()
                 
-                val total = (body?.totalRegistered ?: 0).coerceAtLeast(localTotal)
-                val checked = (body?.checkedIn ?: 0).coerceAtLeast(localCheckedIn)
+                val total = body?.totalRegistered ?: localTotal
+                val checked = body?.checkedIn ?: localCheckedIn
                 
                 val data = DashboardData(
                     eventId = body?.eventId ?: eventId,
