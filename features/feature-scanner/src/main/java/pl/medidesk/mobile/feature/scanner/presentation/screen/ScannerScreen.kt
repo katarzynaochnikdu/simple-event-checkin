@@ -6,22 +6,36 @@ import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.HowToReg
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -34,6 +48,7 @@ import com.google.mlkit.vision.common.InputImage
 import pl.medidesk.mobile.core.ui.theme.ScanDuplicate
 import pl.medidesk.mobile.core.ui.theme.ScanError
 import pl.medidesk.mobile.core.ui.theme.ScanSuccess
+import pl.medidesk.mobile.feature.scanner.presentation.viewmodel.PendingScan
 import pl.medidesk.mobile.feature.scanner.presentation.viewmodel.ScanFeedback
 import pl.medidesk.mobile.feature.scanner.presentation.viewmodel.ScannerUiState
 import pl.medidesk.mobile.feature.scanner.presentation.viewmodel.ScannerViewModel
@@ -87,6 +102,76 @@ fun ScannerScreen(
             }
         }
     }
+
+    uiState.pendingScan?.let { pending ->
+        ScanConfirmDialog(
+            pending = pending,
+            onConfirm = { viewModel.confirmScan() },
+            onDismiss = { viewModel.cancelScan() }
+        )
+    }
+}
+
+@Composable
+private fun ScanConfirmDialog(
+    pending: PendingScan,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = {
+            Icon(
+                Icons.Default.HowToReg,
+                contentDescription = null,
+                tint = ScanSuccess,
+                modifier = Modifier.size(36.dp)
+            )
+        },
+        title = { Text("Potwierdzenie Check-In", fontWeight = FontWeight.Bold) },
+        text = {
+            Column {
+                if (pending.knownLocally && pending.participantName.isNotBlank()) {
+                    Text("Czy potwierdzasz wykonanie Check-In dla:")
+                    Spacer(Modifier.height(8.dp))
+                    Text(pending.participantName, fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
+                    if (pending.ticketName.isNotBlank()) {
+                        Text(pending.ticketName, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                    }
+                    if (pending.company.isNotBlank()) {
+                        Text(pending.company, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                    }
+                    if (pending.alreadyCheckedIn) {
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "Uwaga: ten uczestnik jest już oznaczony jako obecny.",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                } else {
+                    Text("Czy potwierdzasz wykonanie Check-In dla zeskanowanego biletu?")
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "(Uczestnik nie ma jeszcze danych w lokalnej bazie — szczegóły potwierdzą się po sync'u.)",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                colors = ButtonDefaults.buttonColors(containerColor = ScanSuccess)
+            ) {
+                Text("Tak, Check-In", fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Anuluj") }
+        }
+    )
 }
 
 @Composable
@@ -98,7 +183,7 @@ private fun ScanResultOverlay(uiState: ScannerUiState, onUndo: () -> Unit) {
         exit = fadeOut()
     ) {
         val (bgColor, statusText) = when (uiState.feedback) {
-            ScanFeedback.SUCCESS -> ScanSuccess.copy(alpha = 0.92f) to "WEJŚCIE OK"
+            ScanFeedback.SUCCESS -> ScanSuccess.copy(alpha = 0.95f) to "WEJŚCIE OK"
             ScanFeedback.SUCCESS_OFFLINE -> ScanDuplicate.copy(alpha = 0.92f) to "ZAPISANO OFFLINE"
             ScanFeedback.DUPLICATE -> ScanDuplicate.copy(alpha = 0.92f) to "JUŻ ZAREJESTROWANY"
             ScanFeedback.NOT_FOUND -> ScanError.copy(alpha = 0.92f) to "NIE ZNALEZIONO"
@@ -109,6 +194,7 @@ private fun ScanResultOverlay(uiState: ScannerUiState, onUndo: () -> Unit) {
         }
 
         val showUndoButton = uiState.feedback == ScanFeedback.SUCCESS || uiState.feedback == ScanFeedback.SUCCESS_OFFLINE
+        val showCheckmarkAnim = uiState.feedback == ScanFeedback.SUCCESS || uiState.feedback == ScanFeedback.UNDONE
 
         Box(
             modifier = Modifier
@@ -117,6 +203,10 @@ private fun ScanResultOverlay(uiState: ScannerUiState, onUndo: () -> Unit) {
             contentAlignment = Alignment.Center
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                if (showCheckmarkAnim) {
+                    AnimatedCheckmark()
+                    Spacer(Modifier.height(16.dp))
+                }
                 Text(
                     text = statusText,
                     style = MaterialTheme.typography.headlineLarge,
@@ -161,6 +251,83 @@ private fun ScanResultOverlay(uiState: ScannerUiState, onUndo: () -> Unit) {
         }
     }
 }
+
+/**
+ * Animowany "fajny" checkmark — koło wjeżdża spring'iem, potem po jego krawędzi
+ * rysuje się gruba linia checkmarka. Czas trwania ~700 ms łącznie.
+ */
+@Composable
+private fun AnimatedCheckmark() {
+    val circleScale = remember { Animatable(0f) }
+    val checkProgress = remember { Animatable(0f) }
+
+    LaunchedEffect(Unit) {
+        circleScale.animateTo(
+            targetValue = 1f,
+            animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow)
+        )
+        checkProgress.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(durationMillis = 380, easing = LinearEasing)
+        )
+    }
+
+    Box(
+        modifier = Modifier
+            .size(140.dp)
+            .scale(circleScale.value)
+            .background(Color.White.copy(alpha = 0.18f), shape = androidx.compose.foundation.shape.CircleShape),
+        contentAlignment = Alignment.Center
+    ) {
+        Canvas(modifier = Modifier.size(140.dp)) {
+            val w = size.width
+            val h = size.height
+            val cx = w / 2f
+            val cy = h / 2f
+            val r = w * 0.40f
+
+            // Białe koło wypełnienie
+            drawCircle(color = Color.White, radius = r, center = Offset(cx, cy))
+
+            // Punkty checkmarka — względem środka koła
+            val p1 = Offset(cx - r * 0.45f, cy + r * 0.05f)
+            val p2 = Offset(cx - r * 0.10f, cy + r * 0.40f)
+            val p3 = Offset(cx + r * 0.50f, cy - r * 0.30f)
+
+            // Animowane rysowanie checkmarka (dwa segmenty: p1→p2, p2→p3)
+            val seg1Len = distance(p1, p2)
+            val seg2Len = distance(p2, p3)
+            val totalLen = seg1Len + seg2Len
+            val drawnLen = totalLen * checkProgress.value
+
+            val path = Path().apply { moveTo(p1.x, p1.y) }
+            if (drawnLen <= seg1Len) {
+                val t = if (seg1Len > 0f) drawnLen / seg1Len else 0f
+                val end = lerp(p1, p2, t)
+                path.lineTo(end.x, end.y)
+            } else {
+                path.lineTo(p2.x, p2.y)
+                val t2 = if (seg2Len > 0f) (drawnLen - seg1Len) / seg2Len else 0f
+                val end = lerp(p2, p3, t2)
+                path.lineTo(end.x, end.y)
+            }
+
+            drawPath(
+                path = path,
+                color = ScanSuccess,
+                style = Stroke(width = r * 0.22f, cap = StrokeCap.Round)
+            )
+        }
+    }
+}
+
+private fun distance(a: Offset, b: Offset): Float {
+    val dx = b.x - a.x; val dy = b.y - a.y
+    return kotlin.math.sqrt(dx * dx + dy * dy)
+}
+
+private fun lerp(a: Offset, b: Offset, t: Float): Offset =
+    Offset(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t)
 
 @Composable
 private fun CameraPreview(
