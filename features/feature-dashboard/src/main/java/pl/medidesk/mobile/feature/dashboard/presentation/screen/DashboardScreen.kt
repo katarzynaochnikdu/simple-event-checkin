@@ -25,6 +25,7 @@ import pl.medidesk.mobile.core.ui.components.MdAsyncImage
 import pl.medidesk.mobile.core.model.*
 import pl.medidesk.mobile.core.ui.components.LoadingScreen
 import pl.medidesk.mobile.core.ui.theme.StatusColors
+import pl.medidesk.mobile.feature.addorder.presentation.screen.AddOrderSheet
 import pl.medidesk.mobile.feature.dashboard.presentation.viewmodel.DashboardUiState
 import pl.medidesk.mobile.feature.dashboard.presentation.viewmodel.DashboardViewModel
 import pl.medidesk.mobile.feature.events.presentation.screen.formatDateLabel
@@ -56,6 +57,7 @@ fun DashboardScreen(
                 // simple-event-checkin to apka tylko dla operatorów/organizatorów —
                 // każdy zalogowany user widzi panel zarządzania, bez "trybu uczestnika".
                 OrganizerDashboard(
+                    eventId = eventId,
                     data = state.data,
                     syncState = state.syncState,
                     onScannerClick = onNavigateToScanner,
@@ -72,6 +74,7 @@ fun DashboardScreen(
 
 @Composable
 private fun OrganizerDashboard(
+    eventId: String,
     data: DashboardData,
     syncState: SyncState,
     onScannerClick: () -> Unit,
@@ -81,8 +84,8 @@ private fun OrganizerDashboard(
     onSyncClick: () -> Unit,
     onBackToEvents: () -> Unit
 ) {
-    // Column zamiast LazyColumn — mamy 5 stałych itemów, nie potrzeba lazy semantyki.
-    // LazyColumn pozwalał na lekki overscroll mimo że nic się nie chowało.
+    var showAddOrderSheet by remember { mutableStateOf(false) }
+
     Column(modifier = Modifier.fillMaxSize()) {
         DashboardHeader(data, "Panel Zarządzania", onBackToEvents = onBackToEvents)
         Column(modifier = Modifier.padding(top = 16.dp)) {
@@ -97,10 +100,19 @@ private fun OrganizerDashboard(
             MenuButton("Moi podopieczni", "Twoi przypisani uczestnicy", Icons.Default.SupervisorAccount, MaterialTheme.colorScheme.primary, onMyMenteesClick, Modifier.weight(1f))
             MenuButton("Uczestnicy", "Lista i wyszukiwanie", Icons.Default.Group, MaterialTheme.colorScheme.secondary, { onParticipantsClick(null) }, Modifier.weight(1f))
         }
-        Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
-            MenuButton("Statystyki", "Analiza frekwencji", Icons.Default.BarChart, MaterialTheme.colorScheme.tertiary, onStatsClick, Modifier.fillMaxWidth())
+        Row(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            MenuButton("Dodaj zamówienie", "Nowy uczestnik / firma", Icons.Default.PersonAdd, MaterialTheme.colorScheme.primary, { showAddOrderSheet = true }, Modifier.weight(1f))
+            MenuButton("Statystyki", "Analiza frekwencji", Icons.Default.BarChart, MaterialTheme.colorScheme.tertiary, onStatsClick, Modifier.weight(1f))
         }
         SyncButton(syncState, onSyncClick)
+    }
+
+    if (showAddOrderSheet) {
+        AddOrderSheet(
+            eventId = eventId,
+            onDismiss = { showAddOrderSheet = false },
+            onSuccess = { onParticipantsClick(null) }
+        )
     }
 }
 

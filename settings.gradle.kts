@@ -42,6 +42,7 @@ include(":features:feature-scanner")
 include(":features:feature-participants")
 include(":features:feature-dashboard")
 include(":features:feature-more")
+include(":features:feature-add-order")
 
 // Modules hidden/removed for simplification
 // include(":features:feature-walkin")

@@ -75,6 +75,28 @@ interface MobileApiService {
     @GET("api/mobile/gus/lookup/{nip}")
     suspend fun gusLookup(@Path("nip") nip: String): Response<GusLookupResponse>
 
+    // Mobile Add-Order (WO-154) — cart config + checkout endpoints
+    @GET("api/mobile/events/{eventId}/cart-config")
+    suspend fun getCartConfig(@Path("eventId") eventId: String): Response<MobileCartConfigDto>
+
+    @POST("api/mobile/events/{eventId}/checkout/proforma")
+    suspend fun checkoutProforma(
+        @Path("eventId") eventId: String,
+        @Body payload: MobileCheckoutPayloadDto
+    ): Response<MobileCheckoutProformaResponseDto>
+
+    @POST("api/mobile/events/{eventId}/checkout/stripe")
+    suspend fun checkoutStripe(
+        @Path("eventId") eventId: String,
+        @Body payload: MobileCheckoutPayloadDto
+    ): Response<MobileCheckoutStripeResponseDto>
+
+    @POST("api/mobile/events/{eventId}/checkout/free")
+    suspend fun checkoutFree(
+        @Path("eventId") eventId: String,
+        @Body payload: MobileCheckoutPayloadDto
+    ): Response<MobileCheckoutFreeResponseDto>
+
     // Speakers
     @GET("api/mobile/events/{eventId}/speakers")
     suspend fun getSpeakers(@Path("eventId") eventId: String): Response<SpeakersResponse>

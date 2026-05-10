@@ -66,6 +66,7 @@ dependencies {
     implementation(project(":features:feature-participants"))
     implementation(project(":features:feature-dashboard"))
     implementation(project(":features:feature-more"))
+    implementation(project(":features:feature-add-order"))
 
     // Core Android
     implementation(libs.core.ktx)

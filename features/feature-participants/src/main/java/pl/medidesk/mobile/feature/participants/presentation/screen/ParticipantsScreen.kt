@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.outlined.AccessTime
@@ -28,6 +29,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import pl.medidesk.mobile.core.model.Participant
 import pl.medidesk.mobile.core.ui.theme.StatusColors
+import pl.medidesk.mobile.feature.addorder.presentation.screen.AddOrderSheet
 import pl.medidesk.mobile.feature.participants.presentation.viewmodel.ParticipantsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -42,6 +44,7 @@ fun ParticipantsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showFilterSheet by remember { mutableStateOf(false) }
+    var showAddOrderSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     LaunchedEffect(filterType, ticketClassId) {
@@ -119,6 +122,13 @@ fun ParticipantsScreen(
                     containerColor = Color.Transparent
                 )
             )
+        },
+        floatingActionButton = {
+            ExtendedFloatingActionButton(
+                onClick = { showAddOrderSheet = true },
+                icon = { Icon(Icons.Default.PersonAdd, null) },
+                text = { Text("Dodaj uczestnika") }
+            )
         }
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).background(MaterialTheme.colorScheme.background)) {
@@ -192,6 +202,14 @@ fun ParticipantsScreen(
                 }
             }
         }
+    }
+
+    if (showAddOrderSheet) {
+        AddOrderSheet(
+            eventId = eventId,
+            onDismiss = { showAddOrderSheet = false },
+            onSuccess = { viewModel.refresh(eventId) }
+        )
     }
 
     if (showFilterSheet) {
