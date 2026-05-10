@@ -659,31 +659,8 @@ private fun ParticipantRow(
                 )
             }
         }
-        // Prawa strona: badge biletu (opcjonalny) + akcja check-in
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(start = 8.dp)
-        ) {
-            val ticketLabel = participant.ticketName?.takeIf { it.isNotBlank() }
-            if (ticketLabel != null) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        ticketLabel.uppercase(),
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-                Spacer(Modifier.width(4.dp))
-            }
-            Box {
+        // Prawa strona: akcja check-in
+        Box(modifier = Modifier.padding(start = 8.dp)) {
                 val accent = MaterialTheme.colorScheme.secondary
                 when {
                 participant.checkedIn -> {
@@ -718,8 +695,7 @@ private fun ParticipantRow(
                     }
                 }
                 }  // closes when
-            }      // closes Box
-        }          // closes inner Row (badge + check-in)
+        }          // closes Box (check-in)
     }              // closes outer Row
 }                  // closes ParticipantRow
 
