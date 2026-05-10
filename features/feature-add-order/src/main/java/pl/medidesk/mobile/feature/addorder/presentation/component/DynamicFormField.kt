@@ -8,6 +8,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
 import pl.medidesk.mobile.feature.addorder.domain.FormFieldDefinition
@@ -74,6 +75,9 @@ fun DynamicFormField(
                 FormFieldType.TEL -> KeyboardType.Phone
                 else -> KeyboardType.Text
             }
+            // Email pole nie powinno auto-capitalize'ować pierwszej litery (irytujące przy wpisywaniu).
+            val capitalization = if (field.type == FormFieldType.EMAIL) KeyboardCapitalization.None
+                else KeyboardCapitalization.Sentences
             OutlinedTextField(
                 value = value, onValueChange = onValueChange,
                 label = { Text(labelText) },
@@ -81,7 +85,11 @@ fun DynamicFormField(
                 supportingText = supportText,
                 placeholder = field.placeholder?.let { { Text(it) } },
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = keyboardType,
+                    capitalization = capitalization,
+                    autoCorrect = field.type != FormFieldType.EMAIL
+                ),
                 modifier = modifier.fillMaxWidth()
             )
         }

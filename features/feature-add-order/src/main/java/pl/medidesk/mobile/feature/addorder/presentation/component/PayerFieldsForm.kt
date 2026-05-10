@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import pl.medidesk.mobile.feature.addorder.presentation.state.PayerFormData
@@ -68,7 +69,11 @@ fun PayerFieldsForm(
             isError = errors["email"] != null,
             supportingText = errors["email"]?.let { { Text(it) } },
             singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Email,
+                capitalization = KeyboardCapitalization.None,
+                autoCorrect = false
+            ),
             modifier = Modifier.fillMaxWidth()
         )
         OutlinedTextField(
