@@ -8,6 +8,7 @@ import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -224,7 +225,9 @@ private fun MainScreen(eventId: String, onLogout: () -> Unit, onBackToEvents: ()
         bottomBar = {
             NavigationBar {
                 val isDashboard = currentDestination?.route?.startsWith("dashboard") == true
-                val accent = eventAccentColor ?: MaterialTheme.colorScheme.secondary
+                val isDark = isSystemInDarkTheme()
+                val accent = if (isDark) MaterialTheme.colorScheme.onSurface
+                    else eventAccentColor ?: MaterialTheme.colorScheme.secondary
                 val navColors = NavigationBarItemDefaults.colors(
                     selectedIconColor = accent,
                     selectedTextColor = accent,
