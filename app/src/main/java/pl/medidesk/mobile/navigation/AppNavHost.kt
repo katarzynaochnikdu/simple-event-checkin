@@ -266,6 +266,19 @@ private fun MainScreen(eventId: String, onLogout: () -> Unit, onBackToEvents: ()
             }
         }
     ) { innerPadding ->
+        // Powrót do Dashboardu z dowolnego ekranu sub-grafu eventu.
+        // popBackStack nie zawsze działa — bottom-nav używa popUpTo+saveState, więc
+        // bezpośrednie wejście na Participants/Scanner zostawia Dashboard "out of stack"
+        // (poprawnie, bo restoreState=true je odtwarza). Strzałka back arrow ma działać
+        // jednoznacznie: nawiguj do Dashboardu z tym samym wzorcem co tab "Wydarzenie".
+        val goToDashboard: () -> Unit = {
+            innerNav.navigate(Screen.Dashboard.createRoute(eventId)) {
+                popUpTo(innerNav.graph.findStartDestination().id) { saveState = true }
+                launchSingleTop = true
+                restoreState = true
+            }
+        }
+
         NavHost(
             navController = innerNav,
             startDestination = Screen.Dashboard.createRoute(eventId),
@@ -294,20 +307,20 @@ private fun MainScreen(eventId: String, onLogout: () -> Unit, onBackToEvents: ()
             ) {
                 MyMenteesScreen(
                     eventId = eventId,
-                    onBackClick = { innerNav.popBackStack() },
+                    onBackClick = goToDashboard,
                     onParticipantClick = { participantId ->
                         innerNav.navigate(Screen.ParticipantDetails.createRoute(participantId))
                     }
                 )
             }
-            
+
             composable(
                 route = Screen.Scanner.route,
                 arguments = Screen.Scanner.arguments
             ) {
                 ScannerScreen(eventId = eventId)
             }
-            
+
             composable(
                 route = Screen.Participants.route,
                 arguments = Screen.Participants.arguments
@@ -318,28 +331,29 @@ private fun MainScreen(eventId: String, onLogout: () -> Unit, onBackToEvents: ()
                     eventId = eventId,
                     filterType = filterType,
                     ticketClassId = ticketClassId,
-                    onBackClick = { innerNav.popBackStack() },
-                    onParticipantClick = { participantId -> 
+                    onBackClick = goToDashboard,
+                    onParticipantClick = { participantId ->
                         innerNav.navigate(Screen.ParticipantDetails.createRoute(participantId))
                     }
                 )
             }
-            
+
             composable(
                 route = Screen.Stats.route,
                 arguments = Screen.Stats.arguments
             ) {
                 StatsScreen(
                     eventId = eventId,
-                    onBackClick = { innerNav.popBackStack() }
+                    onBackClick = goToDashboard
                 )
             }
-            
+
             composable(
                 route = Screen.ParticipantDetails.route,
                 arguments = Screen.ParticipantDetails.arguments
             ) { backStackEntry ->
                 val participantId = backStackEntry.arguments?.getLong("participantId") ?: return@composable
+                // ParticipantDetails to "drill-down" — popBackStack OK (zawsze ma poprzednika).
                 ParticipantDetailsScreen(
                     participantId = participantId,
                     onBackClick = { innerNav.popBackStack() }

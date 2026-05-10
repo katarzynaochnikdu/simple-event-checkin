@@ -112,6 +112,7 @@ class SyncWorker @AssistedInject constructor(
             ParticipantEntity(
                 id = dto.id,
                 ticketId = dto.ticketId,
+                ticketNumber = dto.ticketNumber,
                 backstageTicketId = dto.backstageTicketId,
                 firstName = dto.firstName,
                 lastName = dto.lastName,
