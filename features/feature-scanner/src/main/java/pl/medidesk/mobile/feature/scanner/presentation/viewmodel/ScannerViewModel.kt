@@ -40,7 +40,8 @@ data class PendingScan(
     val company: String,
     val email: String,
     val knownLocally: Boolean,
-    val alreadyCheckedIn: Boolean
+    val alreadyCheckedIn: Boolean,
+    val orderStatus: String? = null
 )
 
 data class ScannerUiState(
@@ -100,7 +101,8 @@ class ScannerViewModel @Inject constructor(
                         company = result.company,
                         email = result.email,
                         knownLocally = true,
-                        alreadyCheckedIn = result.alreadyCheckedIn
+                        alreadyCheckedIn = result.alreadyCheckedIn,
+                        orderStatus = result.orderStatus
                     )
                     _uiState.value = _uiState.value.copy(pendingScan = pending)
                 }

@@ -29,7 +29,8 @@ class LookupParticipantByTicketUseCase @Inject constructor(
         val localThis = participantDao.findByTicketAndEvent(ticketId, eventId)
         if (localThis != null) {
             return found(ticketId, localThis.firstName, localThis.lastName, localThis.email,
-                localThis.ticketName, localThis.company, localThis.checkedInAt != null)
+                localThis.ticketName, localThis.company, localThis.checkedInAt != null,
+                localThis.orderStatus)
         }
 
         // 2. Cross-event check — może mamy bilet, ale dla innego wydarzenia
@@ -57,7 +58,8 @@ class LookupParticipantByTicketUseCase @Inject constructor(
             } ?: return LookupResult.NotFound
 
             found(ticketId, match.firstName, match.lastName, match.email,
-                match.ticketName, match.company, match.checkedInAt != null)
+                match.ticketName, match.company, match.checkedInAt != null,
+                match.orderStatus)
         } catch (e: Exception) {
             Log.w("LookupParticipantByTicket", "Server lookup error: ${e.message}")
             LookupResult.NotFound
@@ -73,14 +75,16 @@ class LookupParticipantByTicketUseCase @Inject constructor(
 
     private fun found(
         ticketId: String, first: String?, last: String?, email: String?,
-        ticketName: String?, company: String?, alreadyCheckedIn: Boolean
+        ticketName: String?, company: String?, alreadyCheckedIn: Boolean,
+        orderStatus: String? = null
     ): LookupResult.Found = LookupResult.Found(
         ticketId = ticketId,
         participantName = composeName(first, last, email),
         ticketName = ticketName.orEmpty(),
         company = company.orEmpty(),
         email = email.orEmpty(),
-        alreadyCheckedIn = alreadyCheckedIn
+        alreadyCheckedIn = alreadyCheckedIn,
+        orderStatus = orderStatus
     )
 }
 
@@ -100,6 +104,7 @@ sealed class LookupResult {
         val ticketName: String,
         val company: String,
         val email: String,
-        val alreadyCheckedIn: Boolean
+        val alreadyCheckedIn: Boolean,
+        val orderStatus: String? = null
     ) : LookupResult()
 }
