@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -22,12 +23,25 @@ fun PayerFieldsForm(
     gusError: String?,
     onPayerChange: ((PayerFormData) -> PayerFormData) -> Unit,
     onLookupGus: (String) -> Unit,
+    onCopyFromParticipant: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Dane płatnika",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Dane płatnika",
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold)
+            OutlinedButton(onClick = onCopyFromParticipant) {
+                Icon(Icons.Default.ContentCopy, contentDescription = null,
+                    modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(6.dp))
+                Text("Skopiuj z uczestnika")
+            }
+        }
 
         OutlinedTextField(
             value = payer.firstName,

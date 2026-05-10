@@ -97,6 +97,23 @@ class AddOrderViewModel @Inject constructor(
         updatePayer { it.copy(isCompany = isCompany) }
     }
 
+    fun copyParticipantToPayer() {
+        val s = _uiState.value
+        val firstName = s.participantData["firstName"]?.trim().orEmpty()
+        val lastName = s.participantData["lastName"]?.trim().orEmpty()
+        val email = s.participantData["email"]?.trim().orEmpty()
+        val phone = s.participantData["phone"]?.trim().orEmpty()
+        _uiState.value = s.copy(
+            payer = s.payer.copy(
+                firstName = firstName.ifBlank { s.payer.firstName },
+                lastName = lastName.ifBlank { s.payer.lastName },
+                email = email.ifBlank { s.payer.email },
+                phone = phone.ifBlank { s.payer.phone }
+            ),
+            errors = s.errors - setOf("firstName", "lastName", "email")
+        )
+    }
+
     fun toggleConsent(id: String, value: Boolean) {
         val cur = _uiState.value
         _uiState.value = cur.copy(

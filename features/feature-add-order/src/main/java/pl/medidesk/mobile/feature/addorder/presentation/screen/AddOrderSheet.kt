@@ -115,7 +115,8 @@ fun AddOrderSheet(
                                 isLookingUpGus = state.isLookingUpGus,
                                 gusError = state.gusError,
                                 onPayerChange = viewModel::updatePayer,
-                                onLookupGus = viewModel::lookupGus
+                                onLookupGus = viewModel::lookupGus,
+                                onCopyFromParticipant = viewModel::copyParticipantToPayer
                             )
                             4 -> ConsentsForm(
                                 consentsConfig = cfg.consents,
