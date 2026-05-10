@@ -19,7 +19,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.HowToReg
+import androidx.compose.material.icons.filled.MeetingRoom
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -122,7 +122,7 @@ private fun ScanConfirmDialog(
         onDismissRequest = onDismiss,
         icon = {
             Icon(
-                Icons.Default.HowToReg,
+                Icons.Default.MeetingRoom,
                 contentDescription = null,
                 tint = ScanSuccess,
                 modifier = Modifier.size(36.dp)

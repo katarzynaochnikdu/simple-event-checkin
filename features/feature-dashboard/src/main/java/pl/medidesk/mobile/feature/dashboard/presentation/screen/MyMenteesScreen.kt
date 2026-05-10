@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.HowToReg
+import androidx.compose.material.icons.filled.MeetingRoom
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.PersonOff
@@ -592,10 +593,13 @@ private fun CompanyCard(
                 }
                 StatusBadge(group)
                 Spacer(Modifier.width(8.dp))
+                val checkedInCount = group.participants.count { it.checkedIn }
+                val checkedInColor = if (checkedInCount == group.count) StatusColors.Paid else StatusColors.Pending
                 Text(
-                    "${group.count} os.",
+                    "$checkedInCount/${group.count} os.",
                     fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = checkedInColor,
+                    fontWeight = FontWeight.SemiBold
                 )
             }
 
@@ -727,12 +731,12 @@ private fun ParticipantRow(
                         modifier = Modifier
                             .size(36.dp)
                             .clip(CircleShape)
-                            .background(accent.copy(alpha = 0.12f))
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
                     ) {
                         Icon(
-                            Icons.Default.HowToReg,
+                            Icons.Default.MeetingRoom,
                             contentDescription = "Potwierdź przybycie",
-                            tint = accent,
+                            tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -792,9 +796,9 @@ private fun CheckInConfirmDialog(
         onDismissRequest = onDismiss,
         icon = {
             Icon(
-                Icons.Default.HowToReg,
+                Icons.Default.MeetingRoom,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.secondary
+                tint = MaterialTheme.colorScheme.primary
             )
         },
         title = { Text("Potwierdzić przybycie?") },

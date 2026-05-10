@@ -10,11 +10,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.MeetingRoom
 import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.PersonOff
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material.icons.outlined.AccessTime
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
@@ -315,16 +315,16 @@ private fun ParticipantItem(participant: Participant, onClick: () -> Unit, onSta
             ) {
                 if (participant.isCheckedIn) {
                     Icon(
-                        Icons.Default.CheckCircle,
-                        contentDescription = "Zameldowany",
-                        tint = StatusColors.Paid,
+                        Icons.Default.PersonOff,
+                        contentDescription = "Cofnij check-in",
+                        tint = StatusColors.Cancelled,
                         modifier = Modifier.size(26.dp)
                     )
                 } else {
                     Icon(
-                        Icons.Outlined.AccessTime,
+                        Icons.Default.MeetingRoom,
                         contentDescription = "Oczekujący",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f),
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(26.dp)
                     )
                 }

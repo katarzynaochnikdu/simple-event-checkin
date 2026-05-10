@@ -103,7 +103,7 @@ fun ParticipantDetailsScreen(
     if (showCheckinDialog) {
         AlertDialog(
             onDismissRequest = { showCheckinDialog = false },
-            icon = { Icon(Icons.Default.HowToReg, null, tint = StatusGreen) },
+            icon = { Icon(Icons.Default.MeetingRoom, null, tint = MdBlue) },
             title = { Text("Potwierdzenie Check-In", style = MaterialTheme.typography.titleMedium) },
             text = {
                 Text(
@@ -363,7 +363,7 @@ private fun StatusIconsRow(participant: Participant) {
             val (ciIcon, ciColor) = if (participant.isCheckedIn) {
                 Icons.Default.CheckCircle to StatusGreen
             } else {
-                Icons.Outlined.Schedule to StatusGray
+                Icons.Default.MeetingRoom to AccentBlue
             }
             StatusIcon(ciIcon, ciColor, "Check-In")
         }
@@ -413,9 +413,9 @@ private fun CheckinBanner(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    if (isCheckedIn) Icons.Default.CheckCircle else Icons.Default.Schedule,
+                    if (isCheckedIn) Icons.Default.CheckCircle else Icons.Default.MeetingRoom,
                     null,
-                    tint = if (isCheckedIn) StatusGreen else cs.onSurfaceVariant,
+                    tint = if (isCheckedIn) StatusGreen else cs.primary,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -478,7 +478,7 @@ private fun CheckinBanner(
                             color = Color.White
                         )
                     } else {
-                        Icon(Icons.Default.HowToReg, null, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.MeetingRoom, null, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(6.dp))
                         Text("Check-In", style = MaterialTheme.typography.labelLarge)
                     }
