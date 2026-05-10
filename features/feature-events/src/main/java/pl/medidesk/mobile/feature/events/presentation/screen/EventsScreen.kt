@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
@@ -34,6 +35,7 @@ import java.util.Locale
 @Composable
 fun EventsScreen(
     onEventSelected: (String) -> Unit,
+    onNavigateToSettings: () -> Unit = {},
     viewModel: EventsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -43,6 +45,11 @@ fun EventsScreen(
             Column(modifier = Modifier.background(MaterialTheme.colorScheme.secondary)) {
                 TopAppBar(
                     title = { Text("Wydarzenia", color = Color.White, fontWeight = FontWeight.Bold) },
+                    actions = {
+                        IconButton(onClick = onNavigateToSettings) {
+                            Icon(Icons.Default.Settings, contentDescription = "Ustawienia", tint = Color.White)
+                        }
+                    },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
                 )
                 
@@ -152,22 +159,22 @@ private fun EventCompactCard(event: EventItem, onClick: () -> Unit, modifier: Mo
                     .background(accentColor)
             )
             // Logo (mała miniaturka)
-            Box(
+            val logoModel = if (isSystemInDarkTheme()) {
+                (event.logoWhiteUrl ?: event.logoUrl ?: event.imageUrl)
+            } else {
+                (event.logoUrl ?: event.imageUrl)
+            }
+            MdAsyncImage(
+                model = logoModel,
+                contentDescription = event.eventName,
                 modifier = Modifier
                     .padding(start = 12.dp, top = 12.dp, bottom = 12.dp)
                     .size(56.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                contentAlignment = Alignment.Center
-            ) {
-                MdAsyncImage(
-                    model = event.logoUrl ?: event.imageUrl,
-                    contentDescription = event.eventName,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Fit,
-                    initials = event.eventName.take(1)
-                )
-            }
+                    .clip(RoundedCornerShape(10.dp)),
+                contentScale = ContentScale.Fit,
+                initials = event.eventName.take(1),
+                placeholderColor = Color.Transparent
+            )
             // Dane wydarzenia
             Column(
                 modifier = Modifier

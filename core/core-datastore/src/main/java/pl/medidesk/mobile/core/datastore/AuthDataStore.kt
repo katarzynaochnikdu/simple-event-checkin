@@ -26,8 +26,10 @@ class AuthDataStore @Inject constructor(
     private val userLastNameKey = stringPreferencesKey("user_last_name")
     private val userRoleKey = stringPreferencesKey("user_role")
     private val userIdKey = stringPreferencesKey("user_id")
+    private val themePreferenceKey = stringPreferencesKey("theme_preference")
 
     val tokenFlow: Flow<String?> = context.dataStore.data.map { it[tokenKey] }
+    val themePreferenceFlow: Flow<String> = context.dataStore.data.map { it[themePreferenceKey] ?: "SYSTEM" }
     val userIdFlow: Flow<String?> = context.dataStore.data.map { it[userIdKey] }
     val userEmailFlow: Flow<String?> = context.dataStore.data.map { it[userEmailKey] }
     val userFirstNameFlow: Flow<String?> = context.dataStore.data.map { it[userFirstNameKey] }
@@ -54,4 +56,8 @@ class AuthDataStore @Inject constructor(
     }
 
     suspend fun getToken(): String? = tokenFlow.firstOrNull()
+
+    suspend fun saveThemePreference(theme: String) {
+        context.dataStore.edit { it[themePreferenceKey] = theme }
+    }
 }

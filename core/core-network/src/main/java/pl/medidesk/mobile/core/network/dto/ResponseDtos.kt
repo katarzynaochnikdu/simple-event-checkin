@@ -7,6 +7,7 @@ import com.squareup.moshi.JsonClass
 data class LoginResponse(
     val success: Boolean,
     val token: String? = null,
+    @Json(name = "must_change_password") val mustChangePassword: Boolean = false,
     val user: UserDto? = null,
     val error: String? = null
 )
@@ -48,6 +49,7 @@ data class EventDto(
     val image: String?,
     val thumbnail: String?,
     @Json(name = "logo_url") val logoUrl: String? = null,
+    @Json(name = "logo_white_url") val logoWhiteUrl: String? = null,
     @Json(name = "primary_color") val primaryColor: String? = null,
     @Json(name = "secondary_color") val secondaryColor: String? = null,
     @Json(name = "accent_color") val accentColor: String? = null
@@ -368,4 +370,58 @@ data class GenericActionResponse(
     val error: String? = null,
     val status: String? = null,
     val message: String? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class ChangePasswordRequest(
+    @Json(name = "current_password") val currentPassword: String,
+    @Json(name = "new_password") val newPassword: String
+)
+
+@JsonClass(generateAdapter = true)
+data class ChangePasswordResponse(
+    val success: Boolean,
+    val error: String? = null
+)
+
+// --- My Mentees ---
+
+@JsonClass(generateAdapter = true)
+data class MenteeDto(
+    @Json(name = "participant_id") val participantId: Long,
+    @Json(name = "ticket_id") val ticketId: String? = null,
+    @Json(name = "ticket_number") val ticketNumber: String? = null,
+    @Json(name = "backstage_ticket_id") val backstageTicketId: String? = null,
+    @Json(name = "crm_person_id") val crmPersonId: Long? = null,
+    @Json(name = "first_name") val firstName: String?,
+    @Json(name = "last_name") val lastName: String?,
+    val email: String?,
+    val phone: String? = null,
+    @Json(name = "company_name") val companyName: String?,
+    @Json(name = "company_short_name") val companyShortName: String? = null,
+    @Json(name = "is_partner") val isPartner: Boolean = false,
+    @Json(name = "crm_account_id") val crmAccountId: Long? = null,
+    @Json(name = "ticket_name") val ticketName: String? = null,
+    @Json(name = "order_status") val orderStatus: String? = null,
+    @Json(name = "payment_type") val paymentType: Int? = null,
+    @Json(name = "order_total") val orderTotal: Double? = null,
+    @Json(name = "attendance_status") val attendanceStatus: String? = null,
+    @Json(name = "checked_in") val checkedIn: Boolean = false
+)
+
+@JsonClass(generateAdapter = true)
+data class MenteesResponse(
+    val success: Boolean,
+    val data: List<MenteeDto>
+)
+
+@JsonClass(generateAdapter = true)
+data class DeleteCompanyAssignmentRequest(
+    @Json(name = "company_name") val companyName: String
+)
+
+@JsonClass(generateAdapter = true)
+data class SuccessResponse(
+    val success: Boolean,
+    val error: String? = null
 )

@@ -9,6 +9,7 @@ data class EventItem(
     val venue: String,
     val imageUrl: String? = null,
     val logoUrl: String? = null,
+    val logoWhiteUrl: String? = null,
     val primaryColor: String? = null,
     val secondaryColor: String? = null,
     val accentColor: String? = null

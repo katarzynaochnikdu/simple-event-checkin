@@ -23,7 +23,7 @@ class AuthRepositoryImpl @Inject constructor(
                 authDataStore.saveToken(body.token!!)
                 val u = body.user!!
                 authDataStore.saveUserInfo(u.id, u.email, u.firstName ?: "", u.lastName ?: "", u.role ?: "PARTICIPANT")
-                Result.success(User(u.id, u.email, u.firstName ?: "", u.lastName ?: "", u.role ?: "PARTICIPANT"))
+                Result.success(User(u.id, u.email, u.firstName ?: "", u.lastName ?: "", u.role ?: "PARTICIPANT", body.mustChangePassword))
             } else {
                 Result.failure(Exception(body?.error ?: "Błąd logowania"))
             }

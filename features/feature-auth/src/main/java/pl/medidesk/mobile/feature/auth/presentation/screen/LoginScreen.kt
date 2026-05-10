@@ -31,15 +31,20 @@ import pl.medidesk.mobile.feature.auth.presentation.viewmodel.LoginViewModel
 fun LoginScreen(
     role: String,
     onLoginSuccess: () -> Unit,
+    onMustChangePassword: () -> Unit = {},
     viewModel: LoginViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var passwordVisible by remember { mutableStateOf(false) }
+    var showForgotDialog by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
     val scrollState = rememberScrollState()
 
-    LaunchedEffect(uiState.isSuccess) {
-        if (uiState.isSuccess) onLoginSuccess()
+    LaunchedEffect(uiState.isSuccess, uiState.mustChangePassword) {
+        if (uiState.isSuccess) {
+            if (uiState.mustChangePassword) onMustChangePassword()
+            else onLoginSuccess()
+        }
     }
 
     Surface(
@@ -137,7 +142,99 @@ fun LoginScreen(
                         Text("Zaloguj się", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     }
                 }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                TextButton(onClick = { showForgotDialog = true }) {
+                    Text(
+                        "Zapomniałeś hasła?",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
         }
+    }
+
+    // Forgot password dialog
+    if (showForgotDialog) {
+        var forgotEmail by remember { mutableStateOf(uiState.email) }
+
+        AlertDialog(
+            onDismissRequest = {
+                showForgotDialog = false
+                viewModel.clearForgotPasswordState()
+            },
+            title = { Text("Resetowanie hasła") },
+            text = {
+                Column {
+                    if (uiState.forgotPasswordSent) {
+                        Text(
+                            "Link do resetowania hasła został wysłany na podany adres e-mail.",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    } else {
+                        Text(
+                            "Podaj adres e-mail powiązany z Twoim kontem. Wyślemy link do zmiany hasła.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        OutlinedTextField(
+                            value = forgotEmail,
+                            onValueChange = { forgotEmail = it },
+                            label = { Text("E-mail") },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Email,
+                                imeAction = ImeAction.Done
+                            ),
+                            modifier = Modifier.fillMaxWidth(),
+                            isError = uiState.forgotPasswordError != null,
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        if (uiState.forgotPasswordError != null) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = uiState.forgotPasswordError!!,
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                if (uiState.forgotPasswordSent) {
+                    TextButton(onClick = {
+                        showForgotDialog = false
+                        viewModel.clearForgotPasswordState()
+                    }) {
+                        Text("OK")
+                    }
+                } else {
+                    TextButton(
+                        onClick = { viewModel.forgotPassword(forgotEmail) },
+                        enabled = !uiState.forgotPasswordLoading
+                    ) {
+                        if (uiState.forgotPasswordLoading) {
+                            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                        } else {
+                            Text("Wyślij")
+                        }
+                    }
+                }
+            },
+            dismissButton = {
+                if (!uiState.forgotPasswordSent) {
+                    TextButton(onClick = {
+                        showForgotDialog = false
+                        viewModel.clearForgotPasswordState()
+                    }) {
+                        Text("Anuluj")
+                    }
+                }
+            }
+        )
     }
 }

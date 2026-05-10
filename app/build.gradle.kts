@@ -4,6 +4,14 @@ plugins {
     alias(libs.plugins.md.hilt)
 }
 
+// Copy the asset logo to the resources folder during configuration phase
+// so it is available to the Android build system automatically
+project.copy {
+    from("../assets/logo_medidesk.png")
+    into("src/main/res/drawable")
+    rename { "ic_launcher.png" }
+}
+
 android {
     namespace = "pl.medidesk.mobile"
     defaultConfig {
@@ -57,6 +65,7 @@ dependencies {
     implementation(project(":features:feature-scanner"))
     implementation(project(":features:feature-participants"))
     implementation(project(":features:feature-dashboard"))
+    implementation(project(":features:feature-more"))
 
     // Core Android
     implementation(libs.core.ktx)

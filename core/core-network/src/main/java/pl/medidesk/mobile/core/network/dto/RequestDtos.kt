@@ -75,3 +75,14 @@ data class VerifyPinRequest(
 data class OrderStatusUpdateRequest(
     val status: String
 )
+
+@JsonClass(generateAdapter = true)
+data class ForgotPasswordRequest(
+    val email: String
+)
+
+@JsonClass(generateAdapter = true)
+data class ResetPasswordRequest(
+    val token: String,
+    @Json(name = "new_password") val newPassword: String
+)

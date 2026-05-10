@@ -5,7 +5,8 @@ data class User(
     val email: String,
     val firstName: String,
     val lastName: String,
-    val role: String
+    val role: String,
+    val mustChangePassword: Boolean = false
 ) {
     val displayName: String get() = "$firstName $lastName"
 }

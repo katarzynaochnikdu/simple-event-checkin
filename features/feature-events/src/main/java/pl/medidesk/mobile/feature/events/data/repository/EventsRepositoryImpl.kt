@@ -22,6 +22,7 @@ class EventsRepositoryImpl @Inject constructor(
                     venue = dto.venue ?: dto.location ?: dto.address ?: "",
                     imageUrl = dto.imageUrl ?: dto.image ?: dto.thumbnail,
                     logoUrl = dto.logoUrl,
+                    logoWhiteUrl = dto.logoWhiteUrl,
                     primaryColor = dto.primaryColor,
                     secondaryColor = dto.secondaryColor,
                     accentColor = dto.accentColor

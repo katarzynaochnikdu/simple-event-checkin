@@ -7,21 +7,28 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import pl.medidesk.mobile.core.network.MobileApiService
+import pl.medidesk.mobile.core.network.dto.ForgotPasswordRequest
 import pl.medidesk.mobile.feature.auth.domain.usecase.LoginUseCase
 import javax.inject.Inject
 
 data class LoginUiState(
-    // DEV prefill — usuń przed releasem produkcyjnym
+    // TODO: wyczyść przed release — prefill do testów
     val email: String = "testapki@medidesk.pl",
     val password: String = "V3Xfhkp0sqTA",
     val isLoading: Boolean = false,
     val error: String? = null,
-    val isSuccess: Boolean = false
+    val isSuccess: Boolean = false,
+    val mustChangePassword: Boolean = false,
+    val forgotPasswordSent: Boolean = false,
+    val forgotPasswordLoading: Boolean = false,
+    val forgotPasswordError: String? = null
 )
 
 @HiltViewModel
 class LoginViewModel @Inject constructor(
-    private val loginUseCase: LoginUseCase
+    private val loginUseCase: LoginUseCase,
+    private val apiService: MobileApiService
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
@@ -36,10 +43,42 @@ class LoginViewModel @Inject constructor(
             _uiState.value = state.copy(isLoading = true, error = null)
             val result = loginUseCase(state.email, state.password)
             _uiState.value = if (result.isSuccess) {
-                state.copy(isLoading = false, isSuccess = true)
+                val user = result.getOrNull()
+                state.copy(isLoading = false, isSuccess = true, mustChangePassword = user?.mustChangePassword == true)
             } else {
                 state.copy(isLoading = false, error = result.exceptionOrNull()?.message ?: "Błąd logowania")
             }
         }
+    }
+
+    fun forgotPassword(email: String) {
+        if (email.isBlank()) {
+            _uiState.value = _uiState.value.copy(forgotPasswordError = "Podaj adres e-mail")
+            return
+        }
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(forgotPasswordLoading = true, forgotPasswordError = null)
+            try {
+                val resp = apiService.forgotPassword(ForgotPasswordRequest(email.trim()))
+                _uiState.value = if (resp.isSuccessful) {
+                    _uiState.value.copy(forgotPasswordLoading = false, forgotPasswordSent = true)
+                } else {
+                    _uiState.value.copy(forgotPasswordLoading = false, forgotPasswordSent = true)
+                }
+            } catch (_: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    forgotPasswordLoading = false,
+                    forgotPasswordSent = true
+                )
+            }
+        }
+    }
+
+    fun clearForgotPasswordState() {
+        _uiState.value = _uiState.value.copy(
+            forgotPasswordSent = false,
+            forgotPasswordLoading = false,
+            forgotPasswordError = null
+        )
     }
 }

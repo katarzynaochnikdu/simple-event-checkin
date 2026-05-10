@@ -120,6 +120,22 @@ sealed class Screen(val route: String, val arguments: List<NamedNavArgument> = e
         fun createRoute(eventId: String) = "orders/$eventId"
     }
 
+    data object MyMentees : Screen("my_mentees/{eventId}", listOf(
+        navArgument("eventId") { type = NavType.StringType }
+    )) {
+        fun createRoute(eventId: String) = "my_mentees/$eventId"
+    }
+
     data object Settings : Screen("settings")
     data object Attractions : Screen("attractions")
+
+    /**
+     * Reset hasła z deep linka `medidesk://reset-password?token=...`.
+     * Token przekazywany jest dalej jako argument route'a.
+     */
+    data object ResetPassword : Screen("reset_password/{token}", listOf(
+        navArgument("token") { type = NavType.StringType }
+    )) {
+        fun createRoute(token: String) = "reset_password/$token"
+    }
 }

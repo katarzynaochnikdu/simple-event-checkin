@@ -41,10 +41,10 @@ include(":features:feature-events")
 include(":features:feature-scanner")
 include(":features:feature-participants")
 include(":features:feature-dashboard")
+include(":features:feature-more")
 
 // Modules hidden/removed for simplification
 // include(":features:feature-walkin")
 // include(":features:feature-inhub")
-// include(":features:feature-more")
 // include(":features:feature-speakers")
 // include(":features:feature-sponsors")

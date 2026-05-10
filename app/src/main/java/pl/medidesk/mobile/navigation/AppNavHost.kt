@@ -1,5 +1,6 @@
 package pl.medidesk.mobile.navigation
 
+import android.net.Uri
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -13,7 +14,12 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -21,21 +27,103 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.compose.ui.Modifier
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.launch
+import pl.medidesk.mobile.core.datastore.AuthDataStore
+import pl.medidesk.mobile.core.network.MobileApiService
+import pl.medidesk.mobile.core.network.SessionManager
 import pl.medidesk.mobile.feature.auth.presentation.screen.LoginScreen
+import pl.medidesk.mobile.feature.auth.presentation.screen.ResetPasswordScreen
 import pl.medidesk.mobile.feature.dashboard.presentation.screen.DashboardScreen
+import pl.medidesk.mobile.feature.dashboard.presentation.screen.MyMenteesScreen
 import pl.medidesk.mobile.feature.dashboard.presentation.screen.StatsScreen
 import pl.medidesk.mobile.feature.events.presentation.screen.EventsScreen
+import pl.medidesk.mobile.feature.more.presentation.screen.SettingsScreen
 import pl.medidesk.mobile.feature.participants.presentation.screen.ParticipantDetailsScreen
 import pl.medidesk.mobile.feature.participants.presentation.screen.ParticipantsScreen
 import pl.medidesk.mobile.feature.scanner.presentation.screen.ScannerScreen
+import javax.inject.Inject
+
+enum class AuthCheck { CHECKING, LOGGED_IN, NOT_LOGGED_IN }
+
+@HiltViewModel
+class AuthViewModel @Inject constructor(
+    private val authDataStore: AuthDataStore,
+    private val apiService: MobileApiService,
+    val sessionManager: SessionManager
+) : ViewModel() {
+    private val _authState = MutableStateFlow(AuthCheck.CHECKING)
+    val authState: StateFlow<AuthCheck> = _authState.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            val token = authDataStore.tokenFlow.firstOrNull()
+            if (token.isNullOrBlank()) {
+                _authState.value = AuthCheck.NOT_LOGGED_IN
+                return@launch
+            }
+            try {
+                val resp = apiService.me()
+                if (resp.isSuccessful && resp.body() != null) {
+                    _authState.value = AuthCheck.LOGGED_IN
+                } else {
+                    authDataStore.clearAll()
+                    _authState.value = AuthCheck.NOT_LOGGED_IN
+                }
+            } catch (_: Exception) {
+                _authState.value = AuthCheck.LOGGED_IN
+            }
+        }
+    }
+}
 
 @Composable
-fun AppNavHost() {
+fun AppNavHost(
+    pendingDeepLink: Uri? = null,
+    onDeepLinkConsumed: () -> Unit = {},
+    authViewModel: AuthViewModel = hiltViewModel()
+) {
     val navController = rememberNavController()
+    val authState by authViewModel.authState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) {
+        authViewModel.sessionManager.sessionExpired.collect {
+            navController.navigate(Screen.Login.createRoute("ORGANIZER")) {
+                popUpTo(0) { inclusive = true }
+            }
+        }
+    }
+
+    // Deep link: medidesk://reset-password?token=...
+    LaunchedEffect(pendingDeepLink, authState) {
+        // Czekamy aż auth check się skończy (żeby NavHost był skonfigurowany)
+        if (authState == AuthCheck.CHECKING) return@LaunchedEffect
+        val link = pendingDeepLink ?: return@LaunchedEffect
+        if (link.scheme == "medidesk" && link.host == "reset-password") {
+            val token = link.getQueryParameter("token").orEmpty()
+            if (token.isNotBlank()) {
+                navController.navigate(Screen.ResetPassword.createRoute(token)) {
+                    // Reset zawsze "świeży" — czyścimy stack
+                    popUpTo(0) { inclusive = true }
+                }
+            }
+            onDeepLinkConsumed()
+        }
+    }
+
+    val startDest = when (authState) {
+        AuthCheck.CHECKING -> return
+        AuthCheck.LOGGED_IN -> Screen.Events.route
+        AuthCheck.NOT_LOGGED_IN -> Screen.Login.createRoute("ORGANIZER")
+    }
 
     NavHost(
         navController = navController,
-        startDestination = Screen.Login.createRoute("ORGANIZER"), // Bypass role selection
+        startDestination = startDest,
         modifier = Modifier.fillMaxSize()
     ) {
         composable(
@@ -47,7 +135,33 @@ fun AppNavHost() {
                 role = role,
                 onLoginSuccess = {
                     navController.navigate(Screen.Events.route) {
-                        popUpTo(0) { inclusive = true } // Clear backstack after login
+                        popUpTo(0) { inclusive = true }
+                    }
+                },
+                onMustChangePassword = {
+                    navController.navigate(Screen.Events.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                    navController.navigate(Screen.Settings.route)
+                }
+            )
+        }
+
+        composable(
+            route = Screen.ResetPassword.route,
+            arguments = Screen.ResetPassword.arguments
+        ) { backStackEntry ->
+            val token = backStackEntry.arguments?.getString("token").orEmpty()
+            ResetPasswordScreen(
+                token = token,
+                onSuccess = {
+                    navController.navigate(Screen.Login.createRoute("ORGANIZER")) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                },
+                onCancel = {
+                    navController.navigate(Screen.Login.createRoute("ORGANIZER")) {
+                        popUpTo(0) { inclusive = true }
                     }
                 }
             )
@@ -57,6 +171,20 @@ fun AppNavHost() {
             EventsScreen(
                 onEventSelected = { eventId ->
                     navController.navigate(Screen.Main.createRoute(eventId))
+                },
+                onNavigateToSettings = {
+                    navController.navigate(Screen.Settings.route)
+                }
+            )
+        }
+
+        composable(Screen.Settings.route) {
+            SettingsScreen(
+                onBack = { navController.popBackStack() },
+                onLogout = {
+                    navController.navigate(Screen.Login.createRoute("ORGANIZER")) {
+                        popUpTo(0) { inclusive = true }
+                    }
                 }
             )
         }
@@ -150,12 +278,26 @@ private fun MainScreen(eventId: String, onLogout: () -> Unit, onBackToEvents: ()
                 DashboardScreen(
                     eventId = eventId,
                     onNavigateToScanner = { innerNav.navigate(Screen.Scanner.createRoute(eventId)) },
-                    onNavigateToParticipants = { filterType -> 
-                        innerNav.navigate(Screen.Participants.createRoute(eventId, filterType)) 
+                    onNavigateToParticipants = { filterType ->
+                        innerNav.navigate(Screen.Participants.createRoute(eventId, filterType))
                     },
                     onNavigateToInHub = { /* Disabled */ },
                     onNavigateToStats = { innerNav.navigate(Screen.Stats.createRoute(eventId)) },
+                    onNavigateToMyMentees = { innerNav.navigate(Screen.MyMentees.createRoute(eventId)) },
                     onBackToEvents = onBackToEvents
+                )
+            }
+
+            composable(
+                route = Screen.MyMentees.route,
+                arguments = Screen.MyMentees.arguments
+            ) {
+                MyMenteesScreen(
+                    eventId = eventId,
+                    onBackClick = { innerNav.popBackStack() },
+                    onParticipantClick = { participantId ->
+                        innerNav.navigate(Screen.ParticipantDetails.createRoute(participantId))
+                    }
                 )
             }
             

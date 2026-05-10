@@ -124,6 +124,33 @@ interface MobileApiService {
         @Path("orderId") orderId: String
     ): Response<GenericActionResponse>
 
+    // My Mentees
+    @GET("api/mobile/events/{eventId}/my-mentees")
+    suspend fun getMyMentees(
+        @Path("eventId") eventId: String
+    ): Response<MenteesResponse>
+
+    @HTTP(
+        method = "DELETE",
+        path = "api/mobile/events/{eventId}/onsite/assignments/company",
+        hasBody = true
+    )
+    suspend fun deleteCompanyAssignment(
+        @Path("eventId") eventId: String,
+        @Body body: DeleteCompanyAssignmentRequest
+    ): Response<SuccessResponse>
+
+    @POST("api/mobile/change-password")
+    suspend fun changePassword(@Body request: ChangePasswordRequest): Response<ChangePasswordResponse>
+
+    // Forgot password (mobile) — wysyła email z deep-linkiem medidesk://reset-password
+    @POST("api/mobile/forgot-password")
+    suspend fun forgotPassword(@Body request: ForgotPasswordRequest): Response<GenericActionResponse>
+
+    // Reset password (mobile) — ustawia nowe hasło na podstawie tokenu z deep-linka
+    @POST("api/mobile/reset-password")
+    suspend fun resetPassword(@Body request: ResetPasswordRequest): Response<GenericActionResponse>
+
     // Image Upload
     @Multipart
     @POST("api/mobile/upload-image")

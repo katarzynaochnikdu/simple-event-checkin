@@ -43,6 +43,7 @@ fun DashboardScreen(
     onNavigateToSponsors: () -> Unit = {},
     onNavigateToCompanies: () -> Unit = {},
     onNavigateToOrders: () -> Unit = {},
+    onNavigateToMyMentees: () -> Unit = {},
     onBackToEvents: () -> Unit = {},
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
@@ -69,6 +70,7 @@ fun DashboardScreen(
                         onScannerClick = onNavigateToScanner,
                         onParticipantsClick = onNavigateToParticipants,
                         onStatsClick = onNavigateToStats,
+                        onMyMenteesClick = onNavigateToMyMentees,
                         onSyncClick = { viewModel.triggerSync(eventId) },
                         onBackToEvents = onBackToEvents
                     )
@@ -92,6 +94,7 @@ private fun OrganizerDashboard(
     onScannerClick: () -> Unit,
     onParticipantsClick: (filterType: String?) -> Unit,
     onStatsClick: () -> Unit,
+    onMyMenteesClick: () -> Unit,
     onSyncClick: () -> Unit,
     onBackToEvents: () -> Unit
 ) {
@@ -109,7 +112,7 @@ private fun OrganizerDashboard(
         }
         item {
             Row(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                MenuButton("Moi podopieczni", "Wkrótce", Icons.Default.SupervisorAccount, MaterialTheme.colorScheme.primary, { /* TODO: ekran do dorobienia */ }, Modifier.weight(1f))
+                MenuButton("Moi podopieczni", "Twoi przypisani uczestnicy", Icons.Default.SupervisorAccount, MaterialTheme.colorScheme.primary, onMyMenteesClick, Modifier.weight(1f))
                 MenuButton("Uczestnicy", "Lista i wyszukiwanie", Icons.Default.Group, MaterialTheme.colorScheme.secondary, { onParticipantsClick(null) }, Modifier.weight(1f))
             }
         }
