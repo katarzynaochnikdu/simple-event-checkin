@@ -223,13 +223,13 @@ private fun MainScreen(eventId: String, onLogout: () -> Unit, onBackToEvents: ()
     val navBackStackEntry by innerNav.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
     var eventAccentColor by remember { mutableStateOf<androidx.compose.ui.graphics.Color?>(null) }
+    val isDark = isSystemInDarkTheme()
 
     Scaffold(
         bottomBar = {
             NavigationBar {
                 val isDashboard = currentDestination?.route?.startsWith("dashboard") == true
-                val isDark = isSystemInDarkTheme()
-                val accent = if (isDark) MaterialTheme.colorScheme.onSurface
+                val accent = if (isDark) androidx.compose.ui.graphics.Color.White
                     else eventAccentColor ?: MaterialTheme.colorScheme.secondary
                 val navColors = NavigationBarItemDefaults.colors(
                     selectedIconColor = accent,
