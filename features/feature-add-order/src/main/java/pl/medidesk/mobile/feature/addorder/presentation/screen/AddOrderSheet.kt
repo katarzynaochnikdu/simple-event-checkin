@@ -128,6 +128,8 @@ fun AddOrderSheet(
                                 methods = cfg.paymentMethods,
                                 selectedId = state.paymentMethodId,
                                 onSelect = viewModel::selectPaymentMethod,
+                                discountCode = state.discountCode,
+                                onDiscountCodeChange = viewModel::updateDiscountCode,
                                 error = state.errors["payment"]
                             )
                         }

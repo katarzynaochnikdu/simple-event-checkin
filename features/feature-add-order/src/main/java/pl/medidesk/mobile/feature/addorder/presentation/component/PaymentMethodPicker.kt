@@ -21,10 +21,24 @@ fun PaymentMethodPicker(
     methods: List<OrderPaymentMethod>,
     selectedId: String?,
     onSelect: (String) -> Unit,
+    discountCode: String,
+    onDiscountCodeChange: (String) -> Unit,
     error: String?,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text("Kod rabatowy (opcjonalnie)",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold)
+        OutlinedTextField(
+            value = discountCode,
+            onValueChange = onDiscountCodeChange,
+            placeholder = { Text("np. EARLY20") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(Modifier.height(12.dp))
+
         Text("Sposób płatności",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold)

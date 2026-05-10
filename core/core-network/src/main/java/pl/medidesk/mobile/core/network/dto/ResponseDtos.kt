@@ -187,7 +187,22 @@ data class InHubConfigResponse(
 @JsonClass(generateAdapter = true)
 data class VerifyPinResponse(val valid: Boolean)
 @JsonClass(generateAdapter = true)
-data class GusLookupResponse(val success: Boolean)
+data class GusLookupResponse(
+    val success: Boolean,
+    val data: GusCompanyDataDto? = null,
+    val error: String? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class GusCompanyDataDto(
+    val name: String? = null,
+    val regon: String? = null,
+    val street: String? = null,
+    val zip: String? = null,
+    val city: String? = null,
+    val voivodeship: String? = null,
+    val krs: String? = null
+)
 
 // --- Speakers ---
 

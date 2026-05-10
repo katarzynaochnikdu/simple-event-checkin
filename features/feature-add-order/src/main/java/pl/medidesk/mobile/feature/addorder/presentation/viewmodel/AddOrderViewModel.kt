@@ -126,6 +126,10 @@ class AddOrderViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(paymentMethodId = id)
     }
 
+    fun updateDiscountCode(code: String) {
+        _uiState.value = _uiState.value.copy(discountCode = code)
+    }
+
     fun lookupGus(nip: String) {
         val normalized = nip.filter { it.isDigit() }
         if (normalized.length != 10) {
@@ -136,21 +140,28 @@ class AddOrderViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val resp = api.gusLookup(normalized)
-                if (resp.isSuccessful && resp.body()?.success == true) {
-                    // GusLookupResponse w istniejącym DTO ma tylko `success: Boolean`
-                    // — pełne pola są zwracane jako mapa w body backendu, ale Moshi parser
-                    // ich nie eksponuje. W MVP-2 ograniczamy się do zachowania metody:
-                    // gdy success=true, oznaczamy że NIP jest valid; admin uzupełnia ręcznie.
-                    // (Pełna integracja GUS auto-fill — follow-up WO.)
-                    _uiState.value = _uiState.value.copy(
+                val body = resp.body()
+                val d = body?.data
+                if (resp.isSuccessful && body?.success == true && d != null) {
+                    val cur = _uiState.value
+                    _uiState.value = cur.copy(
                         isLookingUpGus = false,
                         gusError = null,
-                        payer = _uiState.value.payer.copy(nip = normalized)
+                        payer = cur.payer.copy(
+                            nip = normalized,
+                            companyName = d.name?.takeIf { it.isNotBlank() } ?: cur.payer.companyName,
+                            address = d.street?.takeIf { it.isNotBlank() } ?: cur.payer.address,
+                            zip = d.zip?.takeIf { it.isNotBlank() } ?: cur.payer.zip,
+                            city = d.city?.takeIf { it.isNotBlank() } ?: cur.payer.city
+                        ),
+                        errors = cur.errors - "companyName"
                     )
                 } else {
+                    val errMsg = body?.error?.takeIf { it.isNotBlank() }
+                        ?: "Nie znaleziono firmy w GUS — wpisz dane ręcznie"
                     _uiState.value = _uiState.value.copy(
                         isLookingUpGus = false,
-                        gusError = "Nie znaleziono firmy w GUS — wpisz dane ręcznie"
+                        gusError = errMsg
                     )
                 }
             } catch (e: Exception) {
@@ -249,11 +260,14 @@ class AddOrderViewModel @Inject constructor(
         )
 
         val consentsMap = s.consentValues.mapValues { (_, v) -> v as Any }
+        val discountTrim = s.discountCode.trim()
+        val summary: Map<String, Any?>? = if (discountTrim.isNotEmpty())
+            mapOf("discountCode" to discountTrim) else null
 
         val payload = MobileCheckoutPayloadDto(
             payer = payerDto,
             participants = listOf(participantDto),
-            summary = null,
+            summary = summary,
             consents = consentsMap.takeIf { it.isNotEmpty() }
         )
 

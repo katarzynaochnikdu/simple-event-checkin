@@ -15,6 +15,7 @@ data class AddOrderUiState(
     val payer: PayerFormData = PayerFormData(),
     val consentValues: Map<String, Boolean> = emptyMap(),
     val paymentMethodId: String? = null,
+    val discountCode: String = "",
     val isLookingUpGus: Boolean = false,
     val gusError: String? = null,
     val isSubmitting: Boolean = false,
