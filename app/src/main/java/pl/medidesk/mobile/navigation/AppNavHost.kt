@@ -9,8 +9,10 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -221,6 +223,14 @@ private fun MainScreen(eventId: String, onLogout: () -> Unit, onBackToEvents: ()
         bottomBar = {
             NavigationBar {
                 val isDashboard = currentDestination?.route?.startsWith("dashboard") == true
+                val teal = MaterialTheme.colorScheme.secondary
+                val navColors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = teal,
+                    selectedTextColor = teal,
+                    unselectedIconColor = teal,
+                    unselectedTextColor = teal,
+                    indicatorColor = teal.copy(alpha = 0.12f)
+                )
                 NavigationBarItem(
                     icon = {
                         if (isDashboard) Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Lista wydarzeń")
@@ -228,6 +238,7 @@ private fun MainScreen(eventId: String, onLogout: () -> Unit, onBackToEvents: ()
                     },
                     label = { Text(if (isDashboard) "Lista wydarzeń" else "Wydarzenie") },
                     selected = false,
+                    colors = navColors,
                     onClick = {
                         if (isDashboard) {
                             onBackToEvents()
@@ -253,6 +264,7 @@ private fun MainScreen(eventId: String, onLogout: () -> Unit, onBackToEvents: ()
                         icon = { Icon(icon, contentDescription = label) },
                         label = { Text(label) },
                         selected = isSelected,
+                        colors = navColors,
                         onClick = {
                             innerNav.navigate(route) {
                                 popUpTo(innerNav.graph.findStartDestination().id)
