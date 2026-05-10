@@ -233,9 +233,8 @@ private fun MainScreen(eventId: String, onLogout: () -> Unit, onBackToEvents: ()
                             onBackToEvents()
                         } else {
                             innerNav.navigate(Screen.Dashboard.createRoute(eventId)) {
-                                popUpTo(innerNav.graph.findStartDestination().id) { saveState = true }
+                                popUpTo(innerNav.graph.findStartDestination().id)
                                 launchSingleTop = true
-                                restoreState = true
                             }
                         }
                     }
@@ -256,9 +255,8 @@ private fun MainScreen(eventId: String, onLogout: () -> Unit, onBackToEvents: ()
                         selected = isSelected,
                         onClick = {
                             innerNav.navigate(route) {
-                                popUpTo(innerNav.graph.findStartDestination().id) { saveState = true }
+                                popUpTo(innerNav.graph.findStartDestination().id)
                                 launchSingleTop = true
-                                restoreState = true
                             }
                         }
                     )
@@ -273,9 +271,8 @@ private fun MainScreen(eventId: String, onLogout: () -> Unit, onBackToEvents: ()
         // jednoznacznie: nawiguj do Dashboardu z tym samym wzorcem co tab "Wydarzenie".
         val goToDashboard: () -> Unit = {
             innerNav.navigate(Screen.Dashboard.createRoute(eventId)) {
-                popUpTo(innerNav.graph.findStartDestination().id) { saveState = true }
+                popUpTo(innerNav.graph.findStartDestination().id)
                 launchSingleTop = true
-                restoreState = true
             }
         }
         // Stats i MyMentees są zawsze pushowane bezpośrednio z Dashboardu (nie przez bottom-nav),
