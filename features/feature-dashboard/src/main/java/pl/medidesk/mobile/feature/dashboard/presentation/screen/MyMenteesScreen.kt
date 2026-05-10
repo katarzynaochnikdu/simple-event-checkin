@@ -22,6 +22,8 @@ import androidx.compose.material.icons.filled.SupervisorAccount
 import androidx.compose.material3.*
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.runtime.*
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -313,6 +315,11 @@ fun MyMenteesScreen(
     val uriHandler = LocalUriHandler.current
 
     LaunchedEffect(eventId) { viewModel.load(eventId) }
+
+    LifecycleResumeEffect(eventId) {
+        viewModel.load(eventId)
+        onPauseOrDispose {}
+    }
 
     LaunchedEffect(state.toastMessage) {
         val msg = state.toastMessage
@@ -708,13 +715,12 @@ private fun ParticipantRow(
         }
         // Prawa strona: akcja check-in
         Box(modifier = Modifier.padding(start = 8.dp)) {
-                val accent = MaterialTheme.colorScheme.secondary
                 when {
                 participant.checkedIn -> {
                     Icon(
                         Icons.Default.HowToReg,
                         contentDescription = "Zarejestrowany",
-                        tint = accent,
+                        tint = StatusColors.Paid,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -722,7 +728,7 @@ private fun ParticipantRow(
                     CircularProgressIndicator(
                         modifier = Modifier.size(20.dp),
                         strokeWidth = 2.dp,
-                        color = accent
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
                 else -> {
