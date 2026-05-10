@@ -194,6 +194,25 @@ data class GusLookupResponse(
 )
 
 @JsonClass(generateAdapter = true)
+data class ValidateDiscountRequest(
+    val code: String,
+    val ticketTypeIds: List<String>
+)
+
+@JsonClass(generateAdapter = true)
+data class ValidateDiscountResponse(
+    val valid: Boolean,
+    val code: String? = null,
+    @Json(name = "discount_percent") val discountPercent: Double? = null,
+    @Json(name = "discount_type") val discountType: String? = null,
+    @Json(name = "discount_value") val discountValue: Double? = null,
+    @Json(name = "ticket_class_ids") val ticketClassIds: List<String>? = null,
+    @Json(name = "remaining_uses") val remainingUses: Int? = null,
+    val message: String? = null,
+    val error: String? = null
+)
+
+@JsonClass(generateAdapter = true)
 data class GusCompanyDataDto(
     val name: String? = null,
     val regon: String? = null,

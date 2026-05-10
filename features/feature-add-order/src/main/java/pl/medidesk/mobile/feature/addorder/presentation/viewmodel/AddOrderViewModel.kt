@@ -13,10 +13,12 @@ import pl.medidesk.mobile.core.network.dto.MobileCheckoutCompanyDataDto
 import pl.medidesk.mobile.core.network.dto.MobileCheckoutParticipantDto
 import pl.medidesk.mobile.core.network.dto.MobileCheckoutPayerDto
 import pl.medidesk.mobile.core.network.dto.MobileCheckoutPayloadDto
+import pl.medidesk.mobile.core.network.dto.ValidateDiscountRequest
 import pl.medidesk.mobile.feature.addorder.domain.FormFieldType
 import pl.medidesk.mobile.feature.addorder.domain.toDomain
 import pl.medidesk.mobile.feature.addorder.presentation.state.AddOrderResult
 import pl.medidesk.mobile.feature.addorder.presentation.state.AddOrderUiState
+import pl.medidesk.mobile.feature.addorder.presentation.state.AppliedDiscount
 import pl.medidesk.mobile.feature.addorder.presentation.state.PayerFormData
 import pl.medidesk.mobile.feature.addorder.presentation.state.TOTAL_STEPS
 import javax.inject.Inject
@@ -127,7 +129,88 @@ class AddOrderViewModel @Inject constructor(
     }
 
     fun updateDiscountCode(code: String) {
-        _uiState.value = _uiState.value.copy(discountCode = code)
+        // Czyść applied discount przy zmianie kodu (user musi kliknąć "Zastosuj" ponownie)
+        _uiState.value = _uiState.value.copy(
+            discountCode = code,
+            appliedDiscount = null,
+            discountError = null
+        )
+    }
+
+    fun applyDiscountCode(eventId: String) {
+        val s = _uiState.value
+        val code = s.discountCode.trim().uppercase()
+        if (code.isBlank()) {
+            _uiState.value = s.copy(appliedDiscount = null, discountError = null)
+            return
+        }
+        val ticketIds = listOfNotNull(s.selectedTicketClassId)
+        _uiState.value = s.copy(isValidatingDiscount = true, discountError = null)
+        viewModelScope.launch {
+            try {
+                val resp = api.validateDiscount(eventId, ValidateDiscountRequest(code, ticketIds))
+                val body = resp.body()
+                if (resp.isSuccessful && body != null) {
+                    if (body.valid) {
+                        _uiState.value = _uiState.value.copy(
+                            isValidatingDiscount = false,
+                            appliedDiscount = AppliedDiscount(
+                                code = body.code ?: code,
+                                type = body.discountType ?: "percent",
+                                percent = body.discountPercent ?: 0.0,
+                                value = body.discountValue ?: 0.0,
+                                message = body.message ?: "Rabat zastosowany",
+                                ticketClassIds = body.ticketClassIds ?: emptyList()
+                            ),
+                            discountError = null
+                        )
+                    } else {
+                        _uiState.value = _uiState.value.copy(
+                            isValidatingDiscount = false,
+                            appliedDiscount = null,
+                            discountError = body.message ?: "Nieprawidłowy kod rabatowy"
+                        )
+                    }
+                } else {
+                    _uiState.value = _uiState.value.copy(
+                        isValidatingDiscount = false,
+                        appliedDiscount = null,
+                        discountError = "Błąd walidacji (${resp.code()})"
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isValidatingDiscount = false,
+                    appliedDiscount = null,
+                    discountError = "Błąd połączenia: ${e.message ?: "nieznany"}"
+                )
+            }
+        }
+    }
+
+    fun clearDiscount() {
+        _uiState.value = _uiState.value.copy(
+            discountCode = "",
+            appliedDiscount = null,
+            discountError = null
+        )
+    }
+
+    fun computeFinalGross(): Double {
+        val s = _uiState.value
+        val ticket = s.cartConfig?.ticketClasses?.firstOrNull { it.id == s.selectedTicketClassId }
+            ?: return 0.0
+        val gross = ticket.priceGross
+        val applied = s.appliedDiscount ?: return gross
+        // Sprawdź czy kod dotyczy tego biletu
+        if (applied.ticketClassIds.isNotEmpty() && ticket.id !in applied.ticketClassIds) {
+            return gross
+        }
+        val discount = when (applied.type) {
+            "fixed" -> applied.value
+            else -> gross * (applied.percent / 100.0)
+        }
+        return maxOf(0.0, gross - discount)
     }
 
     fun lookupGus(nip: String) {
@@ -211,7 +294,8 @@ class AddOrderViewModel @Inject constructor(
                             errors["consent_${c.id}"] = "Zgoda wymagana"
                     }
             }
-            5 -> if (s.paymentMethodId == null) errors["payment"] = "Wybierz sposób płatności"
+            5 -> { /* Krok kodu rabatowego — opcjonalny, brak walidacji */ }
+            6 -> if (s.paymentMethodId == null) errors["payment"] = "Wybierz sposób płatności"
         }
         _uiState.value = s.copy(errors = errors)
         return errors.isEmpty()

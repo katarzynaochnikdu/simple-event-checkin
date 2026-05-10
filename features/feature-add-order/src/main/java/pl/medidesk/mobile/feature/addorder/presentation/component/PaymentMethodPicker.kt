@@ -21,27 +21,18 @@ fun PaymentMethodPicker(
     methods: List<OrderPaymentMethod>,
     selectedId: String?,
     onSelect: (String) -> Unit,
-    discountCode: String,
-    onDiscountCodeChange: (String) -> Unit,
+    finalGrossLabel: String,
     error: String?,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Kod rabatowy (opcjonalnie)",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold)
-        OutlinedTextField(
-            value = discountCode,
-            onValueChange = onDiscountCodeChange,
-            placeholder = { Text("np. EARLY20") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(Modifier.height(12.dp))
-
         Text("Sposób płatności",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold)
+        Text("Do zapłaty: $finalGrossLabel",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.SemiBold)
         Text("Klient otrzyma email z linkiem do płatności bezpośrednio od systemu.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant)

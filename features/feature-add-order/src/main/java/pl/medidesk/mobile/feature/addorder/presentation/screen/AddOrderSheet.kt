@@ -14,6 +14,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.widget.Toast
 import pl.medidesk.mobile.feature.addorder.presentation.component.ConsentsForm
+import pl.medidesk.mobile.feature.addorder.presentation.component.DiscountCodeForm
 import pl.medidesk.mobile.feature.addorder.presentation.component.ParticipantFieldsForm
 import pl.medidesk.mobile.feature.addorder.presentation.component.PayerFieldsForm
 import pl.medidesk.mobile.feature.addorder.presentation.component.PaymentMethodPicker
@@ -125,27 +126,48 @@ fun AddOrderSheet(
                                 onToggle = viewModel::toggleConsent
                             )
                             5 -> {
-                                // Filtruj "free" gdy ticket ma cenę > 0 i brak kodu rabatowego
-                                // (backend odrzuci 400 "To zamówienie nie jest darmowe").
-                                // Z kodem rabatowym zostaw — może być 100% off, niech backend zweryfikuje.
                                 val selectedTicket = cfg.ticketClasses
                                     .firstOrNull { it.id == state.selectedTicketClassId }
-                                val hasDiscount = state.discountCode.isNotBlank()
-                                val visibleMethods = if (
-                                    selectedTicket != null &&
-                                    selectedTicket.priceGross > 0 &&
-                                    !hasDiscount
-                                ) {
-                                    cfg.paymentMethods.filterNot { it.id == "free" }
+                                val finalGross = viewModel.computeFinalGross()
+                                DiscountCodeForm(
+                                    selectedTicket = selectedTicket,
+                                    discountCode = state.discountCode,
+                                    appliedDiscount = state.appliedDiscount,
+                                    isValidating = state.isValidatingDiscount,
+                                    error = state.discountError,
+                                    finalGross = finalGross,
+                                    onCodeChange = viewModel::updateDiscountCode,
+                                    onApply = { viewModel.applyDiscountCode(eventId) },
+                                    onClear = viewModel::clearDiscount
+                                )
+                            }
+                            6 -> {
+                                val finalGross = viewModel.computeFinalGross()
+                                val isFree = finalGross <= 0.0001
+                                // Filtruj metody płatności na podstawie finalGross:
+                                // - finalGross == 0 → tylko "free" (auto-select)
+                                // - finalGross > 0  → tylko proforma + stripe (bez free)
+                                val visibleMethods = if (isFree) {
+                                    cfg.paymentMethods.filter { it.id == "free" }
                                 } else {
-                                    cfg.paymentMethods
+                                    cfg.paymentMethods.filterNot { it.id == "free" }
+                                }
+                                // Auto-select gdy finalGross zmienia się i obecny paymentMethodId
+                                // nie pasuje do nowych visibleMethods.
+                                LaunchedEffect(isFree, visibleMethods.firstOrNull()?.id) {
+                                    val available = visibleMethods.map { it.id }
+                                    if (state.paymentMethodId !in available) {
+                                        visibleMethods.firstOrNull()?.let {
+                                            viewModel.selectPaymentMethod(it.id)
+                                        }
+                                    }
                                 }
                                 PaymentMethodPicker(
                                     methods = visibleMethods,
                                     selectedId = state.paymentMethodId,
                                     onSelect = viewModel::selectPaymentMethod,
-                                    discountCode = state.discountCode,
-                                    onDiscountCodeChange = viewModel::updateDiscountCode,
+                                    finalGrossLabel = if (isFree) "Bezpłatne"
+                                        else "%.2f zł".format(finalGross),
                                     error = state.errors["payment"]
                                 )
                             }

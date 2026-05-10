@@ -16,6 +16,9 @@ data class AddOrderUiState(
     val consentValues: Map<String, Boolean> = emptyMap(),
     val paymentMethodId: String? = null,
     val discountCode: String = "",
+    val isValidatingDiscount: Boolean = false,
+    val appliedDiscount: AppliedDiscount? = null,
+    val discountError: String? = null,
     val isLookingUpGus: Boolean = false,
     val gusError: String? = null,
     val isSubmitting: Boolean = false,
@@ -42,4 +45,13 @@ sealed class AddOrderResult {
     data class Error(val message: String) : AddOrderResult()
 }
 
-const val TOTAL_STEPS = 5
+data class AppliedDiscount(
+    val code: String,
+    val type: String,                  // "percent" | "fixed"
+    val percent: Double,               // 0..100 dla percent, 0 dla fixed
+    val value: Double,                 // value PLN dla fixed, 0 dla percent
+    val message: String,
+    val ticketClassIds: List<String>   // empty = wszystkie bilety
+)
+
+const val TOTAL_STEPS = 6

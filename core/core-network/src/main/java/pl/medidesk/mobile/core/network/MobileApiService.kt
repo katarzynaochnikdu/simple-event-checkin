@@ -97,6 +97,12 @@ interface MobileApiService {
         @Body payload: MobileCheckoutPayloadDto
     ): Response<MobileCheckoutFreeResponseDto>
 
+    @POST("api/mobile/events/{eventId}/validate-discount")
+    suspend fun validateDiscount(
+        @Path("eventId") eventId: String,
+        @Body request: ValidateDiscountRequest
+    ): Response<ValidateDiscountResponse>
+
     // Speakers
     @GET("api/mobile/events/{eventId}/speakers")
     suspend fun getSpeakers(@Path("eventId") eventId: String): Response<SpeakersResponse>
