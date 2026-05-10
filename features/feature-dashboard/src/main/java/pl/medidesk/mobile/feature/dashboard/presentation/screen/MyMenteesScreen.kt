@@ -290,6 +290,8 @@ fun MyMenteesScreen(
     }
 
     Scaffold(
+        // Outer MainScreen Scaffold już zarezerwowało miejsce na NavigationBar.
+        contentWindowInsets = WindowInsets(0),
         topBar = {
             TopAppBar(
                 title = { Text("Moi podopieczni", fontWeight = FontWeight.Bold) },

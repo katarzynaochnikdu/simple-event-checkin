@@ -45,6 +45,8 @@ fun StatsScreen(
     LaunchedEffect(eventId) { viewModel.loadDashboard(eventId) }
 
     Scaffold(
+        // Outer MainScreen Scaffold już zarezerwowało miejsce na NavigationBar.
+        contentWindowInsets = WindowInsets(0),
         topBar = {
             TopAppBar(
                 title = { Text("Analityka Wydarzenia", fontWeight = FontWeight.Bold) },

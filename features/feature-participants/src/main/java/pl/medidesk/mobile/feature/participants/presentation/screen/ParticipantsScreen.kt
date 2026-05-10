@@ -88,6 +88,9 @@ fun ParticipantsScreen(
     val isFilterActive = uiState.filterCheckedIn != null || uiState.selectedTicketClassId != null
 
     Scaffold(
+        // Outer MainScreen Scaffold już zarezerwowało miejsce na NavigationBar — bez tego
+        // wewnętrzny Scaffold dubluje system inset i zostawia pusty pas nad bottom nav.
+        contentWindowInsets = WindowInsets(0),
         topBar = {
             TopAppBar(
                 title = { 
