@@ -17,6 +17,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.PersonOff
 import androidx.compose.material.icons.filled.RemoveModerator
 import androidx.compose.material.icons.filled.Analytics
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.SupervisorAccount
 import androidx.compose.material3.*
 import androidx.compose.ui.platform.LocalUriHandler
@@ -326,7 +327,7 @@ fun MyMenteesScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(Color(0xFFF8F9FA))
+                .background(MaterialTheme.colorScheme.background)
         ) {
             when {
                 state.isLoading -> {
@@ -432,6 +433,7 @@ private fun CompanyCard(
 ) {
     var expanded by remember { mutableStateOf(false) }
     var showWithdrawDialog by remember { mutableStateOf(false) }
+    var showMenu by remember { mutableStateOf(false) }
     val uriHandler = LocalUriHandler.current
 
     Card(
@@ -439,39 +441,39 @@ private fun CompanyCard(
             .fillMaxWidth()
             .clickable { expanded = !expanded },
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            // Header row
+        Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     if (expanded) Icons.Default.KeyboardArrowDown
                     else Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     contentDescription = if (expanded) "Zwiń" else "Rozwiń",
-                    modifier = Modifier.size(24.dp),
-                    tint = Color.Gray
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(Modifier.width(8.dp))
 
+                // Lewa kolumna: nazwa + subtitle z liczbą
                 Column(modifier = Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             group.companyName,
                             fontWeight = FontWeight.Bold,
-                            fontSize = 15.sp,
-                            color = Color(0xFF1A1C1E),
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurface,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f, fill = false)
                         )
                         if (group.isPartner) {
-                            Spacer(Modifier.width(6.dp))
+                            Spacer(Modifier.width(5.dp))
                             Box(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(4.dp))
                                     .background(Color(0xFF152C5B).copy(alpha = 0.1f))
-                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                                    .padding(horizontal = 5.dp, vertical = 2.dp)
                             ) {
                                 Text(
                                     "PARTNER",
@@ -482,70 +484,88 @@ private fun CompanyCard(
                             }
                         }
                     }
-                    if (group.shortName.isNotBlank()) {
-                        Text(
-                            group.shortName,
-                            fontSize = 12.sp,
-                            color = Color.Gray
-                        )
+                    // Subtitle: shortName · N os.
+                    val subtitle = buildString {
+                        if (group.shortName.isNotBlank()) {
+                            append(group.shortName)
+                            append(" · ")
+                        }
+                        append("${group.count} os.")
                     }
+                    Text(
+                        subtitle,
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
 
-                Column(horizontalAlignment = Alignment.End) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(4.dp))
-                                .background(Color.Gray.copy(alpha = 0.1f))
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                Spacer(Modifier.width(6.dp))
+
+                // Prawa strona: status + analytics icon + 3 kropki
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    StatusBadge(group)
+
+                    if (group.crmAccountId != null) {
+                        IconButton(
+                            onClick = {
+                                uriHandler.openUri("https://panel.medidesk.edu.pl/admin/crm/accounts/${group.crmAccountId}")
+                            },
+                            modifier = Modifier.size(32.dp)
                         ) {
-                            Text(
-                                "${group.count} os.",
-                                fontSize = 11.sp,
-                                color = Color.Gray
+                            Icon(
+                                Icons.Default.Analytics,
+                                contentDescription = "Analityka CRM",
+                                tint = Color(0xFF1565C0),
+                                modifier = Modifier.size(16.dp)
                             )
                         }
-                        StatusBadge(group)
                     }
-                }
 
-                Spacer(Modifier.width(4.dp))
-
-                if (group.crmAccountId != null) {
-                    IconButton(
-                        onClick = {
-                            uriHandler.openUri("https://panel.medidesk.edu.pl/admin/crm/accounts/${group.crmAccountId}")
-                        },
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(Color(0xFF1565C0).copy(alpha = 0.08f))
-                    ) {
-                        Icon(
-                            Icons.Default.Analytics,
-                            contentDescription = "Review360",
-                            tint = Color(0xFF1565C0),
-                            modifier = Modifier.size(16.dp)
-                        )
+                    Box {
+                        IconButton(
+                            onClick = { showMenu = true },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.MoreVert,
+                                contentDescription = "Więcej opcji",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = showMenu,
+                            onDismissRequest = { showMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        if (isWithdrawing) "Wycofywanie…" else "Wycofaj opiekę",
+                                        color = Color(0xFFE65100)
+                                    )
+                                },
+                                onClick = {
+                                    showMenu = false
+                                    showWithdrawDialog = true
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.RemoveModerator,
+                                        contentDescription = null,
+                                        tint = Color(0xFFE65100)
+                                    )
+                                },
+                                enabled = !isWithdrawing
+                            )
+                        }
                     }
-                }
-
-                IconButton(
-                    onClick = { showWithdrawDialog = true },
-                    enabled = !isWithdrawing
-                ) {
-                    Icon(
-                        Icons.Default.RemoveModerator,
-                        contentDescription = "Wycofaj opiekę",
-                        tint = Color(0xFFFFB300)
-                    )
                 }
             }
 
             if (expanded) {
-                Spacer(Modifier.height(12.dp))
-                HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f))
                 Spacer(Modifier.height(8.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                Spacer(Modifier.height(4.dp))
                 group.participants.forEach { participant ->
                     ParticipantRow(
                         participant = participant,
@@ -653,7 +673,7 @@ private fun ParticipantRow(
                     displayName,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
-                    color = Color(0xFF1A1C1E),
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f, fill = false)
                 )
                 val ticketLabel = participant.ticketName?.takeIf { it.isNotBlank() }
