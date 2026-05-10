@@ -42,7 +42,7 @@ fun EventsScreen(
 
     Scaffold(
         topBar = {
-            Column(modifier = Modifier.background(MaterialTheme.colorScheme.secondary)) {
+            Column(modifier = Modifier.background(Color(0xFF152C5B))) {
                 TopAppBar(
                     title = { Text("Wydarzenia", color = Color.White, fontWeight = FontWeight.Bold) },
                     actions = {
