@@ -443,6 +443,7 @@ private fun CompanyCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
+            // Wiersz 1: chevron + nazwa (shortName z fallbackiem, max 25 znaków) + Review360 + ⋮
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     if (expanded) Icons.Default.KeyboardArrowDown
@@ -453,111 +454,106 @@ private fun CompanyCard(
                 )
                 Spacer(Modifier.width(8.dp))
 
-                // Lewa kolumna: nazwa + subtitle z liczbą
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            group.companyName,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f, fill = false)
-                        )
-                        if (group.isPartner) {
-                            Spacer(Modifier.width(5.dp))
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
-                                    .padding(horizontal = 5.dp, vertical = 2.dp)
-                            ) {
-                                Text(
-                                    "PARTNER",
-                                    fontSize = 9.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                        }
-                    }
-                    // Subtitle: shortName · N os.
-                    val subtitle = buildString {
-                        if (group.shortName.isNotBlank()) {
-                            append(group.shortName)
-                            append(" · ")
-                        }
-                        append("${group.count} os.")
-                    }
-                    Text(
-                        subtitle,
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                // Nazwa: preferujemy shortName, fallback do companyName, limit 25 znaków
+                val rawName = group.shortName.takeIf { it.isNotBlank() } ?: group.companyName
+                val displayName = if (rawName.length > 25) rawName.take(25).trimEnd() + "…" else rawName
+                Text(
+                    displayName,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
 
                 Spacer(Modifier.width(6.dp))
 
-                // Prawa strona: status + analytics icon + 3 kropki
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    StatusBadge(group)
-
-                    if (group.crmAccountId != null) {
-                        IconButton(
-                            onClick = {
-                                uriHandler.openUri("https://panel.medidesk.edu.pl/admin/crm/accounts/${group.crmAccountId}")
-                            },
-                            modifier = Modifier.size(32.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.Analytics,
-                                contentDescription = "Analityka CRM",
-                                tint = MaterialTheme.colorScheme.secondary,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
-
-                    Box {
-                        IconButton(
-                            onClick = { showMenu = true },
-                            modifier = Modifier.size(32.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.MoreVert,
-                                contentDescription = "Więcej opcji",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                        DropdownMenu(
-                            expanded = showMenu,
-                            onDismissRequest = { showMenu = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        if (isWithdrawing) "Wycofywanie…" else "Wycofaj opiekę",
-                                        color = MaterialTheme.colorScheme.error
-                                    )
-                                },
-                                onClick = {
-                                    showMenu = false
-                                    showWithdrawDialog = true
-                                },
-                                leadingIcon = {
-                                    Icon(
-                                        Icons.Default.RemoveModerator,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.error
-                                    )
-                                },
-                                enabled = !isWithdrawing
-                            )
-                        }
+                // Review360 + 3 kropki
+                if (group.crmAccountId != null) {
+                    IconButton(
+                        onClick = {
+                            uriHandler.openUri("https://panel.medidesk.edu.pl/admin/crm/accounts/${group.crmAccountId}")
+                        },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Analytics,
+                            contentDescription = "Analityka CRM",
+                            tint = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier.size(16.dp)
+                        )
                     }
                 }
+
+                Box {
+                    IconButton(
+                        onClick = { showMenu = true },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.MoreVert,
+                            contentDescription = "Więcej opcji",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    if (isWithdrawing) "Wycofywanie…" else "Wycofaj opiekę",
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            },
+                            onClick = {
+                                showMenu = false
+                                showWithdrawDialog = true
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Default.RemoveModerator,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                            },
+                            enabled = !isWithdrawing
+                        )
+                    }
+                }
+            }
+
+            // Wiersz 2: PARTNER (jeśli) + status płatności + liczba osób
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(start = 28.dp, top = 4.dp)
+            ) {
+                if (group.isPartner) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                            .padding(horizontal = 5.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            "PARTNER",
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Spacer(Modifier.width(6.dp))
+                }
+                StatusBadge(group)
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    "${group.count} os.",
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
             if (expanded) {
