@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
@@ -144,7 +145,10 @@ private fun EventCompactCard(event: EventItem, onClick: () -> Unit, modifier: Mo
             // Logo (mała miniaturka)
             // Light → logo_color → logo (default) → imageUrl
             // Dark  → logo_white → logo (default) → imageUrl
-            val isDark = isSystemInDarkTheme()
+            // Detect dark from MdTheme's actual surface — isSystemInDarkTheme() ignores
+            // the in-app "Motyw aplikacji" preference (LIGHT/DARK/SYSTEM) and only sees
+            // the OS setting, so it returns false when the user picks DARK on a light system.
+            val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
             val logoModel = if (isDark) {
                 (event.logoWhiteUrl ?: event.logoUrl ?: event.imageUrl)
             } else {
