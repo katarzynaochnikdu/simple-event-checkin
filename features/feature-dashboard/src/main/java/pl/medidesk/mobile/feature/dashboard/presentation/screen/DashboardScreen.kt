@@ -1,6 +1,5 @@
 package pl.medidesk.mobile.feature.dashboard.presentation.screen
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -59,12 +58,10 @@ fun DashboardScreen(
                 OrganizerDashboard(
                     eventId = eventId,
                     data = state.data,
-                    syncState = state.syncState,
                     onScannerClick = onNavigateToScanner,
                     onParticipantsClick = onNavigateToParticipants,
                     onStatsClick = onNavigateToStats,
                     onMyMenteesClick = onNavigateToMyMentees,
-                    onSyncClick = { viewModel.triggerSync(eventId) },
                     onBackToEvents = onBackToEvents
                 )
             }
@@ -76,12 +73,10 @@ fun DashboardScreen(
 private fun OrganizerDashboard(
     eventId: String,
     data: DashboardData,
-    syncState: SyncState,
     onScannerClick: () -> Unit,
     onParticipantsClick: (filterType: String?) -> Unit,
     onStatsClick: () -> Unit,
     onMyMenteesClick: () -> Unit,
-    onSyncClick: () -> Unit,
     onBackToEvents: () -> Unit
 ) {
     var showAddOrderSheet by remember { mutableStateOf(false) }
@@ -104,7 +99,6 @@ private fun OrganizerDashboard(
             MenuButton("Dodaj zamówienie", "Nowy uczestnik / firma", Icons.Default.PersonAdd, MaterialTheme.colorScheme.primary, { showAddOrderSheet = true }, Modifier.weight(1f))
             MenuButton("Statystyki", "Analiza frekwencji", Icons.Default.BarChart, MaterialTheme.colorScheme.tertiary, onStatsClick, Modifier.weight(1f))
         }
-        SyncButton(syncState, onSyncClick)
     }
 
     if (showAddOrderSheet) {
@@ -199,11 +193,3 @@ private fun MenuButton(title: String, subtitle: String, icon: ImageVector, iconC
     }
 }
 
-@Composable
-private fun SyncButton(syncState: SyncState, onSyncClick: () -> Unit) {
-    Button(onClick = onSyncClick, modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp).height(56.dp), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface, contentColor = MaterialTheme.colorScheme.onSurface), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
-        Icon(Icons.Default.Refresh, null, modifier = Modifier.size(20.dp))
-        Spacer(Modifier.width(12.dp))
-        Text("Synchronizuj (${syncState.totalPending} oczekujących)", fontWeight = FontWeight.Bold)
-    }
-}
