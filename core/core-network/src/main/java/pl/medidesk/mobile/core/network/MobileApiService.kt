@@ -130,6 +130,12 @@ interface MobileApiService {
         @Path("eventId") eventId: String
     ): Response<MenteesResponse>
 
+    // Review360 — insight360 dashboard session
+    @POST("api/mobile/crm/accounts/{accountId}/review360/view")
+    suspend fun review360View(
+        @Path("accountId") accountId: Long
+    ): Response<Review360ViewResponse>
+
     @HTTP(
         method = "DELETE",
         path = "api/mobile/events/{eventId}/onsite/assignments/company",

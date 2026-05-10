@@ -402,6 +402,7 @@ data class MenteeDto(
     @Json(name = "company_short_name") val companyShortName: String? = null,
     @Json(name = "is_partner") val isPartner: Boolean = false,
     @Json(name = "crm_account_id") val crmAccountId: Long? = null,
+    @Json(name = "crm_review360_status") val review360Status: String? = null,
     @Json(name = "ticket_name") val ticketName: String? = null,
     @Json(name = "order_status") val orderStatus: String? = null,
     @Json(name = "payment_type") val paymentType: Int? = null,
@@ -414,6 +415,13 @@ data class MenteeDto(
 data class MenteesResponse(
     val success: Boolean,
     val data: List<MenteeDto>
+)
+
+@JsonClass(generateAdapter = true)
+data class Review360ViewResponse(
+    val success: Boolean,
+    val url: String? = null,
+    val error: String? = null
 )
 
 @JsonClass(generateAdapter = true)

@@ -52,6 +52,7 @@ data class CompanyGroup(
     val shortName: String,
     val isPartner: Boolean,
     val crmAccountId: Long?,
+    val review360Status: String?,
     val count: Int,
     val paidCount: Int,
     val freeCount: Int,
@@ -66,7 +67,8 @@ data class MyMenteesUiState(
     val withdrawingCompany: String? = null,
     val toastMessage: String? = null,
     val checkingInParticipantId: Long? = null,
-    val pendingCheckInMentee: MenteeDto? = null
+    val pendingCheckInMentee: MenteeDto? = null,
+    val review360Loading: Long? = null
 )
 
 // ─── ViewModel ────────────────────────────────────────────────────────────────
@@ -223,6 +225,30 @@ class MyMenteesViewModel @Inject constructor(
         }
     }
 
+    fun openReview360(accountId: Long, onUrlReady: (String) -> Unit) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(review360Loading = accountId) }
+            try {
+                val response = api.review360View(accountId)
+                val body = response.body()
+                if (response.isSuccessful && body?.success == true && !body.url.isNullOrBlank()) {
+                    onUrlReady(body.url)
+                } else {
+                    val errMsg = when (body?.error) {
+                        "dashboard_timeout" -> "Dashboard jest uśpiony — spróbuj za 30s"
+                        "no_data" -> "Brak danych analizy"
+                        else -> body?.error ?: "Nie udało się otworzyć dashboardu"
+                    }
+                    _uiState.update { it.copy(toastMessage = errMsg) }
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(toastMessage = e.message ?: "Błąd połączenia") }
+            } finally {
+                _uiState.update { it.copy(review360Loading = null) }
+            }
+        }
+    }
+
     private fun groupAndSort(mentees: List<MenteeDto>): List<CompanyGroup> {
         // Grupowanie po companyName (już dostarczone przez backend)
         val grouped = mentees
@@ -247,13 +273,14 @@ class MyMenteesViewModel @Inject constructor(
                 }
             }
 
-            // shortName / isPartner / crmAccountId — bierzemy z pierwszego (są wspólne per firma)
+            // shortName / isPartner / crmAccountId / review360Status — bierzemy z pierwszego (są wspólne per firma)
             val first = deduped.first()
             CompanyGroup(
                 companyName = companyName,
                 shortName = first.companyShortName.orEmpty(),
                 isPartner = first.isPartner,
                 crmAccountId = first.crmAccountId,
+                review360Status = first.review360Status,
                 count = deduped.size,
                 paidCount = paid,
                 freeCount = free,
@@ -281,6 +308,7 @@ fun MyMenteesScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val uriHandler = LocalUriHandler.current
 
     LaunchedEffect(eventId) { viewModel.load(eventId) }
 
@@ -396,11 +424,17 @@ fun MyMenteesScreen(
                                 group = group,
                                 isWithdrawing = state.withdrawingCompany == group.companyName,
                                 checkingInParticipantId = state.checkingInParticipantId,
+                                review360Loading = state.review360Loading,
                                 onWithdraw = {
                                     viewModel.withdrawGuardianship(eventId, group.companyName)
                                 },
                                 onParticipantClick = onParticipantClick,
-                                onCheckInRequest = { mentee -> viewModel.requestCheckIn(mentee) }
+                                onCheckInRequest = { mentee -> viewModel.requestCheckIn(mentee) },
+                                onReview360Click = { accountId ->
+                                    viewModel.openReview360(accountId) { url ->
+                                        uriHandler.openUri(url)
+                                    }
+                                }
                             )
                         }
                     }
@@ -425,14 +459,15 @@ private fun CompanyCard(
     group: CompanyGroup,
     isWithdrawing: Boolean,
     checkingInParticipantId: Long?,
+    review360Loading: Long?,
     onWithdraw: () -> Unit,
     onParticipantClick: (Long) -> Unit,
-    onCheckInRequest: (MenteeDto) -> Unit
+    onCheckInRequest: (MenteeDto) -> Unit,
+    onReview360Click: (Long) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
     var showWithdrawDialog by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
-    val uriHandler = LocalUriHandler.current
 
     Card(
         modifier = Modifier
@@ -469,20 +504,27 @@ private fun CompanyCard(
 
                 Spacer(Modifier.width(6.dp))
 
-                // Review360 + 3 kropki
-                if (group.crmAccountId != null) {
+                // Review360 dashboard — widoczny tylko gdy analiza gotowa (status "done")
+                if (group.crmAccountId != null && group.review360Status == "done") {
+                    val isLoading = review360Loading == group.crmAccountId
                     IconButton(
-                        onClick = {
-                            uriHandler.openUri("https://panel.medidesk.edu.pl/admin/crm/accounts/${group.crmAccountId}")
-                        },
-                        modifier = Modifier.size(32.dp)
+                        onClick = { onReview360Click(group.crmAccountId) },
+                        modifier = Modifier.size(32.dp),
+                        enabled = !isLoading
                     ) {
-                        Icon(
-                            Icons.Default.Analytics,
-                            contentDescription = "Analityka CRM",
-                            tint = MaterialTheme.colorScheme.secondary,
-                            modifier = Modifier.size(16.dp)
-                        )
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Icon(
+                                Icons.Default.Analytics,
+                                contentDescription = "Otwórz analizę Review360",
+                                tint = MaterialTheme.colorScheme.secondary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
                     }
                 }
 
