@@ -131,29 +131,34 @@ private fun ScanConfirmDialog(
         title = { Text("Potwierdzenie Check-In", fontWeight = FontWeight.Bold) },
         text = {
             Column {
-                if (pending.knownLocally && pending.participantName.isNotBlank()) {
-                    Text("Czy potwierdzasz wykonanie Check-In dla:")
-                    Spacer(Modifier.height(8.dp))
-                    Text(pending.participantName, fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
+                if (pending.participantName.isNotBlank()) {
+                    Text("Zweryfikuj dane osoby przed zatwierdzeniem:")
+                    Spacer(Modifier.height(12.dp))
+                    Text(pending.participantName, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    if (pending.email.isNotBlank()) {
+                        Text(pending.email, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+                    }
                     if (pending.ticketName.isNotBlank()) {
-                        Text(pending.ticketName, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                        Spacer(Modifier.height(4.dp))
+                        Text("Bilet: ${pending.ticketName}", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
                     }
                     if (pending.company.isNotBlank()) {
-                        Text(pending.company, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                        Text("Firma: ${pending.company}", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
                     }
                     if (pending.alreadyCheckedIn) {
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(10.dp))
                         Text(
                             "Uwaga: ten uczestnik jest już oznaczony jako obecny.",
                             color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.SemiBold
                         )
                     }
                 } else {
-                    Text("Czy potwierdzasz wykonanie Check-In dla zeskanowanego biletu?")
+                    Text("Nie udało się pobrać danych biletu (brak w lokalnej bazie i sieci).")
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "(Uczestnik nie ma jeszcze danych w lokalnej bazie — szczegóły potwierdzą się po sync'u.)",
+                        "Anuluj i spróbuj ponownie po synchronizacji, albo zatwierdź na własną odpowiedzialność — backend i tak zweryfikuje bilet.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.bodySmall
                     )

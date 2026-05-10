@@ -32,6 +32,7 @@ data class PendingScan(
     val participantName: String,
     val ticketName: String,
     val company: String,
+    val email: String,
     val knownLocally: Boolean,
     val alreadyCheckedIn: Boolean
 )
@@ -81,13 +82,15 @@ class ScannerViewModel @Inject constructor(
 
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isScanning = false)
-            val pending = when (val result = lookupUseCase(ticketId)) {
+            // Lookup robi local-first, potem server fallback (~500ms latency on miss).
+            val pending = when (val result = lookupUseCase(ticketId, eventId)) {
                 is LookupResult.Found -> PendingScan(
                     ticketId = ticketId,
                     eventId = eventId,
                     participantName = result.participantName,
                     ticketName = result.ticketName,
                     company = result.company,
+                    email = result.email,
                     knownLocally = true,
                     alreadyCheckedIn = result.alreadyCheckedIn
                 )
@@ -97,6 +100,7 @@ class ScannerViewModel @Inject constructor(
                     participantName = "",
                     ticketName = "",
                     company = "",
+                    email = "",
                     knownLocally = false,
                     alreadyCheckedIn = false
                 )
