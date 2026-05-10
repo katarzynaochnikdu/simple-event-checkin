@@ -92,11 +92,11 @@ private fun OrganizerDashboard(
             }
         }
         Row(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            MenuButton("Moi podopieczni", "Twoi przypisani uczestnicy", Icons.Default.SupervisorAccount, MaterialTheme.colorScheme.primary, onMyMenteesClick, Modifier.weight(1f))
             MenuButton("Uczestnicy", "Lista i wyszukiwanie", Icons.Default.Group, MaterialTheme.colorScheme.secondary, { onParticipantsClick(null) }, Modifier.weight(1f))
+            MenuButton("Dodaj zamówienie", "Nowy uczestnik / firma", Icons.Default.PersonAdd, MaterialTheme.colorScheme.primary, { showAddOrderSheet = true }, Modifier.weight(1f))
         }
         Row(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            MenuButton("Dodaj zamówienie", "Nowy uczestnik / firma", Icons.Default.PersonAdd, MaterialTheme.colorScheme.primary, { showAddOrderSheet = true }, Modifier.weight(1f))
+            MenuButton("Moi podopieczni", "Twoi przypisani uczestnicy", Icons.Default.SupervisorAccount, MaterialTheme.colorScheme.primary, onMyMenteesClick, Modifier.weight(1f))
             MenuButton("Statystyki", "Analiza frekwencji", Icons.Default.BarChart, MaterialTheme.colorScheme.tertiary, onStatsClick, Modifier.weight(1f))
         }
     }
