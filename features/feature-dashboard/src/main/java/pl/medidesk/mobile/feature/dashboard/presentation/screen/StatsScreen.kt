@@ -174,30 +174,6 @@ private fun StatsContent(data: DashboardData, syncState: SyncState, onSyncClick:
             }
         }
 
-        // 3. Sekcja: Skanerzy
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = cardColors,
-                elevation = CardDefaults.cardElevation(2.dp),
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("SKANERY", style = MaterialTheme.typography.labelMedium, color = labelColor)
-                    Spacer(Modifier.height(16.dp))
-
-                    if (data.topScanners.isEmpty()) {
-                        Text("Czekam na pierwsze skany...", color = mutedColor)
-                    } else {
-                        data.topScanners.forEach { scanner ->
-                            ScannerBarRow(scanner.email, scanner.count, data.checkedIn)
-                            Spacer(Modifier.height(12.dp))
-                        }
-                    }
-                }
-            }
-        }
-
         // 4. Sekcja: Kategorie Biletów
         item {
             Card(
@@ -230,20 +206,3 @@ private fun StatsContent(data: DashboardData, syncState: SyncState, onSyncClick:
     }
 }
 
-@Composable
-private fun ScannerBarRow(label: String, count: Int, total: Int) {
-    val name = label.substringBefore("@")
-    Column {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(name, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f))
-            Text("$count skanów", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
-        }
-        Spacer(Modifier.height(4.dp))
-        LinearProgressIndicator(
-            progress = { if (total > 0) count.toFloat() / total else 0f },
-            modifier = Modifier.fillMaxWidth().height(16.dp).clip(RoundedCornerShape(4.dp)),
-            color = MaterialTheme.colorScheme.primary,
-            trackColor = MaterialTheme.colorScheme.surfaceVariant
-        )
-    }
-}
