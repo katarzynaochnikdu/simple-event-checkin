@@ -664,37 +664,12 @@ private fun ParticipantRow(
             val displayName = "${participant.firstName ?: ""} ${participant.lastName ?: ""}"
                 .trim()
                 .ifEmpty { "—" }
-            // Imię + badge typ biletu w tym samym wierszu
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Text(
-                    displayName,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.weight(1f, fill = false)
-                )
-                val ticketLabel = participant.ticketName?.takeIf { it.isNotBlank() }
-                if (ticketLabel != null) {
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(Color(0xFFF1F3F4))
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
-                    ) {
-                        Text(
-                            ticketLabel.uppercase(),
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF5F6368),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-            }
+            Text(
+                displayName,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
             if (!participant.phone.isNullOrBlank()) {
                 Text(participant.phone!!, fontSize = 12.sp, color = Color.Gray)
             }
@@ -708,8 +683,32 @@ private fun ParticipantRow(
                 )
             }
         }
-        Box(modifier = Modifier.padding(start = 8.dp)) {
-            when {
+        // Prawa strona: badge biletu (opcjonalny) + akcja check-in
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(start = 8.dp)
+        ) {
+            val ticketLabel = participant.ticketName?.takeIf { it.isNotBlank() }
+            if (ticketLabel != null) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Color(0xFFF1F3F4))
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        ticketLabel.uppercase(),
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF5F6368),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                Spacer(Modifier.width(4.dp))
+            }
+            Box {
+                when {
                 participant.checkedIn -> {
                     Icon(
                         Icons.Default.HowToReg,
@@ -741,10 +740,11 @@ private fun ParticipantRow(
                         )
                     }
                 }
-            }
-        }
-    }
-}
+                }  // closes when
+            }      // closes Box
+        }          // closes inner Row (badge + check-in)
+    }              // closes outer Row
+}                  // closes ParticipantRow
 
 // ─── Withdraw Dialog ──────────────────────────────────────────────────────────
 
