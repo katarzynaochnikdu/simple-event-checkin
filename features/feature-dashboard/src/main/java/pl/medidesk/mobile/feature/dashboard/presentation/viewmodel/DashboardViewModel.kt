@@ -34,6 +34,17 @@ class DashboardViewModel @Inject constructor(
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
     init {
+        // Re-load dashboard whenever any screen reports a check-in/undo, so the
+        // POSTĘP CHECK-IN counter and ODZNACZENI/OCZEKUJĄCY tiles update without
+        // user having to leave and return to the screen.
+        viewModelScope.launch {
+            syncEngine.participantChanges.collect {
+                val current = _uiState.value
+                val eventId = if (current is DashboardUiState.Success) current.data.eventId else return@collect
+                if (eventId.isNotBlank() && eventId != "0") loadDashboard(eventId)
+            }
+        }
+
         viewModelScope.launch {
             val user = combine(
                 authDataStore.userEmailFlow,

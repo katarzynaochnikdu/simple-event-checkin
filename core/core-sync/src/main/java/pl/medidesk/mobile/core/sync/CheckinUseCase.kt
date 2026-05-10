@@ -29,6 +29,14 @@ class CheckinUseCase @Inject constructor(
                 val checkedInAt = body.checkedInAt
                 if (body.success && checkedInAt != null) {
                     participantDao.markCheckedIn(ticketId, checkedInAt)
+                    syncEngine.notifyParticipantChanged(
+                        ParticipantStatusChange(
+                            ticketId = ticketId,
+                            participantId = body.participant?.id,
+                            isCheckedIn = true,
+                            checkedInAt = checkedInAt
+                        )
+                    )
                 }
                 CheckinResult(
                     success = body.success,
@@ -64,6 +72,14 @@ class CheckinUseCase @Inject constructor(
                 offlineCheckinDao.insert(OfflineCheckinEntity(ticketId = ticketId, eventId = eventId, scannedAt = scannedAt))
                 participantDao.markCheckedIn(ticketId, scannedAt)
                 syncEngine.triggerImmediateSync(eventId)
+                syncEngine.notifyParticipantChanged(
+                    ParticipantStatusChange(
+                        ticketId = ticketId,
+                        participantId = local.id,
+                        isCheckedIn = true,
+                        checkedInAt = scannedAt
+                    )
+                )
 
                 CheckinResult(success = true, alreadyCheckedIn = false, checkedInAt = scannedAt,
                     participant = ParticipantSummary(local.id, local.firstName ?: "", local.lastName ?: "",

@@ -15,6 +15,7 @@ import pl.medidesk.mobile.core.model.Participant
 import pl.medidesk.mobile.core.model.SyncState
 import pl.medidesk.mobile.core.model.TicketClass
 import pl.medidesk.mobile.core.sync.SyncEngine
+import pl.medidesk.mobile.core.sync.ParticipantStatusChange
 import java.time.Instant
 import javax.inject.Inject
 
@@ -174,11 +175,14 @@ class ParticipantsViewModel @Inject constructor(
                         action = "checkin"
                     )
                 )
+                syncEngine.notifyParticipantChanged(
+                    ParticipantStatusChange(identifier, participant.id, isCheckedIn = true, checkedInAt = now)
+                )
                 syncEngine.triggerImmediateSync(participant.eventId)
             } else {
                 Log.e("ParticipantsVM", "Cannot sync check-in: no ticketId for participant ${participant.id}")
             }
-            
+
             dismissDialogs()
         }
     }
@@ -190,7 +194,7 @@ class ParticipantsViewModel @Inject constructor(
             
             // 1. Update local DB
             participantDao.markCheckedOutById(participant.id)
-            
+
             val identifier = participant.ticketId ?: participant.backstageTicketId
             if (identifier != null) {
                 offlineCheckinDao.insert(
@@ -200,6 +204,9 @@ class ParticipantsViewModel @Inject constructor(
                         scannedAt = now,
                         action = "checkout"
                     )
+                )
+                syncEngine.notifyParticipantChanged(
+                    ParticipantStatusChange(identifier, participant.id, isCheckedIn = false, checkedInAt = null)
                 )
                 // 3. Trigger sync
                 syncEngine.triggerImmediateSync(participant.eventId)

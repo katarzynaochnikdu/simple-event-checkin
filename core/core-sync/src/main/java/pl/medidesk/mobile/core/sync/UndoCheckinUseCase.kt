@@ -12,7 +12,8 @@ import javax.inject.Inject
 class UndoCheckinUseCase @Inject constructor(
     private val apiService: MobileApiService,
     private val participantDao: ParticipantDao,
-    private val offlineCheckinDao: OfflineCheckinDao
+    private val offlineCheckinDao: OfflineCheckinDao,
+    private val syncEngine: SyncEngine
 ) {
     suspend operator fun invoke(ticketId: String, eventId: String): CheckinResult {
         Log.d("UndoCheckinUseCase", "Undoing checkin for ticket: $ticketId, event: $eventId")
@@ -25,6 +26,14 @@ class UndoCheckinUseCase @Inject constructor(
             if (response.isSuccessful && body != null && body.success) {
                 participantDao.markCheckedOut(ticketId)
                 offlineCheckinDao.deleteUnsyncedCheckin(ticketId)
+                syncEngine.notifyParticipantChanged(
+                    ParticipantStatusChange(
+                        ticketId = ticketId,
+                        participantId = body.participant?.id,
+                        isCheckedIn = false,
+                        checkedInAt = null
+                    )
+                )
                 CheckinResult(
                     success = true,
                     participant = body.participant?.let {
@@ -52,6 +61,14 @@ class UndoCheckinUseCase @Inject constructor(
 
         participantDao.markCheckedOut(ticketId)
         offlineCheckinDao.deleteUnsyncedCheckin(ticketId)
+        syncEngine.notifyParticipantChanged(
+            ParticipantStatusChange(
+                ticketId = ticketId,
+                participantId = local.id,
+                isCheckedIn = false,
+                checkedInAt = null
+            )
+        )
 
         return CheckinResult(
             success = true,

@@ -8,8 +8,11 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.stateIn
@@ -20,6 +23,18 @@ import pl.medidesk.mobile.core.model.SyncStatus
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * Lightweight broadcast event so screens that don't share the participants Flow
+ * (MyMentees pulls from a separate /my-mentees endpoint) can update instantly
+ * after a check-in done elsewhere — without each screen running its own poll.
+ */
+data class ParticipantStatusChange(
+    val ticketId: String,
+    val participantId: Long?,
+    val isCheckedIn: Boolean,
+    val checkedInAt: String?
+)
+
 @Singleton
 class SyncEngine @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -28,6 +43,13 @@ class SyncEngine @Inject constructor(
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val workManager = WorkManager.getInstance(context)
+
+    private val _participantChanges = MutableSharedFlow<ParticipantStatusChange>(extraBufferCapacity = 16)
+    val participantChanges: SharedFlow<ParticipantStatusChange> = _participantChanges.asSharedFlow()
+
+    fun notifyParticipantChanged(change: ParticipantStatusChange) {
+        _participantChanges.tryEmit(change)
+    }
 
     val syncState: StateFlow<SyncState> = combine(
         offlineCheckinDao.getUnsyncedCountFlow(),

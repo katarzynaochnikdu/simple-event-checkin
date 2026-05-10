@@ -44,6 +44,7 @@ import pl.medidesk.mobile.core.network.MobileApiService
 import pl.medidesk.mobile.core.network.dto.CheckinRequest
 import pl.medidesk.mobile.core.network.dto.DeleteCompanyAssignmentRequest
 import pl.medidesk.mobile.core.network.dto.MenteeDto
+import pl.medidesk.mobile.core.sync.SyncEngine
 import pl.medidesk.mobile.core.ui.theme.StatusColors
 import java.time.Instant
 import javax.inject.Inject
@@ -78,11 +79,40 @@ data class MyMenteesUiState(
 
 @HiltViewModel
 class MyMenteesViewModel @Inject constructor(
-    private val api: MobileApiService
+    private val api: MobileApiService,
+    private val syncEngine: SyncEngine
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MyMenteesUiState())
     val uiState = _uiState.asStateFlow()
+
+    init {
+        // Subscribe to participant status changes from anywhere in the app
+        // (Scanner, ParticipantDetails undo, ParticipantsList manual checkin).
+        // Lets us optimistically flip the badge here without re-hitting /my-mentees.
+        viewModelScope.launch {
+            syncEngine.participantChanges.collect { change ->
+                applyOptimisticChange(change.ticketId, change.participantId, change.isCheckedIn)
+            }
+        }
+    }
+
+    private fun applyOptimisticChange(ticketId: String, participantId: Long?, isCheckedIn: Boolean) {
+        _uiState.update { state ->
+            val updatedCompanies = state.companies.map { company ->
+                val updatedParticipants = company.participants.map { m ->
+                    val matches = (participantId != null && m.participantId == participantId)
+                        || m.ticketId == ticketId
+                        || m.backstageTicketId == ticketId
+                        || m.ticketNumber == ticketId
+                    if (matches && m.checkedIn != isCheckedIn) m.copy(checkedIn = isCheckedIn) else m
+                }
+                if (updatedParticipants === company.participants) company
+                else company.copy(participants = updatedParticipants)
+            }
+            state.copy(companies = updatedCompanies)
+        }
+    }
 
     fun load(eventId: String) {
         viewModelScope.launch {
