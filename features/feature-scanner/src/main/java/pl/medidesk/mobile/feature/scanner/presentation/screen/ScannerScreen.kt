@@ -192,6 +192,7 @@ private fun ScanResultOverlay(uiState: ScannerUiState, onUndo: () -> Unit) {
             ScanFeedback.SUCCESS_OFFLINE -> ScanDuplicate.copy(alpha = 0.92f) to "ZAPISANO OFFLINE"
             ScanFeedback.DUPLICATE -> ScanDuplicate.copy(alpha = 0.92f) to "JUŻ ZAREJESTROWANY"
             ScanFeedback.NOT_FOUND -> ScanError.copy(alpha = 0.92f) to "NIE ZNALEZIONO"
+            ScanFeedback.WRONG_EVENT -> ScanError.copy(alpha = 0.95f) to "BILET Z INNEGO WYDARZENIA"
             ScanFeedback.ERROR -> ScanError.copy(alpha = 0.92f) to "BŁĄD"
             ScanFeedback.UNDOING -> ScanDuplicate.copy(alpha = 0.92f) to "COFANIE..."
             ScanFeedback.UNDONE -> ScanSuccess.copy(alpha = 0.92f) to "COFNIĘTO"
@@ -219,6 +220,22 @@ private fun ScanResultOverlay(uiState: ScannerUiState, onUndo: () -> Unit) {
                     color = Color.White,
                     textAlign = TextAlign.Center
                 )
+                uiState.wrongEventInfo?.let { info ->
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        text = info.participantName,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.White,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = "Ten bilet przypisany jest do innego wydarzenia.\nZeskanuj bilet z aktualnego eventu.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White.copy(alpha = 0.85f),
+                        textAlign = TextAlign.Center
+                    )
+                }
                 uiState.lastResult?.participant?.let { p ->
                     Spacer(Modifier.height(16.dp))
                     Text(

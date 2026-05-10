@@ -22,6 +22,14 @@ interface ParticipantDao {
     @Query("SELECT * FROM participants WHERE ticket_id = :ticketId OR backstage_ticket_id = :ticketId LIMIT 1")
     suspend fun findByAnyTicketId(ticketId: String): ParticipantEntity?
 
+    @Query("""
+        SELECT * FROM participants
+        WHERE event_id = :eventId
+          AND (ticket_id = :ticketId OR backstage_ticket_id = :ticketId)
+        LIMIT 1
+    """)
+    suspend fun findByTicketAndEvent(ticketId: String, eventId: String): ParticipantEntity?
+
     @Query("SELECT COUNT(*) FROM participants WHERE event_id = :eventId")
     suspend fun countForEvent(eventId: String): Int
     

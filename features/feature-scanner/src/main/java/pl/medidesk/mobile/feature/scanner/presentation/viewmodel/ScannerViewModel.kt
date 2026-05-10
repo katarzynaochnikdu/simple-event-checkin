@@ -18,7 +18,13 @@ import pl.medidesk.mobile.core.sync.SyncEngine
 import pl.medidesk.mobile.core.sync.UndoCheckinUseCase
 import javax.inject.Inject
 
-enum class ScanFeedback { NONE, PROCESSING, SUCCESS, SUCCESS_OFFLINE, DUPLICATE, ERROR, NOT_FOUND, UNDOING, UNDONE }
+enum class ScanFeedback { NONE, PROCESSING, SUCCESS, SUCCESS_OFFLINE, DUPLICATE, ERROR, NOT_FOUND, WRONG_EVENT, UNDOING, UNDONE }
+
+/** Dane wyświetlane w overlay'u "BILET Z INNEGO WYDARZENIA". */
+data class WrongEventInfo(
+    val participantName: String,
+    val otherEventId: String
+)
 
 /**
  * Stan oczekiwania na potwierdzenie check-in po zeskanowaniu QR.
@@ -42,7 +48,8 @@ data class ScannerUiState(
     val lastResult: CheckinResult? = null,
     val syncState: SyncState = SyncState(),
     val isScanning: Boolean = true,
-    val pendingScan: PendingScan? = null
+    val pendingScan: PendingScan? = null,
+    val wrongEventInfo: WrongEventInfo? = null
 )
 
 @HiltViewModel
@@ -82,30 +89,50 @@ class ScannerViewModel @Inject constructor(
 
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isScanning = false)
-            // Lookup robi local-first, potem server fallback (~500ms latency on miss).
-            val pending = when (val result = lookupUseCase(ticketId, eventId)) {
-                is LookupResult.Found -> PendingScan(
-                    ticketId = ticketId,
-                    eventId = eventId,
-                    participantName = result.participantName,
-                    ticketName = result.ticketName,
-                    company = result.company,
-                    email = result.email,
-                    knownLocally = true,
-                    alreadyCheckedIn = result.alreadyCheckedIn
-                )
-                LookupResult.NotFound -> PendingScan(
-                    ticketId = ticketId,
-                    eventId = eventId,
-                    participantName = "",
-                    ticketName = "",
-                    company = "",
-                    email = "",
-                    knownLocally = false,
-                    alreadyCheckedIn = false
-                )
+            // Lookup robi local-first (z event_id filter), cross-event check, potem server fallback.
+            when (val result = lookupUseCase(ticketId, eventId)) {
+                is LookupResult.Found -> {
+                    val pending = PendingScan(
+                        ticketId = ticketId,
+                        eventId = eventId,
+                        participantName = result.participantName,
+                        ticketName = result.ticketName,
+                        company = result.company,
+                        email = result.email,
+                        knownLocally = true,
+                        alreadyCheckedIn = result.alreadyCheckedIn
+                    )
+                    _uiState.value = _uiState.value.copy(pendingScan = pending)
+                }
+                is LookupResult.WrongEvent -> {
+                    // Bilet z innego wydarzenia — natychmiast pokazujemy overlay error,
+                    // żaden dialog potwierdzenia (operator nie powinien móc zatwierdzić).
+                    _uiState.value = _uiState.value.copy(
+                        feedback = ScanFeedback.WRONG_EVENT,
+                        wrongEventInfo = WrongEventInfo(
+                            participantName = result.participantName,
+                            otherEventId = result.otherEventId
+                        )
+                    )
+                    autoDismissJob = viewModelScope.launch {
+                        delay(3000)
+                        resetState()
+                    }
+                }
+                LookupResult.NotFound -> {
+                    val pending = PendingScan(
+                        ticketId = ticketId,
+                        eventId = eventId,
+                        participantName = "",
+                        ticketName = "",
+                        company = "",
+                        email = "",
+                        knownLocally = false,
+                        alreadyCheckedIn = false
+                    )
+                    _uiState.value = _uiState.value.copy(pendingScan = pending)
+                }
             }
-            _uiState.value = _uiState.value.copy(pendingScan = pending)
         }
     }
 
@@ -167,7 +194,8 @@ class ScannerViewModel @Inject constructor(
             feedback = ScanFeedback.NONE,
             lastResult = null,
             isScanning = true,
-            pendingScan = null
+            pendingScan = null,
+            wrongEventInfo = null
         )
         lastScannedTicketId = null
         lastScannedEventId = null
