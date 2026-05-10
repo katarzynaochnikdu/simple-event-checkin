@@ -142,13 +142,13 @@ private fun EventCompactCard(event: EventItem, onClick: () -> Unit, modifier: Mo
                     .background(accentColor)
             )
             // Logo (mała miniaturka)
-            // W dark mode: preferuj logoWhiteUrl (logotyp w wersji białej) → fallback do kolorowego
-            // Gdy w dark mode brak logoWhiteUrl, dodajemy jasne tło pod kolorowe logo (czytelność)
+            // Light → logo_color → logo (default) → imageUrl
+            // Dark  → logo_white → logo (default) → imageUrl
             val isDark = isSystemInDarkTheme()
             val logoModel = if (isDark) {
                 (event.logoWhiteUrl ?: event.logoUrl ?: event.imageUrl)
             } else {
-                (event.logoUrl ?: event.imageUrl)
+                (event.logoColorUrl ?: event.logoUrl ?: event.imageUrl)
             }
             val needsLightBgFallback = isDark && event.logoWhiteUrl.isNullOrBlank() && !event.logoUrl.isNullOrBlank()
             MdAsyncImage(

@@ -49,6 +49,7 @@ data class EventDto(
     val image: String?,
     val thumbnail: String?,
     @Json(name = "logo_url") val logoUrl: String? = null,
+    @Json(name = "logo_color_url") val logoColorUrl: String? = null,
     @Json(name = "logo_white_url") val logoWhiteUrl: String? = null,
     @Json(name = "primary_color") val primaryColor: String? = null,
     @Json(name = "secondary_color") val secondaryColor: String? = null,
