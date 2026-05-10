@@ -231,8 +231,9 @@ class MyMenteesViewModel @Inject constructor(
             try {
                 val response = api.review360View(accountId)
                 val body = response.body()
-                if (response.isSuccessful && body?.success == true && !body.url.isNullOrBlank()) {
-                    onUrlReady(body.url)
+                val viewUrl = body?.url
+                if (response.isSuccessful && body?.success == true && !viewUrl.isNullOrBlank()) {
+                    onUrlReady(viewUrl)
                 } else {
                     val errMsg = when (body?.error) {
                         "dashboard_timeout" -> "Dashboard jest uśpiony — spróbuj za 30s"
