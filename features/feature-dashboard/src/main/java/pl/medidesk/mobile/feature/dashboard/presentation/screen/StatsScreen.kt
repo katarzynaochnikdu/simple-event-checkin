@@ -103,7 +103,7 @@ private fun StatsContent(data: DashboardData, syncState: SyncState, onSyncClick:
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("PRZYBYCIE W CZASIE", style = MaterialTheme.typography.labelMedium, color = labelColor)
+                    Text("CZAS PRZYBYCIA", style = MaterialTheme.typography.labelMedium, color = labelColor)
                     Spacer(Modifier.height(16.dp))
                     if (data.timeline.isEmpty()) {
                         Box(Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
