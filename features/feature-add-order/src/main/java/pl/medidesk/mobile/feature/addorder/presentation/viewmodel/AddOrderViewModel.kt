@@ -111,15 +111,10 @@ class AddOrderViewModel @Inject constructor(
     fun selectTicketClass(id: String) {
         val cur = _uiState.value
         val ticketClass = cur.cartConfig?.ticketClasses?.firstOrNull { it.id == id }
-        // WO-175: NIE auto-skacze do minQuantity. Gdy min == max → ustaw count = min
-        // (jedyna możliwa wartość). W przeciwnym razie start z 1 — user decyduje
-        // explicitne +/− jak ile biletów chce. Walidacja blokuje "Dalej" jeśli
-        // count < minQuantity.
-        val newCount = if (ticketClass != null && ticketClass.minQuantity == ticketClass.maxQuantity) {
-            ticketClass.minQuantity.coerceAtLeast(1)
-        } else {
-            1
-        }
+        // WO-176: count startuje OD minQuantity klasy biletu (revert from iter2).
+        // User feedback: "masz minimalnie 2 a zaczyna od 1" — start z 1 było mylące.
+        // Dla Connect+ (min=2) count = 2 od razu. Dla Connect (min=1) count = 1.
+        val newCount = (ticketClass?.minQuantity ?: 1).coerceAtLeast(1)
         val resized = resizeParticipants(cur.participantsData, newCount)
         _uiState.value = cur.copy(
             selectedTicketClassId = id,
@@ -145,13 +140,11 @@ class AddOrderViewModel @Inject constructor(
         )
     }
 
-    // WO-171: zmniejsz licznik uczestników.
-    // WO-175: dolny limit to 1 (nie minQuantity) — pozwól zejść poniżej minimum,
-    //         walidacja w validateCurrentStep blokuje "Dalej" gdy count < minQuantity.
+    // WO-176: dolny limit to minQuantity (revert from iter2, zgodnie z user feedback).
     fun decrementParticipantCount() {
         val cur = _uiState.value
-        if (cur.selectedTicketClassId == null) return
-        val newCount = (cur.participantCount - 1).coerceAtLeast(1)
+        val cls = cur.cartConfig?.ticketClasses?.firstOrNull { it.id == cur.selectedTicketClassId } ?: return
+        val newCount = (cur.participantCount - 1).coerceAtLeast(cls.minQuantity)
         if (newCount == cur.participantCount) return
         val resized = resizeParticipants(cur.participantsData, newCount)
         val newSubStep = cur.participantSubStep.coerceAtMost(newCount - 1)
@@ -386,6 +379,17 @@ class AddOrderViewModel @Inject constructor(
                         !Patterns.EMAIL_ADDRESS.matcher(v).matches()
                     ) errors[f.id] = "Nieprawidłowy email"
                 }
+                // WO-176: HARD-OVERRIDE — firstName/lastName/email zawsze wymagane,
+                // niezależnie od `required` flag w backend config. Admin add-order MUSI
+                // mieć pełne dane uczestnika do utworzenia rekordu.
+                val first = currentData["firstName"].orEmpty().trim()
+                if (first.isBlank()) errors["firstName"] = "Imię wymagane"
+                val last = currentData["lastName"].orEmpty().trim()
+                if (last.isBlank()) errors["lastName"] = "Nazwisko wymagane"
+                val email = currentData["email"].orEmpty().trim()
+                if (email.isBlank()) errors["email"] = "Email wymagany"
+                else if (!Patterns.EMAIL_ADDRESS.matcher(email).matches())
+                    errors["email"] = "Nieprawidłowy email"
             }
             3 -> {
                 if (s.payer.firstName.isBlank()) errors["firstName"] = "Imię wymagane"

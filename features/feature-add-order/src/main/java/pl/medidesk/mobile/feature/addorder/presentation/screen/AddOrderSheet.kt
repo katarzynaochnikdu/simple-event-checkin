@@ -193,15 +193,13 @@ fun AddOrderSheet(
                             Text(if (state.step > 1) "Wstecz" else "Anuluj")
                         }
                         if (state.step < TOTAL_STEPS) {
-                            val nextLabel = when {
-                                state.step == 2 && state.participantSubStep < state.participantCount - 1 ->
-                                    "Dalej (uczestnik ${state.participantSubStep + 2})"
-                                else -> "Dalej"
-                            }
                             Button(onClick = { viewModel.nextStep() },
                                 modifier = Modifier.weight(1f),
                                 enabled = !state.isSubmitting) {
-                                Text(nextLabel)
+                                // WO-176: krótkie "Dalej" — info o subStep jest w headerze
+                                // "Uczestnik X z N" + breadcrumb dots. Dłuższy label się
+                                // przycina na wąskich ekranach.
+                                Text("Dalej")
                             }
                         } else {
                             Button(onClick = { viewModel.submit(eventId) },

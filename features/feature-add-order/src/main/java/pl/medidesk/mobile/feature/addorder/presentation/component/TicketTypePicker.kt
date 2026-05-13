@@ -1,18 +1,26 @@
 package pl.medidesk.mobile.feature.addorder.presentation.component
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ConfirmationNumber
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import pl.medidesk.mobile.feature.addorder.domain.OrderTicketClass
 
@@ -32,6 +40,15 @@ fun TicketTypePicker(
 ) {
     // WO-175: filtruj niedostępne ticket classes — nie pokazujemy w ogóle.
     val availableTickets = ticketClasses.filter { it.available }
+    // WO-176: collapsible descriptions per karta (per-ticket-id state).
+    val expandedDescriptions = rememberSaveable(
+        saver = androidx.compose.runtime.saveable.mapSaver(
+            save = { map -> map.toMap() },
+            restore = { saved -> mutableStateMapOf<String, Boolean>().apply {
+                saved.forEach { (k, v) -> put(k, v as Boolean) }
+            } }
+        )
+    ) { mutableStateMapOf<String, Boolean>() }
 
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
@@ -71,21 +88,61 @@ fun TicketTypePicker(
                     Column(modifier = Modifier.weight(1f)) {
                         Text(tc.name, fontWeight = FontWeight.SemiBold,
                             style = MaterialTheme.typography.bodyLarge)
-                        if (!tc.description.isNullOrBlank()) {
-                            Text(tc.description,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        // WO-175: min/max info widoczne na każdej karcie (przed wyborem).
+                        // WO-175 iter 3: min/max info jako prominent chip TUŻ POD nazwą biletu
+                        // (zamiast pod opisem) — żeby było wyraźne i nie tonąło w długich
+                        // opisach. Background z accent color + icon biletu.
                         val minMaxLabel = formatMinMaxLabel(tc)
                         if (minMaxLabel != null) {
-                            Spacer(Modifier.height(2.dp))
+                            Spacer(Modifier.height(6.dp))
+                            Surface(
+                                color = MaterialTheme.colorScheme.tertiaryContainer,
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        Icons.Default.ConfirmationNumber,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(14.dp),
+                                        tint = MaterialTheme.colorScheme.onTertiaryContainer
+                                    )
+                                    Spacer(Modifier.width(6.dp))
+                                    Text(
+                                        minMaxLabel,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onTertiaryContainer
+                                    )
+                                }
+                            }
+                            Spacer(Modifier.height(6.dp))
+                        }
+                        // WO-176: collapsible description — 2 linijki + "Zobacz więcej"/"Zwiń".
+                        if (!tc.description.isNullOrBlank()) {
+                            val isExpanded = expandedDescriptions[tc.id] == true
                             Text(
-                                minMaxLabel,
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.tertiary
+                                tc.description,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = if (isExpanded) Int.MAX_VALUE else 2,
+                                overflow = if (isExpanded) TextOverflow.Clip else TextOverflow.Ellipsis
                             )
+                            // Toggle "Zobacz więcej" / "Zwiń" — pokazuj zawsze gdy opis > 80 znaków
+                            // (heurystyka: krótkie opisy mieszczą się w 2 linijkach bez ellipsis).
+                            if (tc.description.length > 80) {
+                                Spacer(Modifier.height(2.dp))
+                                Text(
+                                    text = if (isExpanded) "Zwiń ▲" else "Zobacz więcej ▼",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.clickable {
+                                        expandedDescriptions[tc.id] = !isExpanded
+                                    }
+                                )
+                            }
                         }
                     }
                     Column(horizontalAlignment = Alignment.End) {
@@ -152,9 +209,8 @@ fun TicketTypePicker(
                     ) {
                         FilledIconButton(
                             onClick = onDecrement,
-                            // WO-175: dolny limit to 1 (nie minQuantity) — pozwól zejść poniżej minimum,
-                            //         walidacja w ViewModel blokuje "Dalej" gdy count < minQuantity.
-                            enabled = participantCount > 1,
+                            // WO-176: dolny limit to minQuantity (revert from iter2).
+                            enabled = participantCount > selectedTicket.minQuantity,
                             shape = CircleShape
                         ) {
                             Icon(Icons.Default.Remove, contentDescription = "Zmniejsz liczbę biletów")
@@ -208,20 +264,21 @@ fun TicketTypePicker(
 }
 
 // WO-175: helpers dla min/max label na karcie biletu.
+// Iter 3: skrócone wersje dla chipa (compact format).
 private fun formatMinMaxLabel(tc: OrderTicketClass): String? {
     val min = tc.minQuantity
     val max = tc.maxQuantity
     return when {
         // Brak ograniczenia (default backend max_quantity=999, min=1) — nie pokazuj
         min == 1 && max >= 99 -> null
-        // min == max → konkretna wartość
-        min == max -> "$min ${pluralBilet(min)} na zamówienie"
-        // Tylko górna granica
-        min == 1 -> "Maks. $max ${pluralBilet(max)} na zamówienie"
-        // Tylko dolna
-        max >= 99 -> "Min. $min ${pluralBilet(min)} na zamówienie"
-        // Pełen zakres
-        else -> "Min. $min – maks. $max ${pluralBilet(max)} na zamówienie"
+        // min == max → "1 bilet" / "2 bilety"
+        min == max -> "$min ${pluralBilet(min)}"
+        // Tylko górna granica → "Maks. 5 biletów"
+        min == 1 -> "Maks. $max ${pluralBilet(max)}"
+        // Tylko dolna → "Min. 2 biletów"
+        max >= 99 -> "Min. $min ${pluralBilet(min)}"
+        // Pełen zakres → "2 – 10 biletów"
+        else -> "$min – $max ${pluralBilet(max)}"
     }
 }
 
