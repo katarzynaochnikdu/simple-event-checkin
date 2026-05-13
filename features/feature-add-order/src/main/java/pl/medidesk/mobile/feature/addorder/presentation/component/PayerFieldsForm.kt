@@ -1,10 +1,13 @@
 package pl.medidesk.mobile.feature.addorder.presentation.component
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -128,13 +131,58 @@ fun PayerFieldsForm(
             modifier = Modifier.fillMaxWidth()
         )
 
-        Spacer(Modifier.height(8.dp))
-        Row(verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()) {
-            Text("Płatnik to firma", modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.bodyLarge)
-            Switch(checked = payer.isCompany,
-                onCheckedChange = { v -> onPayerChange { it.copy(isCompany = v) } })
+        // WO-176: prominent "Płatnik to firma" toggle — Card z ikoną i kolorem
+        // wskazującym aktywny stan. Wyraźnie sygnalizuje że to ważny wybór
+        // wpływający na resztę formularza (NIP, nazwa firmy, adres dla faktury).
+        Spacer(Modifier.height(4.dp))
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = if (payer.isCompany) MaterialTheme.colorScheme.primaryContainer
+                                  else MaterialTheme.colorScheme.surface
+            ),
+            border = BorderStroke(
+                width = if (payer.isCompany) 2.dp else 1.dp,
+                color = if (payer.isCompany) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.outlineVariant
+            ),
+            shape = RoundedCornerShape(12.dp),
+            modifier = Modifier.fillMaxWidth(),
+            onClick = { onPayerChange { it.copy(isCompany = !it.isCompany) } }
+        ) {
+            Row(
+                modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.Default.Business,
+                    contentDescription = null,
+                    modifier = Modifier.size(28.dp),
+                    tint = if (payer.isCompany) MaterialTheme.colorScheme.primary
+                           else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.width(14.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        "Płatnik to firma",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (payer.isCompany) MaterialTheme.colorScheme.onPrimaryContainer
+                                else MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        "Włącz aby wystawić fakturę VAT (NIP, nazwa firmy, adres)",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (payer.isCompany)
+                                    MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f)
+                                else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Spacer(Modifier.width(8.dp))
+                Switch(
+                    checked = payer.isCompany,
+                    onCheckedChange = { v -> onPayerChange { it.copy(isCompany = v) } }
+                )
+            }
         }
 
         AnimatedVisibility(visible = payer.isCompany) {
