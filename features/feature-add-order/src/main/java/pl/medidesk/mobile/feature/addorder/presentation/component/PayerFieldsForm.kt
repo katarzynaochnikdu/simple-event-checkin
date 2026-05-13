@@ -4,10 +4,15 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -25,7 +30,11 @@ fun PayerFieldsForm(
     onPayerChange: ((PayerFormData) -> PayerFormData) -> Unit,
     onLookupGus: (String) -> Unit,
     onCopyFromParticipant: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    // WO-176: lista uczestników (z multi-participant order) — gdy size > 1 pokazujemy
+    // dropdown z wyborem z którego uczestnika kopiować dane.
+    participantsData: List<Map<String, String>> = emptyList(),
+    onCopyFromParticipantAt: (Int) -> Unit = { onCopyFromParticipant() }
 ) {
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(
@@ -36,11 +45,45 @@ fun PayerFieldsForm(
                 modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold)
-            OutlinedButton(onClick = onCopyFromParticipant) {
-                Icon(Icons.Default.ContentCopy, contentDescription = null,
-                    modifier = Modifier.size(16.dp))
-                Spacer(Modifier.width(6.dp))
-                Text("Skopiuj z uczestnika")
+            // WO-176: gdy > 1 uczestnik → dropdown wyboru; gdy 1 → zwykły button.
+            if (participantsData.size > 1) {
+                var menuExpanded by remember { mutableStateOf(false) }
+                Box {
+                    OutlinedButton(onClick = { menuExpanded = true }) {
+                        Icon(Icons.Default.ContentCopy, contentDescription = null,
+                            modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Skopiuj z uczestnika")
+                        Icon(Icons.Default.ArrowDropDown, contentDescription = null,
+                            modifier = Modifier.size(18.dp))
+                    }
+                    DropdownMenu(
+                        expanded = menuExpanded,
+                        onDismissRequest = { menuExpanded = false }
+                    ) {
+                        participantsData.forEachIndexed { idx, data ->
+                            val firstName = data["firstName"]?.trim().orEmpty()
+                            val lastName = data["lastName"]?.trim().orEmpty()
+                            val name = listOf(firstName, lastName).filter { it.isNotEmpty() }
+                                .joinToString(" ")
+                                .ifBlank { "(bez danych)" }
+                            DropdownMenuItem(
+                                text = { Text("Uczestnik ${idx + 1}: $name") },
+                                onClick = {
+                                    onCopyFromParticipantAt(idx)
+                                    menuExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+            } else {
+                OutlinedButton(onClick = onCopyFromParticipant) {
+                    Icon(Icons.Default.ContentCopy, contentDescription = null,
+                        modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Skopiuj z uczestnika")
+                }
             }
         }
 

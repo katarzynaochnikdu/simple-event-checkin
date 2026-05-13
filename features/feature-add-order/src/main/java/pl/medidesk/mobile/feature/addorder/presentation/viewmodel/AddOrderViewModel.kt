@@ -193,13 +193,19 @@ class AddOrderViewModel @Inject constructor(
     }
 
     fun copyParticipantToPayer() {
-        // WO-171: kopiuj dane PIERWSZEGO uczestnika (participantsData[0]) na płatnika.
+        // WO-176: legacy alias — kopiuj z PIERWSZEGO uczestnika (gdy count == 1).
+        copyParticipantToPayerAt(0)
+    }
+
+    // WO-176: kopiuj dane WYBRANEGO uczestnika (po indexie) na płatnika.
+    // Gdy participantCount > 1 UI pokazuje dropdown z wyborem.
+    fun copyParticipantToPayerAt(index: Int) {
         val s = _uiState.value
-        val first = s.participantsData.firstOrNull() ?: return
-        val firstName = first["firstName"]?.trim().orEmpty()
-        val lastName = first["lastName"]?.trim().orEmpty()
-        val email = first["email"]?.trim().orEmpty()
-        val phone = first["phone"]?.trim().orEmpty()
+        val source = s.participantsData.getOrNull(index) ?: return
+        val firstName = source["firstName"]?.trim().orEmpty()
+        val lastName = source["lastName"]?.trim().orEmpty()
+        val email = source["email"]?.trim().orEmpty()
+        val phone = source["phone"]?.trim().orEmpty()
         _uiState.value = s.copy(
             payer = s.payer.copy(
                 firstName = firstName.ifBlank { s.payer.firstName },
