@@ -102,13 +102,18 @@ fun AddOrderSheet(
                                 ticketClasses = cfg.ticketClasses,
                                 selectedId = state.selectedTicketClassId,
                                 onSelect = viewModel::selectTicketClass,
-                                error = state.errors["ticket"]
+                                error = state.errors["ticket"],
+                                participantCount = state.participantCount,
+                                onIncrement = viewModel::incrementParticipantCount,
+                                onDecrement = viewModel::decrementParticipantCount
                             )
                             2 -> ParticipantFieldsForm(
                                 fields = cfg.participantFields,
-                                values = state.participantData,
+                                values = state.participantsData.getOrElse(state.participantSubStep) { emptyMap() },
                                 errors = state.errors,
-                                onFieldChange = viewModel::updateParticipantField
+                                onFieldChange = viewModel::updateParticipantField,
+                                participantIndex = state.participantSubStep,
+                                totalParticipants = state.participantCount
                             )
                             3 -> PayerFieldsForm(
                                 payer = state.payer,
@@ -187,10 +192,15 @@ fun AddOrderSheet(
                             Text(if (state.step > 1) "Wstecz" else "Anuluj")
                         }
                         if (state.step < TOTAL_STEPS) {
+                            val nextLabel = when {
+                                state.step == 2 && state.participantSubStep < state.participantCount - 1 ->
+                                    "Dalej (uczestnik ${state.participantSubStep + 2})"
+                                else -> "Dalej"
+                            }
                             Button(onClick = { viewModel.nextStep() },
                                 modifier = Modifier.weight(1f),
                                 enabled = !state.isSubmitting) {
-                                Text("Dalej")
+                                Text(nextLabel)
                             }
                         } else {
                             Button(onClick = { viewModel.submit(eventId) },

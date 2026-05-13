@@ -34,7 +34,9 @@ data class OrderTicketClass(
     val priceGross: Double,
     val vatRate: Int,
     val currency: String,
-    val available: Boolean
+    val available: Boolean,
+    val minQuantity: Int = 1,
+    val maxQuantity: Int = 999
 )
 
 data class OrderPaymentMethod(
@@ -110,7 +112,9 @@ fun MobileCartConfigDto.toDomain(): OrderCartConfig = OrderCartConfig(
 private fun MobileCartTicketClassDto.toDomain() = OrderTicketClass(
     id = id, name = name, description = description,
     priceNet = priceNet, priceGross = priceGross, vatRate = vatRate,
-    currency = currency, available = available
+    currency = currency, available = available,
+    minQuantity = minQuantity.coerceAtLeast(1),
+    maxQuantity = maxQuantity.coerceAtLeast(1)
 )
 
 private fun MobileCartPaymentMethodDto.toDomain() = OrderPaymentMethod(

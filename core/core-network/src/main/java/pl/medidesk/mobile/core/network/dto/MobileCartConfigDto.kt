@@ -34,6 +34,7 @@ data class MobileCartTicketClassDto(
     @Json(name = "vat_rate") val vatRate: Int = 23,
     val currency: String = "PLN",
     @Json(name = "max_quantity") val maxQuantity: Int = 999,
+    @Json(name = "min_quantity") val minQuantity: Int = 1,
     val available: Boolean = true
 )
 

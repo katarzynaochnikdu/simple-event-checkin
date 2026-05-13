@@ -68,25 +68,112 @@ class AddOrderViewModel @Inject constructor(
     }
 
     fun nextStep() {
-        if (validateCurrentStep()) {
-            val cur = _uiState.value.step
-            if (cur < TOTAL_STEPS) setStep(cur + 1)
+        if (!validateCurrentStep()) return
+        val s = _uiState.value
+        if (s.step == 2 && s.participantSubStep < s.participantCount - 1) {
+            // WO-171: pętla podstron w Kroku 2 — przejście do następnego uczestnika
+            val nextSub = s.participantSubStep + 1
+            _uiState.value = s.copy(
+                participantSubStep = nextSub,
+                participantData = s.participantsData.getOrElse(nextSub) { emptyMap() },
+                errors = emptyMap()
+            )
+            return
+        }
+        if (s.step < TOTAL_STEPS) {
+            // Wychodzimy z Kroku 2 do przodu → reset subStep na 0
+            val resetSubStep = if (s.step == 2) 0 else s.participantSubStep
+            _uiState.value = s.copy(
+                step = s.step + 1,
+                participantSubStep = resetSubStep,
+                errors = emptyMap()
+            )
         }
     }
 
     fun prevStep() {
-        val cur = _uiState.value.step
-        if (cur > 1) setStep(cur - 1)
+        val s = _uiState.value
+        if (s.step == 2 && s.participantSubStep > 0) {
+            // WO-171: cofnięcie do poprzedniego uczestnika w Kroku 2
+            val prevSub = s.participantSubStep - 1
+            _uiState.value = s.copy(
+                participantSubStep = prevSub,
+                participantData = s.participantsData.getOrElse(prevSub) { emptyMap() },
+                errors = emptyMap()
+            )
+            return
+        }
+        if (s.step > 1) {
+            _uiState.value = s.copy(step = s.step - 1, errors = emptyMap())
+        }
     }
 
     fun selectTicketClass(id: String) {
-        _uiState.value = _uiState.value.copy(selectedTicketClassId = id)
+        val cur = _uiState.value
+        val ticketClass = cur.cartConfig?.ticketClasses?.firstOrNull { it.id == id }
+        val newCount = (ticketClass?.minQuantity ?: 1).coerceAtLeast(1)
+        val resized = resizeParticipants(cur.participantsData, newCount)
+        _uiState.value = cur.copy(
+            selectedTicketClassId = id,
+            participantCount = newCount,
+            participantsData = resized,
+            participantSubStep = 0,
+            participantData = resized.firstOrNull() ?: emptyMap(),
+            errors = cur.errors - "ticket"
+        )
+    }
+
+    // WO-171: zwiększ licznik uczestników (max = ticketClass.maxQuantity).
+    fun incrementParticipantCount() {
+        val cur = _uiState.value
+        val cls = cur.cartConfig?.ticketClasses?.firstOrNull { it.id == cur.selectedTicketClassId } ?: return
+        val newCount = (cur.participantCount + 1).coerceAtMost(cls.maxQuantity)
+        if (newCount == cur.participantCount) return
+        _uiState.value = cur.copy(
+            participantCount = newCount,
+            participantsData = resizeParticipants(cur.participantsData, newCount)
+        )
+    }
+
+    // WO-171: zmniejsz licznik uczestników (min = ticketClass.minQuantity).
+    fun decrementParticipantCount() {
+        val cur = _uiState.value
+        val cls = cur.cartConfig?.ticketClasses?.firstOrNull { it.id == cur.selectedTicketClassId } ?: return
+        val newCount = (cur.participantCount - 1).coerceAtLeast(cls.minQuantity)
+        if (newCount == cur.participantCount) return
+        val resized = resizeParticipants(cur.participantsData, newCount)
+        val newSubStep = cur.participantSubStep.coerceAtMost(newCount - 1)
+        _uiState.value = cur.copy(
+            participantCount = newCount,
+            participantsData = resized,
+            participantSubStep = newSubStep,
+            participantData = resized.getOrElse(newSubStep) { emptyMap() }
+        )
+    }
+
+    private fun resizeParticipants(existing: List<Map<String, String>>, newSize: Int): List<Map<String, String>> {
+        return when {
+            newSize <= 0 -> listOf(emptyMap())
+            existing.size == newSize -> existing
+            existing.size > newSize -> existing.take(newSize)
+            else -> existing + List(newSize - existing.size) { emptyMap() }
+        }
     }
 
     fun updateParticipantField(id: String, value: String) {
+        // WO-171: route przez updateParticipantFieldAt na aktywnym subStep.
+        updateParticipantFieldAt(_uiState.value.participantSubStep, id, value)
+    }
+
+    // WO-171: aktualizacja pola dla konkretnego uczestnika.
+    fun updateParticipantFieldAt(index: Int, id: String, value: String) {
         val cur = _uiState.value
+        if (index !in cur.participantsData.indices) return
+        val newList = cur.participantsData.toMutableList()
+        newList[index] = newList[index] + (id to value)
         _uiState.value = cur.copy(
-            participantData = cur.participantData + (id to value),
+            participantsData = newList,
+            participantData = if (index == cur.participantSubStep) newList[index] else cur.participantData,
             errors = cur.errors - id
         )
     }
@@ -100,11 +187,13 @@ class AddOrderViewModel @Inject constructor(
     }
 
     fun copyParticipantToPayer() {
+        // WO-171: kopiuj dane PIERWSZEGO uczestnika (participantsData[0]) na płatnika.
         val s = _uiState.value
-        val firstName = s.participantData["firstName"]?.trim().orEmpty()
-        val lastName = s.participantData["lastName"]?.trim().orEmpty()
-        val email = s.participantData["email"]?.trim().orEmpty()
-        val phone = s.participantData["phone"]?.trim().orEmpty()
+        val first = s.participantsData.firstOrNull() ?: return
+        val firstName = first["firstName"]?.trim().orEmpty()
+        val lastName = first["lastName"]?.trim().orEmpty()
+        val email = first["email"]?.trim().orEmpty()
+        val phone = first["phone"]?.trim().orEmpty()
         _uiState.value = s.copy(
             payer = s.payer.copy(
                 firstName = firstName.ifBlank { s.payer.firstName },
@@ -197,20 +286,21 @@ class AddOrderViewModel @Inject constructor(
     }
 
     fun computeFinalGross(): Double {
+        // WO-171: subtotal = priceGross * participantCount, rabat aplikowany do subtotal.
         val s = _uiState.value
         val ticket = s.cartConfig?.ticketClasses?.firstOrNull { it.id == s.selectedTicketClassId }
             ?: return 0.0
-        val gross = ticket.priceGross
-        val applied = s.appliedDiscount ?: return gross
+        val subtotal = ticket.priceGross * s.participantCount
+        val applied = s.appliedDiscount ?: return subtotal
         // Sprawdź czy kod dotyczy tego biletu
         if (applied.ticketClassIds.isNotEmpty() && ticket.id !in applied.ticketClassIds) {
-            return gross
+            return subtotal
         }
         val discount = when (applied.type) {
             "fixed" -> applied.value
-            else -> gross * (applied.percent / 100.0)
+            else -> subtotal * (applied.percent / 100.0)
         }
-        return maxOf(0.0, gross - discount)
+        return maxOf(0.0, subtotal - discount)
     }
 
     fun lookupGus(nip: String) {
@@ -262,10 +352,12 @@ class AddOrderViewModel @Inject constructor(
         when (s.step) {
             1 -> if (s.selectedTicketClassId == null) errors["ticket"] = "Wybierz typ biletu"
             2 -> {
+                // WO-171: walidacja dotyczy AKTUALNEGO subStep'a (current participant).
                 val fields = s.cartConfig?.participantFields?.takeIf { it.isNotEmpty() }
                     ?: defaultParticipantFields()
+                val currentData = s.participantsData.getOrElse(s.participantSubStep) { emptyMap() }
                 fields.filter { it.visible }.forEach { f ->
-                    val v = s.participantData[f.id].orEmpty().trim()
+                    val v = currentData[f.id].orEmpty().trim()
                     if (f.required && v.isBlank()) errors[f.id] = "${f.label} wymagane"
                     else if (f.type == FormFieldType.EMAIL && v.isNotBlank() &&
                         !Patterns.EMAIL_ADDRESS.matcher(v).matches()
@@ -326,34 +418,47 @@ class AddOrderViewModel @Inject constructor(
             ) else null
         )
 
-        val customFields = s.participantData.toMap()
-        val pFirst = customFields["firstName"]?.trim().orEmpty().ifBlank { s.payer.firstName.trim() }
-        val pLast = customFields["lastName"]?.trim().orEmpty().ifBlank { s.payer.lastName.trim() }
-        val pEmail = customFields["email"]?.trim().orEmpty().ifBlank { s.payer.email.trim() }
-        val pPhone = customFields["phone"]?.trim()?.ifBlank { null }
+        // WO-171: budujemy listę N uczestników z s.participantsData (limited do participantCount).
+        val participantDtos = s.participantsData.take(s.participantCount).mapIndexed { idx, data ->
+            val pFirst = data["firstName"]?.trim().orEmpty()
+                .ifBlank { if (idx == 0) s.payer.firstName.trim() else "" }
+            val pLast = data["lastName"]?.trim().orEmpty()
+                .ifBlank { if (idx == 0) s.payer.lastName.trim() else "" }
+            val pEmail = data["email"]?.trim().orEmpty()
+                .ifBlank { if (idx == 0) s.payer.email.trim() else "" }
+            val pPhone = data["phone"]?.trim()?.ifBlank { null }
+            MobileCheckoutParticipantDto(
+                firstName = pFirst,
+                lastName = pLast,
+                email = pEmail,
+                phone = pPhone,
+                ticketTypeId = ticketClass.id,
+                ticketTypeName = ticketClass.name,
+                customFields = data.filterKeys { it !in setOf("firstName", "lastName", "email", "phone") }
+                    .takeIf { it.isNotEmpty() }
+            )
+        }
 
-        val participantDto = MobileCheckoutParticipantDto(
-            firstName = pFirst,
-            lastName = pLast,
-            email = pEmail,
-            phone = pPhone,
-            ticketTypeId = ticketClass.id,
-            ticketTypeName = ticketClass.name,
-            customFields = customFields.filterKeys { it !in setOf("firstName", "lastName", "email", "phone") }
-                .takeIf { it.isNotEmpty() }
-        )
-
+        val firstEmail = participantDtos.firstOrNull()?.email ?: s.payer.email
         val consentsMap = s.consentValues.mapValues { (_, v) -> v as Any }
         val discountTrim = s.discountCode.trim()
-        val summary: Map<String, Any?>? = if (discountTrim.isNotEmpty())
-            mapOf("discountCode" to discountTrim) else null
+        val subtotalGross = ticketClass.priceGross * s.participantCount
+        val finalGross = computeFinalGross()
+        val summary: MutableMap<String, Any?> = mutableMapOf(
+            "quantity" to s.participantCount,
+            "subtotal_gross" to subtotalGross,
+            "final_gross" to finalGross
+        )
+        if (discountTrim.isNotEmpty()) summary["discountCode"] = discountTrim
 
         val payload = MobileCheckoutPayloadDto(
             payer = payerDto,
-            participants = listOf(participantDto),
+            participants = participantDtos,
             summary = summary,
             consents = consentsMap.takeIf { it.isNotEmpty() }
         )
+
+        val countSuffix = if (s.participantCount > 1) " (${s.participantCount} biletów)" else ""
 
         _uiState.value = s.copy(isSubmitting = true)
         viewModelScope.launch {
@@ -363,19 +468,19 @@ class AddOrderViewModel @Inject constructor(
                         val r = api.checkoutProforma(eventId, payload)
                         handleResponse(r.isSuccessful, r.code(), r.body()?.eventOrderId,
                             r.errorBody()?.string(),
-                            "Proforma wysłana do $pEmail")
+                            "Proforma wysłana do $firstEmail$countSuffix")
                     }
                     "stripe" -> {
                         val r = api.checkoutStripe(eventId, payload)
                         handleResponse(r.isSuccessful, r.code(), r.body()?.eventOrderId,
                             r.errorBody()?.string(),
-                            "Email z linkiem wysłany do $pEmail")
+                            "Email z linkiem wysłany do $firstEmail$countSuffix")
                     }
                     "free" -> {
                         val r = api.checkoutFree(eventId, payload)
                         handleResponse(r.isSuccessful, r.code(), r.body()?.eventOrderId,
                             r.errorBody()?.string(),
-                            "Uczestnik dodany")
+                            if (s.participantCount > 1) "Dodano ${s.participantCount} uczestników" else "Uczestnik dodany")
                     }
                     else -> {
                         _uiState.value = s.copy(isSubmitting = false,

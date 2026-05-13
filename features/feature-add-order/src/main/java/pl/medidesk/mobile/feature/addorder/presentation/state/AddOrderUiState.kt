@@ -6,12 +6,20 @@ import pl.medidesk.mobile.feature.addorder.domain.OrderCartConfig
  * State multi-step "Dodaj zamówienie" sheet (WO-155).
  */
 data class AddOrderUiState(
-    val step: Int = 1,                                          // 1..5
+    val step: Int = 1,                                          // 1..6
     val cartConfig: OrderCartConfig? = null,
     val isLoadingConfig: Boolean = false,
     val configError: String? = null,
     val selectedTicketClassId: String? = null,
+    // Legacy single-participant view (WO-155). Z WO-171 source of truth jest
+    // participantsData[participantSubStep]. participantData zostaje na razie
+    // dla wstecznej kompatybilności (np. submit z pojedynczym uczestnikiem)
+    // ale ViewModel synchronizuje z participantsData[0] przy każdej zmianie.
     val participantData: Map<String, String> = emptyMap(),
+    // WO-171: multi-participant support
+    val participantCount: Int = 1,
+    val participantsData: List<Map<String, String>> = listOf(emptyMap()),
+    val participantSubStep: Int = 0,
     val payer: PayerFormData = PayerFormData(),
     val consentValues: Map<String, Boolean> = emptyMap(),
     val paymentMethodId: String? = null,
