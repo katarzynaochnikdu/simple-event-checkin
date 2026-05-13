@@ -111,7 +111,15 @@ class AddOrderViewModel @Inject constructor(
     fun selectTicketClass(id: String) {
         val cur = _uiState.value
         val ticketClass = cur.cartConfig?.ticketClasses?.firstOrNull { it.id == id }
-        val newCount = (ticketClass?.minQuantity ?: 1).coerceAtLeast(1)
+        // WO-175: NIE auto-skacze do minQuantity. Gdy min == max → ustaw count = min
+        // (jedyna możliwa wartość). W przeciwnym razie start z 1 — user decyduje
+        // explicitne +/− jak ile biletów chce. Walidacja blokuje "Dalej" jeśli
+        // count < minQuantity.
+        val newCount = if (ticketClass != null && ticketClass.minQuantity == ticketClass.maxQuantity) {
+            ticketClass.minQuantity.coerceAtLeast(1)
+        } else {
+            1
+        }
         val resized = resizeParticipants(cur.participantsData, newCount)
         _uiState.value = cur.copy(
             selectedTicketClassId = id,
@@ -119,11 +127,12 @@ class AddOrderViewModel @Inject constructor(
             participantsData = resized,
             participantSubStep = 0,
             participantData = resized.firstOrNull() ?: emptyMap(),
-            errors = cur.errors - "ticket"
+            errors = cur.errors - "ticket" - "quantity"
         )
     }
 
     // WO-171: zwiększ licznik uczestników (max = ticketClass.maxQuantity).
+    // WO-175: clear quantity error przy zmianie (re-walidacja przy "Dalej").
     fun incrementParticipantCount() {
         val cur = _uiState.value
         val cls = cur.cartConfig?.ticketClasses?.firstOrNull { it.id == cur.selectedTicketClassId } ?: return
@@ -131,15 +140,18 @@ class AddOrderViewModel @Inject constructor(
         if (newCount == cur.participantCount) return
         _uiState.value = cur.copy(
             participantCount = newCount,
-            participantsData = resizeParticipants(cur.participantsData, newCount)
+            participantsData = resizeParticipants(cur.participantsData, newCount),
+            errors = cur.errors - "quantity"
         )
     }
 
-    // WO-171: zmniejsz licznik uczestników (min = ticketClass.minQuantity).
+    // WO-171: zmniejsz licznik uczestników.
+    // WO-175: dolny limit to 1 (nie minQuantity) — pozwól zejść poniżej minimum,
+    //         walidacja w validateCurrentStep blokuje "Dalej" gdy count < minQuantity.
     fun decrementParticipantCount() {
         val cur = _uiState.value
-        val cls = cur.cartConfig?.ticketClasses?.firstOrNull { it.id == cur.selectedTicketClassId } ?: return
-        val newCount = (cur.participantCount - 1).coerceAtLeast(cls.minQuantity)
+        if (cur.selectedTicketClassId == null) return
+        val newCount = (cur.participantCount - 1).coerceAtLeast(1)
         if (newCount == cur.participantCount) return
         val resized = resizeParticipants(cur.participantsData, newCount)
         val newSubStep = cur.participantSubStep.coerceAtMost(newCount - 1)
@@ -147,7 +159,8 @@ class AddOrderViewModel @Inject constructor(
             participantCount = newCount,
             participantsData = resized,
             participantSubStep = newSubStep,
-            participantData = resized.getOrElse(newSubStep) { emptyMap() }
+            participantData = resized.getOrElse(newSubStep) { emptyMap() },
+            errors = cur.errors - "quantity"
         )
     }
 
@@ -350,7 +363,17 @@ class AddOrderViewModel @Inject constructor(
         val s = _uiState.value
         val errors = mutableMapOf<String, String>()
         when (s.step) {
-            1 -> if (s.selectedTicketClassId == null) errors["ticket"] = "Wybierz typ biletu"
+            1 -> {
+                if (s.selectedTicketClassId == null) {
+                    errors["ticket"] = "Wybierz typ biletu"
+                } else {
+                    // WO-175: walidacja minQuantity — count musi być >= minimum klasy biletu.
+                    val cls = s.cartConfig?.ticketClasses?.firstOrNull { it.id == s.selectedTicketClassId }
+                    if (cls != null && s.participantCount < cls.minQuantity) {
+                        errors["quantity"] = "Minimum ${cls.minQuantity} biletów dla tego typu"
+                    }
+                }
+            }
             2 -> {
                 // WO-171: walidacja dotyczy AKTUALNEGO subStep'a (current participant).
                 val fields = s.cartConfig?.participantFields?.takeIf { it.isNotEmpty() }

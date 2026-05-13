@@ -105,7 +105,8 @@ fun AddOrderSheet(
                                 error = state.errors["ticket"],
                                 participantCount = state.participantCount,
                                 onIncrement = viewModel::incrementParticipantCount,
-                                onDecrement = viewModel::decrementParticipantCount
+                                onDecrement = viewModel::decrementParticipantCount,
+                                quantityError = state.errors["quantity"]
                             )
                             2 -> ParticipantFieldsForm(
                                 fields = cfg.participantFields,
