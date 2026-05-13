@@ -375,6 +375,12 @@ class AddOrderViewModel @Inject constructor(
             }
             2 -> {
                 // WO-171: walidacja dotyczy AKTUALNEGO subStep'a (current participant).
+                // WO-176: usunięty HARD-OVERRIDE (firstName/lastName/email zawsze required).
+                //         Trzymamy się 1:1 z koszykiem: walidujemy DOKŁADNIE to co backend
+                //         zwrócił w participant_fields (z fallback do defaultParticipantFields).
+                //         Pola i ich required flagi są zarządzane w panelu wydarzenia
+                //         (purchase_cart_config.participant_fields) — ten sam source-of-truth
+                //         co Purchase Cart.
                 val fields = s.cartConfig?.participantFields?.takeIf { it.isNotEmpty() }
                     ?: defaultParticipantFields()
                 val currentData = s.participantsData.getOrElse(s.participantSubStep) { emptyMap() }
@@ -385,17 +391,6 @@ class AddOrderViewModel @Inject constructor(
                         !Patterns.EMAIL_ADDRESS.matcher(v).matches()
                     ) errors[f.id] = "Nieprawidłowy email"
                 }
-                // WO-176: HARD-OVERRIDE — firstName/lastName/email zawsze wymagane,
-                // niezależnie od `required` flag w backend config. Admin add-order MUSI
-                // mieć pełne dane uczestnika do utworzenia rekordu.
-                val first = currentData["firstName"].orEmpty().trim()
-                if (first.isBlank()) errors["firstName"] = "Imię wymagane"
-                val last = currentData["lastName"].orEmpty().trim()
-                if (last.isBlank()) errors["lastName"] = "Nazwisko wymagane"
-                val email = currentData["email"].orEmpty().trim()
-                if (email.isBlank()) errors["email"] = "Email wymagany"
-                else if (!Patterns.EMAIL_ADDRESS.matcher(email).matches())
-                    errors["email"] = "Nieprawidłowy email"
             }
             3 -> {
                 if (s.payer.firstName.isBlank()) errors["firstName"] = "Imię wymagane"
