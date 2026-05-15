@@ -18,3 +18,7 @@ local.properties
 *.keystore
 !debug.keystore
 *.hprof
+
+# Release signing
+*.jks
+RELEASE_SIGNING.md

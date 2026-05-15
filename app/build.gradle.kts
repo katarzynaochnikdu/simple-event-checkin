@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.md.android.application)
     alias(libs.plugins.md.android.application.compose)
@@ -12,17 +14,41 @@ project.copy {
     rename { "ic_launcher.png" }
 }
 
+// ---------------------------------------------------------------------------
+// Load local.properties manually — AGP only auto-reads sdk.dir/ndk.dir from it.
+// Custom keys (POSTHOG_API_KEY, BASE_URL, etc.) must be loaded explicitly.
+// ---------------------------------------------------------------------------
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.reader().use { reader -> localProperties.load(reader) }
+}
+
 android {
     namespace = "pl.medidesk.mobile"
+    // Output file names: mEventLab-{debug|release}-{versionName}.{apk|aab}
+    base.archivesName.set("mEventLab")
     defaultConfig {
         applicationId = "pl.medidesk.mobile"
         versionCode = 1
         versionName = "1.0.0"
 
-        // Read BASE_URL from local.properties or use default
-        val baseUrl = project.findProperty("BASE_URL") as String?
+        // Read BASE_URL from local.properties or env var or use default
+        val baseUrl = localProperties.getProperty("BASE_URL")
+            ?: System.getenv("BASE_URL")
             ?: "https://md-order-portal-backend.onrender.com"
         buildConfigField("String", "BASE_URL", "\"$baseUrl\"")
+
+        // PostHog — read from local.properties (dev) or env vars (CI/release)
+        // Never commit real keys — add POSTHOG_API_KEY=phc_... to local.properties
+        val posthogKey = localProperties.getProperty("POSTHOG_API_KEY")
+            ?: System.getenv("POSTHOG_API_KEY")
+            ?: ""
+        val posthogHost = localProperties.getProperty("POSTHOG_HOST")
+            ?: System.getenv("POSTHOG_HOST")
+            ?: "https://eu.i.posthog.com"
+        buildConfigField("String", "POSTHOG_API_KEY", "\"$posthogKey\"")
+        buildConfigField("String", "POSTHOG_HOST", "\"$posthogHost\"")
     }
 
     sourceSets {
@@ -31,8 +57,34 @@ android {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            val keystorePath = localProperties.getProperty("RELEASE_KEYSTORE_PATH")
+                ?: System.getenv("RELEASE_KEYSTORE_PATH")
+            val keystorePass = localProperties.getProperty("RELEASE_KEYSTORE_PASSWORD")
+                ?: System.getenv("RELEASE_KEYSTORE_PASSWORD")
+            val keystoreAlias = localProperties.getProperty("RELEASE_KEY_ALIAS")
+                ?: System.getenv("RELEASE_KEY_ALIAS")
+            val keystoreKeyPass = localProperties.getProperty("RELEASE_KEY_PASSWORD")
+                ?: System.getenv("RELEASE_KEY_PASSWORD")
+
+            if (!keystorePath.isNullOrBlank() && file(keystorePath).exists()) {
+                storeFile = file(keystorePath)
+                storePassword = keystorePass
+                keyAlias = keystoreAlias
+                keyPassword = keystoreKeyPass
+            }
+        }
+    }
+
     buildTypes {
         release {
+            // Apply release signing only if keystore is configured.
+            // Otherwise the build falls back to unsigned (caught by Play Store upload check).
+            val releaseSigning = signingConfigs.getByName("release")
+            if (releaseSigning.storeFile != null) {
+                signingConfig = releaseSigning
+            }
             isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -67,6 +119,9 @@ dependencies {
     implementation(project(":features:feature-dashboard"))
     implementation(project(":features:feature-more"))
     implementation(project(":features:feature-add-order"))
+
+    // Analytics
+    implementation(project(":core:core-analytics"))
 
     // Core Android
     implementation(libs.core.ktx)
