@@ -225,11 +225,13 @@ private fun ScanResultOverlay(uiState: ScannerUiState, onUndo: () -> Unit) {
             ScanFeedback.ERROR -> ScanError.copy(alpha = 0.92f) to "BŁĄD"
             ScanFeedback.UNDOING -> ScanDuplicate.copy(alpha = 0.92f) to "COFANIE..."
             ScanFeedback.UNDONE -> ScanSuccess.copy(alpha = 0.92f) to "COFNIĘTO"
+            ScanFeedback.DENIED -> ScanError.copy(alpha = 0.95f) to "Niepotwierdzone wejście"
             else -> Color.Transparent to ""
         }
 
         val showUndoButton = uiState.feedback == ScanFeedback.SUCCESS || uiState.feedback == ScanFeedback.SUCCESS_OFFLINE
         val showCheckmarkAnim = uiState.feedback == ScanFeedback.SUCCESS || uiState.feedback == ScanFeedback.UNDONE
+        val showCrossmarkAnim = uiState.feedback == ScanFeedback.DENIED
 
         Box(
             modifier = Modifier
@@ -240,6 +242,10 @@ private fun ScanResultOverlay(uiState: ScannerUiState, onUndo: () -> Unit) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 if (showCheckmarkAnim) {
                     AnimatedCheckmark()
+                    Spacer(Modifier.height(16.dp))
+                }
+                if (showCrossmarkAnim) {
+                    AnimatedCrossmark()
                     Spacer(Modifier.height(16.dp))
                 }
                 Text(
@@ -286,6 +292,35 @@ private fun ScanResultOverlay(uiState: ScannerUiState, onUndo: () -> Unit) {
                             color = Color.White.copy(alpha = 0.75f),
                             textAlign = TextAlign.Center
                         )
+                    }
+                }
+                if (uiState.feedback == ScanFeedback.DENIED) {
+                    uiState.pendingScan?.let { ps ->
+                        if (ps.participantName.isNotBlank()) {
+                            Spacer(Modifier.height(16.dp))
+                            Text(
+                                text = ps.participantName,
+                                style = MaterialTheme.typography.titleLarge,
+                                color = Color.White,
+                                textAlign = TextAlign.Center
+                            )
+                            if (ps.ticketName.isNotBlank()) {
+                                Text(
+                                    text = ps.ticketName,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = Color.White.copy(alpha = 0.85f),
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                            if (ps.company.isNotBlank()) {
+                                Text(
+                                    text = ps.company,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color.White.copy(alpha = 0.75f),
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
                     }
                 }
                 if (showUndoButton) {
@@ -372,6 +407,68 @@ private fun AnimatedCheckmark() {
     }
 }
 
+/**
+ * Animowany czerwony X — koło wjeżdża spring'iem, potem rysują się dwa ramiona krzyżyka.
+ * Czas trwania ~700 ms łącznie.
+ */
+@Composable
+private fun AnimatedCrossmark() {
+    val circleScale = remember { Animatable(0f) }
+    val arm1Progress = remember { Animatable(0f) }
+    val arm2Progress = remember { Animatable(0f) }
+
+    LaunchedEffect(Unit) {
+        circleScale.animateTo(
+            targetValue = 1f,
+            animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow)
+        )
+        arm1Progress.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(durationMillis = 220, easing = LinearEasing)
+        )
+        arm2Progress.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(durationMillis = 220, easing = LinearEasing)
+        )
+    }
+
+    Box(
+        modifier = Modifier
+            .size(140.dp)
+            .scale(circleScale.value)
+            .background(Color.White.copy(alpha = 0.18f), shape = androidx.compose.foundation.shape.CircleShape),
+        contentAlignment = Alignment.Center
+    ) {
+        Canvas(modifier = Modifier.size(140.dp)) {
+            val w = size.width
+            val h = size.height
+            val cx = w / 2f
+            val cy = h / 2f
+            val r = w * 0.40f
+
+            // Białe koło wypełnienie
+            drawCircle(color = Color.White, radius = r, center = Offset(cx, cy))
+
+            val strokeW = r * 0.22f
+            val arm = r * 0.42f
+
+            // Pierwsze ramię X: góra-lewo → dół-prawo
+            val a1Start = Offset(cx - arm, cy - arm)
+            val a1End   = Offset(cx + arm, cy + arm)
+            val arm1End = lerp(a1Start, a1End, arm1Progress.value)
+            val path1 = Path().apply { moveTo(a1Start.x, a1Start.y); lineTo(arm1End.x, arm1End.y) }
+            drawPath(path1, color = ScanError, style = Stroke(width = strokeW, cap = StrokeCap.Round))
+
+            // Drugie ramię X: góra-prawo → dół-lewo
+            val a2Start = Offset(cx + arm, cy - arm)
+            val a2End   = Offset(cx - arm, cy + arm)
+            val arm2End = lerp(a2Start, a2End, arm2Progress.value)
+            val path2 = Path().apply { moveTo(a2Start.x, a2Start.y); lineTo(arm2End.x, arm2End.y) }
+            drawPath(path2, color = ScanError, style = Stroke(width = strokeW, cap = StrokeCap.Round))
+        }
+    }
+}
+
 private fun distance(a: Offset, b: Offset): Float {
     val dx = b.x - a.x; val dy = b.y - a.y
     return kotlin.math.sqrt(dx * dx + dy * dy)
@@ -413,7 +510,12 @@ private fun CameraPreview(
                         barcodeScanner.process(image)
                             .addOnSuccessListener { barcodes ->
                                 barcodes.firstOrNull()?.rawValue?.let { ticketId ->
-                                    onQrDetected(ticketId)
+                                    // WO-204: client-side guard — reject blank or oversized values
+                                    // before passing to ViewModel/API. Backstage ticket IDs are
+                                    // alphanumeric strings, never longer than ~100 chars.
+                                    if (ticketId.isNotBlank() && ticketId.length <= 200) {
+                                        onQrDetected(ticketId)
+                                    }
                                 }
                             }
                             .addOnCompleteListener { imageProxy.close() }

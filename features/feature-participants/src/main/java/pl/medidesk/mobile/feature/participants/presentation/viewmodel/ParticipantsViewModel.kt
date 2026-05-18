@@ -16,6 +16,7 @@ import pl.medidesk.mobile.core.model.SyncState
 import pl.medidesk.mobile.core.model.TicketClass
 import pl.medidesk.mobile.core.sync.SyncEngine
 import pl.medidesk.mobile.core.sync.ParticipantStatusChange
+import pl.medidesk.mobile.feature.participants.BuildConfig
 import java.time.Instant
 import javax.inject.Inject
 
@@ -47,11 +48,11 @@ class ParticipantsViewModel @Inject constructor(
     val uiState: StateFlow<ParticipantsUiState> = _uiState.asStateFlow()
 
     init {
-        Log.d("ParticipantsVM", "Initializing for eventId: $eventId")
-        
+        if (BuildConfig.DEBUG) Log.d("ParticipantsVM", "Initializing for eventId: $eventId")
+
         viewModelScope.launch {
             participantDao.getParticipantsFlow(eventId).collect { entities ->
-                Log.d("ParticipantsVM", "Received ${entities.size} entities from DB")
+                if (BuildConfig.DEBUG) Log.d("ParticipantsVM", "Received ${entities.size} entities from DB")
                 val participants = entities.map { e ->
                     Participant(
                         id = e.id,
@@ -103,7 +104,9 @@ class ParticipantsViewModel @Inject constructor(
         }
 
         if (eventId.isNotEmpty()) {
-            refresh(eventId)
+            // Silent background sync on first load — SQLite flow above already shows
+            // local data instantly, so we don't need to block with isRefreshing=true.
+            syncEngine.triggerImmediateSync(eventId)
         }
     }
 
@@ -131,18 +134,35 @@ class ParticipantsViewModel @Inject constructor(
         )
     }
 
+    /**
+     * Explicit pull-to-refresh: shows spinner, waits for sync to finish.
+     * Use this only when the user deliberately pulled down to refresh.
+     */
     fun refresh(eventId: String) {
         _uiState.value = _uiState.value.copy(isRefreshing = true)
         viewModelScope.launch {
             try {
                 syncEngine.runImmediateSyncAndWait(eventId)
-                Log.d("ParticipantsVM", "Sync finished — local DB should now reflect server state")
+                if (BuildConfig.DEBUG) Log.d("ParticipantsVM", "Sync finished — local DB should now reflect server state")
             } catch (e: Exception) {
-                Log.e("ParticipantsVM", "Sync wait failed: ${e.message}", e)
+                if (BuildConfig.DEBUG) {
+                    Log.e("ParticipantsVM", "Sync wait failed: ${e.message}", e)
+                } else {
+                    Log.e("ParticipantsVM", "Sync wait failed")
+                }
             } finally {
                 _uiState.value = _uiState.value.copy(isRefreshing = false)
             }
         }
+    }
+
+    /**
+     * Silent background sync — no spinner, no blocking.
+     * Use on LifecycleResumeEffect so returning from details doesn't flash the list.
+     * SQLite flow auto-updates the list when sync writes new rows.
+     */
+    fun silentSync(eventId: String) {
+        syncEngine.triggerImmediateSync(eventId)
     }
 
     // Manual Actions
@@ -162,7 +182,8 @@ class ParticipantsViewModel @Inject constructor(
         viewModelScope.launch {
             val now = Instant.now().toString()
             val identifier = participant.ticketId ?: participant.backstageTicketId
-            Log.d("ParticipantsVM", "Performing manual check-in for ID: ${participant.id}, TicketID: $identifier")
+            // WO-204: guard PII logs in release builds
+            if (BuildConfig.DEBUG) Log.d("ParticipantsVM", "Performing manual check-in for ID: ${participant.id}, TicketID: $identifier")
 
             participantDao.markCheckedInById(participant.id, now)
 
@@ -180,6 +201,7 @@ class ParticipantsViewModel @Inject constructor(
                 )
                 syncEngine.triggerImmediateSync(participant.eventId)
             } else {
+                // WO-204: no PII in release error log (participant.id = numeric, acceptable)
                 Log.e("ParticipantsVM", "Cannot sync check-in: no ticketId for participant ${participant.id}")
             }
 
@@ -190,7 +212,8 @@ class ParticipantsViewModel @Inject constructor(
     fun performManualCheckout(participant: Participant) {
         viewModelScope.launch {
             val now = Instant.now().toString()
-            Log.d("ParticipantsVM", "Performing manual check-out for ID: ${participant.id}")
+            // WO-204: guard PII logs in release builds
+            if (BuildConfig.DEBUG) Log.d("ParticipantsVM", "Performing manual check-out for ID: ${participant.id}")
             
             // 1. Update local DB
             participantDao.markCheckedOutById(participant.id)
