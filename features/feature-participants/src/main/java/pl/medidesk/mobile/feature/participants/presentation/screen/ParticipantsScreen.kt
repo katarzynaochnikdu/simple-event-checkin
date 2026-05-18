@@ -12,7 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MeetingRoom
 import androidx.compose.material.icons.filled.PersonAdd
-import androidx.compose.material.icons.filled.PersonOff
+import androidx.compose.material.icons.filled.HowToReg
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.*
@@ -58,7 +58,8 @@ fun ParticipantsScreen(
     }
 
     LifecycleResumeEffect(eventId) {
-        viewModel.refresh(eventId)
+        // Silent sync on resume — no spinner, SQLite flow updates list automatically
+        viewModel.silentSync(eventId)
         onPauseOrDispose {}
     }
 
@@ -321,9 +322,9 @@ private fun ParticipantItem(participant: Participant, onClick: () -> Unit, onSta
             ) {
                 if (participant.isCheckedIn) {
                     Icon(
-                        Icons.Default.PersonOff,
+                        Icons.Default.HowToReg,
                         contentDescription = "Cofnij check-in",
-                        tint = StatusColors.Cancelled,
+                        tint = StatusColors.Paid,
                         modifier = Modifier.size(26.dp)
                     )
                 } else {
