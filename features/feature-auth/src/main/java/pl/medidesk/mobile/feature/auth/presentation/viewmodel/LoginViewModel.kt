@@ -7,15 +7,16 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import pl.medidesk.mobile.core.analytics.Analytics
+import pl.medidesk.mobile.core.analytics.AnalyticsEvent
 import pl.medidesk.mobile.core.network.MobileApiService
 import pl.medidesk.mobile.core.network.dto.ForgotPasswordRequest
 import pl.medidesk.mobile.feature.auth.domain.usecase.LoginUseCase
 import javax.inject.Inject
 
 data class LoginUiState(
-    // TODO: wyczyść przed release — prefill do testów
-    val email: String = "testapki@medidesk.pl",
-    val password: String = "V3Xfhkp0sqTA",
+    val email: String = "",
+    val password: String = "",
     val isLoading: Boolean = false,
     val error: String? = null,
     val isSuccess: Boolean = false,
@@ -44,6 +45,9 @@ class LoginViewModel @Inject constructor(
             val result = loginUseCase(state.email, state.password)
             _uiState.value = if (result.isSuccess) {
                 val user = result.getOrNull()
+                // Identify user — only userId + role (no PII like email/name)
+                user?.let { Analytics.identify(userId = it.id.toString(), role = it.role) }
+                Analytics.capture(AnalyticsEvent.USER_LOGGED_IN, mapOf(AnalyticsEvent.Props.ROLE to (user?.role ?: "")))
                 state.copy(isLoading = false, isSuccess = true, mustChangePassword = user?.mustChangePassword == true)
             } else {
                 state.copy(isLoading = false, error = result.exceptionOrNull()?.message ?: "Błąd logowania")

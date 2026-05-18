@@ -125,6 +125,36 @@ fun SettingsScreen(
                 }
             }
 
+            Spacer(Modifier.height(16.dp))
+
+            // — Prywatność —
+            SectionHeader("Prywatność")
+            Surface(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                tonalElevation = 1.dp,
+                shape = MaterialTheme.shapes.medium
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Dane analityczne", style = MaterialTheme.typography.bodyLarge)
+                        Text(
+                            text = "Anonimowe dane o korzystaniu z aplikacji (bez PII)",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = uiState.analyticsConsent,
+                        onCheckedChange = { viewModel.setAnalyticsConsent(it) }
+                    )
+                }
+            }
+
             Spacer(Modifier.weight(1f))
             Spacer(Modifier.height(24.dp))
 

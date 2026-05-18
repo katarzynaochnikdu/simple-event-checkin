@@ -5,6 +5,9 @@ plugins {
 
 android {
     namespace = "pl.medidesk.mobile.core.network"
+    buildFeatures {
+        buildConfig = true
+    }
 }
 
 dependencies {

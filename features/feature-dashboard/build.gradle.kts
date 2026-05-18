@@ -4,10 +4,14 @@ plugins {
 
 android {
     namespace = "pl.medidesk.mobile.feature.dashboard"
+    buildFeatures {
+        buildConfig = true
+    }
 }
 
 dependencies {
     implementation(project(":core:core-sync"))
+    implementation(project(":core:core-analytics"))
     implementation(project(":features:feature-events"))
     implementation(project(":features:feature-auth"))
     implementation(libs.lifecycle.viewmodel.compose)

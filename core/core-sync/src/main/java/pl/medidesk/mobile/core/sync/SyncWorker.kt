@@ -13,6 +13,9 @@ import pl.medidesk.mobile.core.database.dao.WalkinDao
 import pl.medidesk.mobile.core.database.entities.ParticipantEntity
 import pl.medidesk.mobile.core.database.entities.SyncMetadataEntity
 import pl.medidesk.mobile.core.network.MobileApiService
+import pl.medidesk.mobile.core.analytics.Analytics
+import pl.medidesk.mobile.core.analytics.AnalyticsEvent
+import pl.medidesk.mobile.core.sync.BuildConfig
 import pl.medidesk.mobile.core.network.dto.CheckinSyncItem
 import pl.medidesk.mobile.core.network.dto.CheckinSyncRequest
 import pl.medidesk.mobile.core.network.dto.WalkinBatchRequest
@@ -62,12 +65,15 @@ class SyncWorker @AssistedInject constructor(
     override suspend fun doWork(): Result {
         val eventId = inputData.getString(KEY_EVENT_ID) ?: return Result.failure()
         val forceFullPull = inputData.getBoolean(KEY_FORCE_FULL_PULL, false)
+        val startMs = System.currentTimeMillis()
 
         var hasError = false
+        var pushedCount = 0
+        var pulledCount = 0
 
         // 1. Push Checkins FIRST (so server knows about new checkins)
         try {
-            pushCheckins(eventId)
+            pushedCount = pushCheckins(eventId)
         } catch (e: Exception) {
             Log.e(TAG, "Error pushing checkins", e)
             hasError = true
@@ -75,7 +81,7 @@ class SyncWorker @AssistedInject constructor(
 
         // 2. Pull Participants (to get updated state from server)
         try {
-            pullParticipants(eventId, forceFullPull)
+            pulledCount = pullParticipants(eventId, forceFullPull)
         } catch (e: Exception) {
             Log.e(TAG, "Error pulling participants", e)
             hasError = true
@@ -89,29 +95,48 @@ class SyncWorker @AssistedInject constructor(
             hasError = true
         }
 
+        val durationMs = System.currentTimeMillis() - startMs
+        val pendingCount = offlineCheckinDao.getUnsyncedCount()
+
         return if (hasError) {
+            Analytics.capture(
+                AnalyticsEvent.SYNC_FAILED,
+                mapOf(
+                    AnalyticsEvent.Props.ERROR_TYPE to "worker_error",
+                    AnalyticsEvent.Props.PENDING_COUNT to pendingCount
+                )
+            )
             if (runAttemptCount < 3) Result.retry() else Result.failure()
         } else {
+            Analytics.capture(
+                AnalyticsEvent.SYNC_COMPLETED,
+                mapOf(
+                    AnalyticsEvent.Props.PUSHED_COUNT to pushedCount,
+                    AnalyticsEvent.Props.PULLED_COUNT to pulledCount,
+                    AnalyticsEvent.Props.DURATION_MS to durationMs,
+                    AnalyticsEvent.Props.FORCE_FULL to forceFullPull
+                )
+            )
             Result.success()
         }
     }
 
-    private suspend fun pullParticipants(eventId: String, forceFullPull: Boolean = false) {
+    private suspend fun pullParticipants(eventId: String, forceFullPull: Boolean = false): Int {
         val meta = syncMetadataDao.get(eventId)
         // Force full pull (immediate sync triggered by UI resume / after checkin):
         // pass since=null so backend returns ALL participants and we replaceAll locally —
         // ensures deletions and uncheck-ins from the web panel propagate to mobile cache.
         val since = if (forceFullPull) null else meta?.lastParticipantsSync
 
-        Log.d(TAG, "Pulling participants for $eventId since=$since (forceFullPull=$forceFullPull)")
+        if (BuildConfig.DEBUG) Log.d(TAG, "Pulling participants for $eventId since=$since (forceFullPull=$forceFullPull)")
         val response = apiService.getParticipants(eventId, since)
         if (!response.isSuccessful) {
             Log.e(TAG, "Failed to fetch participants: ${response.code()}")
             throw Exception("Network error")
         }
 
-        val body = response.body() ?: return
-        Log.d(TAG, "Fetched ${body.participants.size} participants")
+        val body = response.body() ?: return 0
+        if (BuildConfig.DEBUG) Log.d(TAG, "Fetched ${body.participants.size} participants")
         
         val entities = body.participants.map { dto ->
             ParticipantEntity(
@@ -156,14 +181,15 @@ class SyncWorker @AssistedInject constructor(
         } else {
             syncMetadataDao.updateParticipantsSync(eventId, now)
         }
-        Log.d(TAG, "Successfully updated local database with ${entities.size} participants")
+        if (BuildConfig.DEBUG) Log.d(TAG, "Successfully updated local database with ${entities.size} participants")
+        return entities.size
     }
 
-    private suspend fun pushCheckins(eventId: String) {
+    private suspend fun pushCheckins(eventId: String): Int {
         val unsynced = offlineCheckinDao.getUnsynced().filter { it.eventId == eventId }
-        if (unsynced.isEmpty()) return
+        if (unsynced.isEmpty()) return 0
 
-        Log.d(TAG, "Pushing ${unsynced.size} checkins to server")
+        if (BuildConfig.DEBUG) Log.d(TAG, "Pushing ${unsynced.size} checkins to server")
         val items = unsynced.mapNotNull { e ->
             val tid = e.ticketId ?: e.backstageTicketId ?: return@mapNotNull null
             CheckinSyncItem(
@@ -175,15 +201,20 @@ class SyncWorker @AssistedInject constructor(
             )
         }
 
-        if (items.isEmpty()) return
+        if (items.isEmpty()) return 0
 
         val response = apiService.syncCheckins(CheckinSyncRequest(items))
         if (response.isSuccessful) {
-            Log.d(TAG, "Successfully synced ${items.size} checkins")
+            if (BuildConfig.DEBUG) Log.d(TAG, "Successfully synced ${items.size} checkins")
             offlineCheckinDao.markAllSyncedForEvent(eventId)
             syncMetadataDao.updateCheckinPush(eventId, Instant.now().toString())
+            return items.size
         } else {
-             Log.e(TAG, "Failed to push checkins: ${response.code()} ${response.errorBody()?.string()}")
+             if (BuildConfig.DEBUG) {
+                 Log.e(TAG, "Failed to push checkins: ${response.code()} ${response.errorBody()?.string()}")
+             } else {
+                 Log.e(TAG, "Failed to push checkins: ${response.code()}")
+             }
              throw Exception("Checkin sync failed")
         }
     }

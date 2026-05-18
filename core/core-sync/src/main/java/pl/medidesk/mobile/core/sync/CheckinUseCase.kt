@@ -3,6 +3,7 @@ package pl.medidesk.mobile.core.sync
 import android.util.Log
 import pl.medidesk.mobile.core.model.CheckinResult
 import pl.medidesk.mobile.core.network.MobileApiService
+import pl.medidesk.mobile.core.sync.BuildConfig
 import pl.medidesk.mobile.core.network.dto.CheckinRequest
 import pl.medidesk.mobile.core.database.dao.OfflineCheckinDao
 import pl.medidesk.mobile.core.database.dao.ParticipantDao
@@ -19,12 +20,12 @@ class CheckinUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(ticketId: String, eventId: String): CheckinResult {
         val scannedAt = Instant.now().toString()
-        Log.d("CheckinUseCase", "Checking in ticket: $ticketId for event: $eventId")
+        if (BuildConfig.DEBUG) Log.d("CheckinUseCase", "Checking in ticket: $ticketId for event: $eventId")
 
         return try {
             val response = apiService.checkin(CheckinRequest(ticketId = ticketId, eventId = eventId, scannedAt = scannedAt))
             val body = response.body()
-            Log.d("CheckinUseCase", "Server response: code=${response.code()}, success=${body?.success}, error=${body?.error}")
+            if (BuildConfig.DEBUG) Log.d("CheckinUseCase", "Server response: code=${response.code()}, success=${body?.success}, error=${body?.error}")
             if (response.isSuccessful && body != null) {
                 val checkedInAt = body.checkedInAt
                 if (body.success && checkedInAt != null) {
@@ -49,18 +50,26 @@ class CheckinUseCase @Inject constructor(
                     isOffline = false
                 )
             } else {
-                val errorBody = response.errorBody()?.string()
-                Log.w("CheckinUseCase", "Online checkin failed: code=${response.code()}, body=$errorBody — trying local")
+                if (BuildConfig.DEBUG) {
+                    val errorBody = response.errorBody()?.string()
+                    Log.w("CheckinUseCase", "Online checkin failed: code=${response.code()}, body=$errorBody — trying local")
+                } else {
+                    Log.w("CheckinUseCase", "Online checkin failed: code=${response.code()} — trying local")
+                }
                 localCheckin(ticketId, eventId, scannedAt)
             }
         } catch (e: Exception) {
-            Log.e("CheckinUseCase", "Online checkin error: ${e.message} — trying local", e)
+            if (BuildConfig.DEBUG) {
+                Log.e("CheckinUseCase", "Online checkin error: ${e.message} — trying local", e)
+            } else {
+                Log.e("CheckinUseCase", "Online checkin error — trying local")
+            }
             localCheckin(ticketId, eventId, scannedAt)
         }
     }
 
     private suspend fun localCheckin(ticketId: String, eventId: String, scannedAt: String): CheckinResult {
-        Log.d("CheckinUseCase", "Falling back to local/offline checkin for ticket: $ticketId")
+        if (BuildConfig.DEBUG) Log.d("CheckinUseCase", "Falling back to local/offline checkin for ticket: $ticketId")
         val local = participantDao.findByAnyTicketId(ticketId)
         return if (local != null) {
             if (local.checkedInAt != null) {

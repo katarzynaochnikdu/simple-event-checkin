@@ -16,6 +16,7 @@ import pl.medidesk.mobile.core.network.dto.CheckinRequest
 import pl.medidesk.mobile.core.network.dto.UndoCheckinRequest
 import pl.medidesk.mobile.core.sync.ParticipantStatusChange
 import pl.medidesk.mobile.core.sync.SyncEngine
+import pl.medidesk.mobile.feature.participants.BuildConfig
 import java.time.Instant
 import javax.inject.Inject
 
@@ -51,7 +52,7 @@ class ParticipantDetailsViewModel @Inject constructor(
     val checkinResult: StateFlow<CheckinResult> = _checkinResult.asStateFlow()
 
     init {
-        Log.d("ParticipantDetails", "Init with ID: $participantId")
+        if (BuildConfig.DEBUG) Log.d("ParticipantDetails", "Init with ID: $participantId")
         if (participantId == null) {
             _uiState.value = ParticipantDetailsUiState.Error("Błędne ID uczestnika")
         } else {
@@ -59,6 +60,7 @@ class ParticipantDetailsViewModel @Inject constructor(
             // screen, sync from backend) re-emits and we reflect it instantly.
             viewModelScope.launch {
                 participantDao.getParticipantByIdFlow(participantId).collect { entity ->
+                    if (BuildConfig.DEBUG) Log.d("ParticipantDetails", "Flow emit for $participantId: status=${entity?.status} checkedInAt=${entity?.checkedInAt}")
                     if (entity != null) {
                         _uiState.value = ParticipantDetailsUiState.Success(entity.toParticipant())
                     } else if (_uiState.value is ParticipantDetailsUiState.Loading) {
@@ -66,10 +68,9 @@ class ParticipantDetailsViewModel @Inject constructor(
                     }
                 }
             }
-            // Also listen for in-app status changes (someone else's tap on Scanner /
-            // ParticipantsList): mirror to local DB so the Flow above re-emits.
             viewModelScope.launch {
                 syncEngine.participantChanges.collect { change ->
+                    if (BuildConfig.DEBUG) Log.d("ParticipantDetails", "Bus event participant=${change.participantId} ticket=${change.ticketId} isCheckedIn=${change.isCheckedIn} (we are $participantId)")
                     if (change.participantId == participantId) {
                         if (change.isCheckedIn) {
                             participantDao.markCheckedInById(participantId, change.checkedInAt ?: Instant.now().toString())

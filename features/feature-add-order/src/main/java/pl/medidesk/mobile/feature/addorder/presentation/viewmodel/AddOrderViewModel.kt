@@ -8,6 +8,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import pl.medidesk.mobile.core.analytics.Analytics
+import pl.medidesk.mobile.core.analytics.AnalyticsEvent
 import pl.medidesk.mobile.core.network.MobileApiService
 import pl.medidesk.mobile.core.network.dto.MobileCheckoutCompanyDataDto
 import pl.medidesk.mobile.core.network.dto.MobileCheckoutParticipantDto
@@ -33,6 +35,7 @@ class AddOrderViewModel @Inject constructor(
 
     fun loadCartConfig(eventId: String) {
         if (_uiState.value.cartConfig != null) return
+        Analytics.capture(AnalyticsEvent.ADD_ORDER_STARTED, mapOf(AnalyticsEvent.Props.EVENT_ID to eventId))
         _uiState.value = _uiState.value.copy(isLoadingConfig = true, configError = null)
         viewModelScope.launch {
             try {
@@ -532,6 +535,12 @@ class AddOrderViewModel @Inject constructor(
         successMsg: String
     ) {
         if (successful && orderId != null) {
+            Analytics.capture(
+                AnalyticsEvent.ADD_ORDER_COMPLETED,
+                mapOf(
+                    AnalyticsEvent.Props.PAYMENT_METHOD to (_uiState.value.paymentMethodId ?: "unknown")
+                )
+            )
             _uiState.value = _uiState.value.copy(
                 isSubmitting = false,
                 submitResult = AddOrderResult.Success(orderId, successMsg)

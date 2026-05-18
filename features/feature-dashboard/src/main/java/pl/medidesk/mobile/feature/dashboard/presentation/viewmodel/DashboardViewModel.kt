@@ -9,6 +9,8 @@ import pl.medidesk.mobile.core.database.dao.ParticipantDao
 import pl.medidesk.mobile.core.datastore.AuthDataStore
 import pl.medidesk.mobile.core.model.*
 import pl.medidesk.mobile.core.network.MobileApiService
+import pl.medidesk.mobile.core.analytics.Analytics
+import pl.medidesk.mobile.core.analytics.AnalyticsEvent
 import pl.medidesk.mobile.core.network.dto.DashboardResponse
 import pl.medidesk.mobile.core.sync.SyncEngine
 import pl.medidesk.mobile.feature.events.domain.repository.EventsRepository
@@ -60,14 +62,17 @@ class DashboardViewModel @Inject constructor(
             // (LifecycleResumeEffect when user comes back) keep the previous
             // Success on screen so we don't flash a Loading skeleton — new
             // numbers will overwrite when sync + getDashboard return.
-            if (_uiState.value !is DashboardUiState.Success) {
+            val isFirstLoad = _uiState.value !is DashboardUiState.Success
+            if (isFirstLoad) {
                 _uiState.value = DashboardUiState.Loading
+                Analytics.capture(AnalyticsEvent.EVENT_OPENED, mapOf(AnalyticsEvent.Props.EVENT_ID to eventId))
             }
 
-            // Wait for sync (push pending checkins, then full pull) BEFORE asking backend
-            // for dashboard stats — otherwise getDashboard may return stale numbers that
-            // don't reflect the user's last actions yet.
-            try { syncEngine.runImmediateSyncAndWait(eventId) } catch (_: Exception) {}
+            // Fire-and-forget sync — don't block UI while network does its job.
+            // SQLite flows (countTotalFlow, countCheckedInFlow, getRecentCheckinsFlow)
+            // are reactive: they re-emit automatically when SyncWorker writes new rows,
+            // so the dashboard will update in-place without showing a loading spinner.
+            syncEngine.triggerImmediateSync(eventId)
             
             val userFlow = combine(
                 authDataStore.userEmailFlow,

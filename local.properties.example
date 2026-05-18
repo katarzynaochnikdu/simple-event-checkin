@@ -1,5 +1,56 @@
-# Copy this file to local.properties and fill in values (do NOT commit local.properties)
-sdk.dir=/path/to/android/sdk
+# =============================================================================
+# local.properties.example — template for new developers
+# =============================================================================
+# Copy this file to `local.properties` and fill in your values.
+# `local.properties` is gitignored — never commit it.
+# =============================================================================
 
-# API base URL (no trailing slash)
-BASE_URL=https://md-order-portal-backend.onrender.com
+# ----- Android SDK location (REQUIRED) -----
+# Windows example: C:\\Users\\YourName\\AppData\\Local\\Android\\Sdk
+# macOS example:   /Users/YourName/Library/Android/sdk
+# Linux example:   /home/YourName/Android/Sdk
+sdk.dir=C:\\Users\\YourName\\AppData\\Local\\Android\\Sdk
+
+
+# ----- Backend URL override (OPTIONAL) -----
+# Defaults to production: https://md-order-portal-backend.onrender.com
+# Uncomment and set if you want to point app at staging or local backend.
+# BASE_URL=http://10.0.2.2:5000
+
+
+# ----- PostHog Analytics (REQUIRED for telemetry) -----
+# Get your key from: https://eu.posthog.com → Project Settings → Project API Key
+POSTHOG_API_KEY=phc_YOUR_KEY_HERE
+POSTHOG_HOST=https://eu.i.posthog.com
+
+
+# ----- Release signing config (OPTIONAL — only needed for `bundleRelease` / `assembleRelease`) -----
+# Read by `app/build.gradle.kts` to sign release builds.
+# DO NOT commit the keystore file. Store passwords in a password manager.
+#
+# RELEASE_KEYSTORE_PATH=C:\\keystores\\medidesk-mobile-release.keystore
+# RELEASE_KEYSTORE_PASSWORD=your-keystore-password-here
+# RELEASE_KEY_ALIAS=medidesk-mobile
+# RELEASE_KEY_PASSWORD=your-key-password-here
+
+
+# ----- How to generate the release keystore (run ONCE on your machine) -----
+#
+# On Windows (PowerShell):
+#   keytool -genkeypair -v `
+#       -keystore medidesk-mobile-release.keystore `
+#       -alias medidesk-mobile `
+#       -keyalg RSA -keysize 2048 `
+#       -validity 10000
+#
+# When prompted:
+#   - First & last name: Katarzyna Ochnik
+#   - Organizational unit: Digital Unity
+#   - Organization: Katarzyna Ochnik Digital Unity
+#   - City: Warsaw
+#   - State/Province: Mazowieckie
+#   - Country code: PL
+#
+# IMPORTANT: Keep this keystore file FOREVER. If you lose it, you cannot publish
+# updates to the same Play Store listing — you would need to publish as a new app
+# with a different package name.

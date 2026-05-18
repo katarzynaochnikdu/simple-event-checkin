@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import pl.medidesk.mobile.core.analytics.Analytics
+import pl.medidesk.mobile.core.analytics.AnalyticsEvent
 import pl.medidesk.mobile.core.datastore.AuthDataStore
 import pl.medidesk.mobile.core.network.MobileApiService
 import pl.medidesk.mobile.core.network.dto.ChangePasswordRequest
@@ -15,6 +17,7 @@ data class SettingsUiState(
     val userDisplayName: String = "",
     val userRole: String = "",
     val themePreference: String = "SYSTEM",
+    val analyticsConsent: Boolean = false,
     val isChangingPassword: Boolean = false,
     val passwordChangeSuccess: Boolean = false,
     val passwordChangeError: String? = null
@@ -36,8 +39,15 @@ class SettingsViewModel @Inject constructor(
                 authDataStore.userFirstNameFlow,
                 authDataStore.userLastNameFlow,
                 authDataStore.userRoleFlow,
-                authDataStore.themePreferenceFlow
-            ) { email, firstName, lastName, role, theme ->
+                authDataStore.themePreferenceFlow,
+                authDataStore.analyticsConsentFlow
+            ) { values ->
+                val email = values[0] as String?
+                val firstName = values[1] as String?
+                val lastName = values[2] as String?
+                val role = values[3] as String?
+                val theme = values[4] as String? ?: "SYSTEM"
+                val consent = values[5] as Boolean?
                 val displayName = listOfNotNull(firstName, lastName)
                     .filter { it.isNotBlank() }
                     .joinToString(" ")
@@ -46,7 +56,8 @@ class SettingsViewModel @Inject constructor(
                     userEmail = email ?: "",
                     userDisplayName = displayName,
                     userRole = role ?: "",
-                    themePreference = theme
+                    themePreference = theme,
+                    analyticsConsent = consent == true
                 )
             }.collect { _uiState.value = it }
         }
@@ -79,8 +90,21 @@ class SettingsViewModel @Inject constructor(
         _uiState.update { it.copy(passwordChangeSuccess = false, passwordChangeError = null) }
     }
 
+    fun setAnalyticsConsent(consent: Boolean) {
+        viewModelScope.launch {
+            authDataStore.saveAnalyticsConsent(consent)
+            if (consent) Analytics.optIn() else Analytics.optOut()
+            Analytics.capture(
+                AnalyticsEvent.ANALYTICS_CONSENT_CHANGED,
+                mapOf(AnalyticsEvent.Props.ACTION to if (consent) "opted_in" else "opted_out")
+            )
+        }
+    }
+
     fun logout(onLogout: () -> Unit) {
         viewModelScope.launch {
+            Analytics.capture(AnalyticsEvent.USER_LOGGED_OUT)
+            Analytics.reset()
             authDataStore.clearAll()
             onLogout()
         }

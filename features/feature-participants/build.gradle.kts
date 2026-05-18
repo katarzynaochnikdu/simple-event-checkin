@@ -4,6 +4,9 @@ plugins {
 
 android {
     namespace = "pl.medidesk.mobile.feature.participants"
+    buildFeatures {
+        buildConfig = true
+    }
 }
 
 dependencies {

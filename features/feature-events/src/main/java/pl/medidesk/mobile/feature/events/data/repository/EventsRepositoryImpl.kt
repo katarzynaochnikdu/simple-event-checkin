@@ -8,11 +8,24 @@ import javax.inject.Inject
 class EventsRepositoryImpl @Inject constructor(
     private val apiService: MobileApiService
 ) : EventsRepository {
-    override suspend fun getEvents(): Result<List<EventItem>> = try {
+
+    private var cachedEvents: List<EventItem>? = null
+    private var cacheTimestamp: Long = 0L
+    private val CACHE_TTL_MS = 5 * 60 * 1000L // 5 minut
+
+    override suspend fun getEvents(): Result<List<EventItem>> {
+        val now = System.currentTimeMillis()
+        cachedEvents?.takeIf { now - cacheTimestamp < CACHE_TTL_MS }?.let {
+            return Result.success(it)
+        }
+        return fetchFromNetwork()
+    }
+
+    private suspend fun fetchFromNetwork(): Result<List<EventItem>> = try {
         val response = apiService.getEvents()
         val body = response.body()
         if (response.isSuccessful && body != null) {
-            Result.success(body.events.map { dto ->
+            val events = body.events.map { dto ->
                 EventItem(
                     eventId = dto.eventId ?: dto.id ?: "",
                     eventName = dto.eventName ?: dto.name ?: dto.title ?: "Wydarzenie",
@@ -28,7 +41,10 @@ class EventsRepositoryImpl @Inject constructor(
                     secondaryColor = dto.secondaryColor,
                     accentColor = dto.accentColor
                 )
-            })
+            }
+            cachedEvents = events
+            cacheTimestamp = System.currentTimeMillis()
+            Result.success(events)
         } else {
             Result.failure(Exception("Błąd pobierania eventów"))
         }

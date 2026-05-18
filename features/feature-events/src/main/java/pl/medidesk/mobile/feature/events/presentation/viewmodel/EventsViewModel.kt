@@ -74,11 +74,13 @@ class EventsViewModel @Inject constructor(
         }
 
         // 4. Grupowanie po miesiącach (zachowując sortowanie)
+        // Używamy mianownika ręcznie — Locale("pl") + MMMM zwraca dopełniacz (maja, czerwca).
+        val monthNominative = listOf("", "Styczeń", "Luty", "Marzec", "Kwiecień", "Maj", "Czerwiec",
+            "Lipiec", "Sierpień", "Wrzesień", "Październik", "Listopad", "Grudzień")
         val grouped = filtered.groupBy { event ->
             try {
                 val date = parseToDateTime(event.startDate)
-                val formatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale("pl"))
-                date.format(formatter).replaceFirstChar { it.uppercase() }
+                "${monthNominative[date.monthValue]} ${date.year}"
             } catch (e: Exception) { "Inne" }
         }.map { (month, events) -> UiEventGroup(month, events) }
 

@@ -41,6 +41,9 @@ espresso = "3.6.1"
 # Image Loading
 coil = "2.7.0"
 
+# Analytics
+posthog = "3.11.0"
+
 [libraries]
 # Compose BOM
 compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
@@ -113,6 +116,9 @@ kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-
 
 # Core KTX
 core-ktx = { group = "androidx.core", name = "core-ktx", version = "1.15.0" }
+
+# Analytics — PostHog
+posthog-android = { group = "com.posthog", name = "posthog-android", version.ref = "posthog" }
 
 # Test
 junit = { group = "junit", name = "junit", version.ref = "junit" }

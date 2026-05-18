@@ -44,6 +44,7 @@ fun DashboardScreen(
     onNavigateToMyMentees: () -> Unit = {},
     onBackToEvents: () -> Unit = {},
     onEventColorLoaded: (Color) -> Unit = {},
+    onEventNameLoaded: (String) -> Unit = {},
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -62,6 +63,9 @@ fun DashboardScreen(
             is DashboardUiState.Success -> {
                 val eventColor = pl.medidesk.mobile.feature.events.presentation.screen.parseHexColor(state.data.primaryColor)
                 LaunchedEffect(eventColor) { if (eventColor != null) onEventColorLoaded(eventColor) }
+                LaunchedEffect(state.data.eventName) {
+                    if (state.data.eventName.isNotBlank()) onEventNameLoaded(state.data.eventName)
+                }
                 // simple-event-checkin to apka tylko dla operatorów/organizatorów —
                 // każdy zalogowany user widzi panel zarządzania, bez "trybu uczestnika".
                 OrganizerDashboard(
@@ -101,12 +105,12 @@ private fun OrganizerDashboard(
             }
         }
         Row(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            MenuButton("Uczestnicy", "Lista i wyszukiwanie", Icons.Default.Group, MaterialTheme.colorScheme.secondary, { onParticipantsClick(null) }, Modifier.weight(1f))
-            MenuButton("Dodaj zamówienie", "Nowy uczestnik / firma", Icons.Default.PersonAdd, MaterialTheme.colorScheme.primary, { showAddOrderSheet = true }, Modifier.weight(1f))
+            MenuButton("Uczestnicy", Icons.Default.Group, MaterialTheme.colorScheme.secondary, { onParticipantsClick(null) }, Modifier.weight(1f))
+            MenuButton("Dodaj uczestnika", Icons.Default.PersonAdd, MaterialTheme.colorScheme.primary, { showAddOrderSheet = true }, Modifier.weight(1f))
         }
         Row(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            MenuButton("Moi podopieczni", "Twoi przypisani uczestnicy", Icons.Default.SupervisorAccount, MaterialTheme.colorScheme.primary, onMyMenteesClick, Modifier.weight(1f))
-            MenuButton("Statystyki", "Analiza frekwencji", Icons.Default.BarChart, MaterialTheme.colorScheme.tertiary, onStatsClick, Modifier.weight(1f))
+            MenuButton("Moi podopieczni", Icons.Default.SupervisorAccount, MaterialTheme.colorScheme.primary, onMyMenteesClick, Modifier.weight(1f))
+            MenuButton("Statystyki", Icons.Default.BarChart, MaterialTheme.colorScheme.tertiary, onStatsClick, Modifier.weight(1f))
         }
     }
 
@@ -187,17 +191,14 @@ private fun SummaryCard(value: String, label: String, color: Color, modifier: Mo
 }
 
 @Composable
-private fun MenuButton(title: String, subtitle: String, icon: ImageVector, iconColor: Color, onClick: () -> Unit, modifier: Modifier) {
-    Card(onClick = onClick, modifier = modifier.height(90.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), elevation = CardDefaults.cardElevation(2.dp), shape = RoundedCornerShape(16.dp)) {
+private fun MenuButton(title: String, icon: ImageVector, iconColor: Color, onClick: () -> Unit, modifier: Modifier) {
+    Card(onClick = onClick, modifier = modifier.height(72.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), elevation = CardDefaults.cardElevation(2.dp), shape = RoundedCornerShape(16.dp)) {
         Row(modifier = Modifier.fillMaxSize().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Surface(modifier = Modifier.size(40.dp), shape = RoundedCornerShape(10.dp), color = iconColor.copy(alpha = 0.1f)) {
                 Icon(icon, null, tint = iconColor, modifier = Modifier.padding(10.dp))
             }
             Spacer(Modifier.width(12.dp))
-            Column {
-                Text(title, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
-                Text(subtitle, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
-            }
+            Text(title, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
         }
     }
 }

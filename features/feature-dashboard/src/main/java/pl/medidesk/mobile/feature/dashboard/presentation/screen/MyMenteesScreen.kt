@@ -122,9 +122,11 @@ class MyMenteesViewModel @Inject constructor(
                 val response = api.getMyMentees(eventId)
                 val body = response.body()
                 if (response.isSuccessful && body != null) {
-                    android.util.Log.d("MyMentees", "Loaded ${body.data.size} mentees, checked_in=${body.data.count { it.checkedIn }}")
-                    body.data.forEach { m ->
-                        android.util.Log.d("MyMentees", "  pid=${m.participantId} ${m.firstName} ${m.lastName} checked_in=${m.checkedIn}")
+                    if (pl.medidesk.mobile.feature.dashboard.BuildConfig.DEBUG) {
+                        android.util.Log.d("MyMentees", "Loaded ${body.data.size} mentees, checked_in=${body.data.count { it.checkedIn }}")
+                        body.data.forEach { m ->
+                            android.util.Log.d("MyMentees", "  pid=${m.participantId} ${m.firstName} ${m.lastName} checked_in=${m.checkedIn}")
+                        }
                     }
                     val companies = groupAndSort(body.data)
                     _uiState.update {

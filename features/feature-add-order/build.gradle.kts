@@ -11,6 +11,7 @@ dependencies {
     implementation(libs.lifecycle.runtime.compose)
     implementation(libs.hilt.navigation.compose)
     implementation(project(":core:core-sync"))
+    implementation(project(":core:core-analytics"))
     implementation(project(":core:core-model"))
     implementation(project(":core:core-ui"))
 }

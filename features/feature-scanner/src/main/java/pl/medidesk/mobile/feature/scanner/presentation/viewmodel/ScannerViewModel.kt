@@ -9,6 +9,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import pl.medidesk.mobile.core.analytics.Analytics
+import pl.medidesk.mobile.core.analytics.AnalyticsEvent
 import pl.medidesk.mobile.core.model.CheckinResult
 import pl.medidesk.mobile.core.model.SyncState
 import pl.medidesk.mobile.core.sync.CheckinUseCase
@@ -18,7 +20,7 @@ import pl.medidesk.mobile.core.sync.SyncEngine
 import pl.medidesk.mobile.core.sync.UndoCheckinUseCase
 import javax.inject.Inject
 
-enum class ScanFeedback { NONE, PROCESSING, SUCCESS, SUCCESS_OFFLINE, DUPLICATE, ERROR, NOT_FOUND, WRONG_EVENT, UNDOING, UNDONE }
+enum class ScanFeedback { NONE, PROCESSING, SUCCESS, SUCCESS_OFFLINE, DUPLICATE, ERROR, NOT_FOUND, WRONG_EVENT, UNDOING, UNDONE, DENIED }
 
 /** Dane wyświetlane w overlay'u "BILET Z INNEGO WYDARZENIA". */
 data class WrongEventInfo(
@@ -158,6 +160,16 @@ class ScannerViewModel @Inject constructor(
             }
             _uiState.value = _uiState.value.copy(feedback = feedback, lastResult = result)
 
+            // Analytics: track every confirmed scan outcome
+            Analytics.capture(
+                AnalyticsEvent.QR_SCAN_COMPLETED,
+                mapOf(
+                    AnalyticsEvent.Props.RESULT to feedback.name.lowercase(),
+                    AnalyticsEvent.Props.EVENT_ID to pending.eventId,
+                    AnalyticsEvent.Props.IS_OFFLINE to result.isOffline
+                )
+            )
+
             autoDismissJob = viewModelScope.launch {
                 delay(3000)
                 resetState()
@@ -168,7 +180,20 @@ class ScannerViewModel @Inject constructor(
     /** Użytkownik kliknął "Anuluj" w dialogu potwierdzenia. */
     fun cancelScan() {
         autoDismissJob?.cancel()
-        resetState()
+        val eventId = _uiState.value.pendingScan?.eventId ?: ""
+        _uiState.value = _uiState.value.copy(feedback = ScanFeedback.DENIED, isScanning = false)
+        Analytics.capture(
+            AnalyticsEvent.QR_SCAN_COMPLETED,
+            mapOf(
+                AnalyticsEvent.Props.RESULT to "denied",
+                AnalyticsEvent.Props.EVENT_ID to eventId,
+                AnalyticsEvent.Props.IS_OFFLINE to false
+            )
+        )
+        autoDismissJob = viewModelScope.launch {
+            delay(1500)
+            resetState()
+        }
     }
 
     fun undoLastScan() {
@@ -182,6 +207,7 @@ class ScannerViewModel @Inject constructor(
 
             if (result.success) {
                 _uiState.value = _uiState.value.copy(feedback = ScanFeedback.UNDONE, lastResult = result)
+                Analytics.capture(AnalyticsEvent.CHECKIN_UNDONE, mapOf(AnalyticsEvent.Props.EVENT_ID to eventId))
                 delay(2000)
             } else {
                 _uiState.value = _uiState.value.copy(feedback = ScanFeedback.ERROR, lastResult = result)

@@ -5,6 +5,9 @@ plugins {
 
 android {
     namespace = "pl.medidesk.mobile.core.sync"
+    buildFeatures {
+        buildConfig = true
+    }
 }
 
 dependencies {
@@ -12,6 +15,7 @@ dependencies {
     implementation(project(":core:core-network"))
     implementation(project(":core:core-database"))
     implementation(project(":core:core-datastore"))
+    implementation(project(":core:core-analytics"))
 
     implementation(libs.workmanager.ktx)
     implementation(libs.hilt.work)

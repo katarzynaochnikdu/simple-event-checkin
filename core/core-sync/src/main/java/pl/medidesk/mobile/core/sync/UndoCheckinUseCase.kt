@@ -16,12 +16,12 @@ class UndoCheckinUseCase @Inject constructor(
     private val syncEngine: SyncEngine
 ) {
     suspend operator fun invoke(ticketId: String, eventId: String): CheckinResult {
-        Log.d("UndoCheckinUseCase", "Undoing checkin for ticket: $ticketId, event: $eventId")
+        if (BuildConfig.DEBUG) Log.d("UndoCheckinUseCase", "Undoing checkin for ticket: $ticketId, event: $eventId")
 
         return try {
             val response = apiService.undoCheckin(UndoCheckinRequest(ticketId = ticketId, eventId = eventId))
             val body = response.body()
-            Log.d("UndoCheckinUseCase", "Server response: code=${response.code()}, success=${body?.success}")
+            if (BuildConfig.DEBUG) Log.d("UndoCheckinUseCase", "Server response: code=${response.code()}, success=${body?.success}")
 
             if (response.isSuccessful && body != null && body.success) {
                 participantDao.markCheckedOut(ticketId)
@@ -43,11 +43,15 @@ class UndoCheckinUseCase @Inject constructor(
                 )
             } else {
                 val error = body?.error ?: "undo_failed"
-                Log.w("UndoCheckinUseCase", "Server undo failed: $error")
+                if (BuildConfig.DEBUG) Log.w("UndoCheckinUseCase", "Server undo failed: $error")
                 CheckinResult(success = false, error = error, isOffline = false)
             }
         } catch (e: Exception) {
-            Log.e("UndoCheckinUseCase", "Online undo failed: ${e.message} — reverting locally", e)
+            if (BuildConfig.DEBUG) {
+                Log.e("UndoCheckinUseCase", "Online undo failed: ${e.message} — reverting locally", e)
+            } else {
+                Log.e("UndoCheckinUseCase", "Online undo failed — reverting locally")
+            }
             localUndo(ticketId)
         }
     }

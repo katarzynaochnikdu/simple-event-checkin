@@ -40,9 +40,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
+import pl.medidesk.mobile.core.analytics.Analytics
 import pl.medidesk.mobile.core.datastore.AuthDataStore
 import pl.medidesk.mobile.core.network.MobileApiService
 import pl.medidesk.mobile.core.network.SessionManager
+import pl.medidesk.mobile.ui.AnalyticsConsentDialog
 import pl.medidesk.mobile.feature.auth.presentation.screen.LoginScreen
 import pl.medidesk.mobile.feature.auth.presentation.screen.ResetPasswordScreen
 import pl.medidesk.mobile.feature.dashboard.presentation.screen.DashboardScreen
@@ -66,6 +68,9 @@ class AuthViewModel @Inject constructor(
     private val _authState = MutableStateFlow(AuthCheck.CHECKING)
     val authState: StateFlow<AuthCheck> = _authState.asStateFlow()
 
+    private val _analyticsConsent = MutableStateFlow<Boolean?>(null)
+    val analyticsConsent: StateFlow<Boolean?> = _analyticsConsent.asStateFlow()
+
     init {
         viewModelScope.launch {
             val token = authDataStore.tokenFlow.firstOrNull()
@@ -85,6 +90,31 @@ class AuthViewModel @Inject constructor(
                 _authState.value = AuthCheck.LOGGED_IN
             }
         }
+
+        // Observe analytics consent state
+        viewModelScope.launch {
+            authDataStore.analyticsConsentFlow.collect { consent ->
+                _analyticsConsent.value = consent
+                when (consent) {
+                    true -> Analytics.optIn()
+                    false -> Analytics.optOut()
+                    null -> { /* not set yet — dialog will ask */ }
+                }
+            }
+        }
+    }
+
+    fun saveAnalyticsConsent(consent: Boolean) {
+        viewModelScope.launch {
+            authDataStore.saveAnalyticsConsent(consent)
+            Analytics.capture(
+                pl.medidesk.mobile.core.analytics.AnalyticsEvent.ANALYTICS_CONSENT_CHANGED,
+                mapOf(
+                    pl.medidesk.mobile.core.analytics.AnalyticsEvent.Props.ACTION to if (consent) "opted_in" else "opted_out",
+                    pl.medidesk.mobile.core.analytics.AnalyticsEvent.Props.APP_VERSION to pl.medidesk.mobile.BuildConfig.VERSION_NAME
+                )
+            )
+        }
     }
 }
 
@@ -96,6 +126,22 @@ fun AppNavHost(
 ) {
     val navController = rememberNavController()
     val authState by authViewModel.authState.collectAsStateWithLifecycle()
+    val analyticsConsent by authViewModel.analyticsConsent.collectAsStateWithLifecycle()
+
+    // Screen view tracking — Compose nav nie wyzwala automatic `$screen` autocapture'a
+    // (PostHog Android SDK widzi tylko Activity). Sami emitujemy event przy każdej
+    // zmianie destinacji — daje funnel-analizę "login → events → dashboard → scanner".
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    LaunchedEffect(navBackStackEntry?.destination?.route) {
+        val route = navBackStackEntry?.destination?.route ?: return@LaunchedEffect
+        // Strip route params (np. "main/{eventId}" → "main") — żeby nie pomnażać
+        // wariantów ekranu po eventId w PostHog Persons.
+        val screenName = route.substringBefore("/").substringBefore("?")
+        Analytics.capture(
+            "\$screen",
+            mapOf("screen_name" to screenName, "\$screen_name" to screenName)
+        )
+    }
 
     LaunchedEffect(Unit) {
         authViewModel.sessionManager.sessionExpired.collect {
@@ -120,6 +166,16 @@ fun AppNavHost(
             }
             onDeepLinkConsumed()
         }
+    }
+
+    // GDPR consent gate — show dialog if consent was never set
+    // (null = first launch; shown regardless of auth state)
+    if (authState != AuthCheck.CHECKING && analyticsConsent == null) {
+        AnalyticsConsentDialog(
+            onAccept = { authViewModel.saveAnalyticsConsent(true) },
+            onDecline = { authViewModel.saveAnalyticsConsent(false) }
+        )
+        return
     }
 
     val startDest = when (authState) {
@@ -224,12 +280,15 @@ private fun MainScreen(eventId: String, onLogout: () -> Unit, onBackToEvents: ()
     val navBackStackEntry by innerNav.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
     var eventAccentColor by remember { mutableStateOf<androidx.compose.ui.graphics.Color?>(null) }
+    var eventName by remember { mutableStateOf<String?>(null) }
     // Detect dark mode from MdTheme's actual surface (not isSystemInDarkTheme directly).
     // isSystemInDarkTheme can desync from app theme on per-app dark mode / forced themes —
     // surface luminance is the source of truth for what we're actually rendering.
     val surfaceColor = MaterialTheme.colorScheme.surface
     val isDark = surfaceColor.luminance() < 0.5f
-    android.util.Log.d("NavBarTheme", "isSystemInDarkTheme=${isSystemInDarkTheme()} surface=$surfaceColor luminance=${surfaceColor.luminance()} isDark=$isDark")
+    if (pl.medidesk.mobile.BuildConfig.DEBUG) {
+        android.util.Log.d("NavBarTheme", "isSystemInDarkTheme=${isSystemInDarkTheme()} surface=$surfaceColor luminance=${surfaceColor.luminance()} isDark=$isDark")
+    }
 
     Scaffold(
         bottomBar = {
@@ -252,7 +311,13 @@ private fun MainScreen(eventId: String, onLogout: () -> Unit, onBackToEvents: ()
                         if (isDashboard) Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Lista wydarzeń")
                         else Icon(Icons.Default.Home, contentDescription = "Wydarzenie")
                     },
-                    label = { Text(if (isDashboard) "Lista wydarzeń" else "Wydarzenie") },
+                    label = {
+                        Text(
+                            text = if (isDashboard) "Lista wydarzeń" else (eventName ?: "Wydarzenie"),
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        )
+                    },
                     selected = false,
                     colors = navColors,
                     onClick = {
@@ -326,7 +391,8 @@ private fun MainScreen(eventId: String, onLogout: () -> Unit, onBackToEvents: ()
                     onNavigateToStats = { innerNav.navigate(Screen.Stats.createRoute(eventId)) },
                     onNavigateToMyMentees = { innerNav.navigate(Screen.MyMentees.createRoute(eventId)) },
                     onBackToEvents = onBackToEvents,
-                    onEventColorLoaded = { color -> eventAccentColor = color }
+                    onEventColorLoaded = { color -> eventAccentColor = color },
+                    onEventNameLoaded = { name -> eventName = name }
                 )
             }
 
