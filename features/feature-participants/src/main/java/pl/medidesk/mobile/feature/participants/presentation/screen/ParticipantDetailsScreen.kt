@@ -502,24 +502,24 @@ private fun ContactCard(participant: Participant, context: android.content.Conte
         border = BorderStroke(1.dp, cs.outlineVariant)
     ) {
         Column {
-            if (hasEmail) {
-                ContactRow(
-                    icon = Icons.Outlined.Email,
-                    label = participant.email!!,
-                    onClick = {
-                        context.startActivity(Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:${participant.email}")))
-                    }
-                )
-            }
-            if (hasEmail && hasPhone) {
-                HorizontalDivider(color = cs.outlineVariant.copy(alpha = 0.5f), modifier = Modifier.padding(horizontal = 16.dp))
-            }
             if (hasPhone) {
                 ContactRow(
                     icon = Icons.Outlined.Phone,
                     label = participant.phone!!,
                     onClick = {
                         context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:${participant.phone}")))
+                    }
+                )
+            }
+            if (hasPhone && hasEmail) {
+                HorizontalDivider(color = cs.outlineVariant.copy(alpha = 0.5f), modifier = Modifier.padding(horizontal = 16.dp))
+            }
+            if (hasEmail) {
+                ContactRow(
+                    icon = Icons.Outlined.Email,
+                    label = participant.email!!,
+                    onClick = {
+                        context.startActivity(Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:${participant.email}")))
                     }
                 )
             }
@@ -746,15 +746,23 @@ private fun translateRsvp(raw: String): Pair<String, Color> {
 private fun formatDateTime(raw: String): String {
     if (raw.isBlank()) return "Brak danych"
     return try {
+        val warsawZone = java.time.ZoneId.of("Europe/Warsaw")
         val stripped = raw.replace(" ", "T")
         val dt = try {
-            java.time.ZonedDateTime.parse(stripped).toLocalDateTime()
+            // ISO-8601 z offset/Z — np. "2026-05-18T09:20:05Z" lub "...+02:00"
+            java.time.ZonedDateTime.parse(stripped).withZoneSameInstant(warsawZone).toLocalDateTime()
         } catch (_: Exception) {
             try {
-                java.time.OffsetDateTime.parse(stripped).toLocalDateTime()
+                java.time.OffsetDateTime.parse(stripped).atZoneSameInstant(warsawZone).toLocalDateTime()
             } catch (_: Exception) {
-                val clean = if (stripped.length >= 19) stripped.substring(0, 19) else stripped
-                LocalDateTime.parse(clean)
+                try {
+                    // RFC 1123 — np. "Mon, 18 May 2026 09:20:05 GMT" (format backendu)
+                    java.time.ZonedDateTime.parse(raw, DateTimeFormatter.RFC_1123_DATE_TIME)
+                        .withZoneSameInstant(warsawZone).toLocalDateTime()
+                } catch (_: Exception) {
+                    val clean = if (stripped.length >= 19) stripped.substring(0, 19) else stripped
+                    LocalDateTime.parse(clean)
+                }
             }
         }
         dt.format(DateTimeFormatter.ofPattern("dd.MM.yyyy, HH:mm"))

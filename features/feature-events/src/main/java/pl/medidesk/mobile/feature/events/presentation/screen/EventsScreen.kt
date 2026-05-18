@@ -345,7 +345,12 @@ fun formatDateLabel(raw: String?): String {
     val months = listOf("", "stycznia", "lutego", "marca", "kwietnia", "maja", "czerwca", "lipca", "sierpnia", "września", "października", "listopada", "grudnia")
     return try {
         val m = months[dt.monthValue]
-        val time = String.format(Locale.getDefault(), "%02d:%02d", dt.hour, dt.minute)
-        "${dt.dayOfMonth} $m ${dt.year}, $time"
+        // Jeśli godzina 00:00 — API nie zwróciło czasu (tylko data), pomijamy
+        if (dt.hour == 0 && dt.minute == 0) {
+            "${dt.dayOfMonth} $m ${dt.year}"
+        } else {
+            val time = String.format(Locale.getDefault(), "%02d:%02d", dt.hour, dt.minute)
+            "${dt.dayOfMonth} $m ${dt.year}, $time"
+        }
     } catch (e: Exception) { raw ?: "Błąd daty" }
 }
