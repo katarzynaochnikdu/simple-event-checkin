@@ -5,14 +5,11 @@ import android.util.Size
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -38,6 +35,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -87,7 +86,11 @@ fun ScannerScreen(
             }
         }
 
-        ScanResultOverlay(uiState = uiState, onUndo = { viewModel.undoLastScan() })
+        ScanResultOverlay(
+            uiState = uiState,
+            onUndo = { viewModel.undoLastScan() },
+            onDismiss = { viewModel.dismissFeedback() }
+        )
 
         if (uiState.syncState.totalPending > 0) {
             Surface(
@@ -209,12 +212,22 @@ private fun ScanConfirmDialog(
 }
 
 @Composable
-private fun ScanResultOverlay(uiState: ScannerUiState, onUndo: () -> Unit) {
+private fun ScanResultOverlay(
+    uiState: ScannerUiState,
+    onUndo: () -> Unit,
+    onDismiss: () -> Unit
+) {
     val showOverlay = uiState.feedback != ScanFeedback.NONE && uiState.feedback != ScanFeedback.PROCESSING
-    AnimatedVisibility(
-        visible = showOverlay,
-        enter = fadeIn(),
-        exit = fadeOut()
+    if (!showOverlay) return
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            decorFitsSystemWindows = false,
+            dismissOnBackPress = true,
+            dismissOnClickOutside = false
+        )
     ) {
         val (bgColor, statusText) = when (uiState.feedback) {
             ScanFeedback.SUCCESS -> ScanSuccess.copy(alpha = 0.95f) to "WEJŚCIE OK"

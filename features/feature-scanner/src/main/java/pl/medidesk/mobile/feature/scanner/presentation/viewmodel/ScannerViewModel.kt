@@ -191,9 +191,19 @@ class ScannerViewModel @Inject constructor(
             )
         )
         autoDismissJob = viewModelScope.launch {
-            delay(1500)
+            delay(3000)
             resetState()
         }
+    }
+
+    /**
+     * Wywoływane przez UI gdy użytkownik dismiss'uje overlay feedback przez system back.
+     * Anuluje auto-dismiss timer i czyści feedback od razu.
+     */
+    fun dismissFeedback() {
+        if (_uiState.value.feedback == ScanFeedback.NONE) return
+        autoDismissJob?.cancel()
+        resetState()
     }
 
     fun undoLastScan() {
