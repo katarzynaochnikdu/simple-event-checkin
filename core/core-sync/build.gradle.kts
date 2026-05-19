@@ -16,6 +16,7 @@ dependencies {
     implementation(project(":core:core-database"))
     implementation(project(":core:core-datastore"))
     implementation(project(":core:core-analytics"))
+    implementation(project(":core:core-mappers"))
 
     implementation(libs.workmanager.ktx)
     implementation(libs.hilt.work)

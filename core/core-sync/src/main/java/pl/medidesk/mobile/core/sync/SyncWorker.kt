@@ -10,8 +10,8 @@ import pl.medidesk.mobile.core.database.dao.OfflineCheckinDao
 import pl.medidesk.mobile.core.database.dao.ParticipantDao
 import pl.medidesk.mobile.core.database.dao.SyncMetadataDao
 import pl.medidesk.mobile.core.database.dao.WalkinDao
-import pl.medidesk.mobile.core.database.entities.ParticipantEntity
 import pl.medidesk.mobile.core.database.entities.SyncMetadataEntity
+import pl.medidesk.mobile.core.mappers.toEntity
 import pl.medidesk.mobile.core.network.MobileApiService
 import pl.medidesk.mobile.core.analytics.Analytics
 import pl.medidesk.mobile.core.analytics.AnalyticsEvent
@@ -138,39 +138,7 @@ class SyncWorker @AssistedInject constructor(
         val body = response.body() ?: return 0
         if (BuildConfig.DEBUG) Log.d(TAG, "Fetched ${body.participants.size} participants")
         
-        val entities = body.participants.map { dto ->
-            ParticipantEntity(
-                id = dto.id,
-                ticketId = dto.ticketId,
-                ticketNumber = dto.ticketNumber,
-                backstageTicketId = dto.backstageTicketId,
-                firstName = dto.firstName,
-                lastName = dto.lastName,
-                email = dto.email,
-                phone = dto.phone,
-                company = dto.company,
-                ticketClassId = dto.ticketClassId,
-                ticketName = dto.ticketName,
-                status = dto.status,
-                attendanceStatus = dto.attendanceStatus,
-                eventOrderId = dto.eventOrderId,
-                eventId = eventId,
-                checkedInAt = dto.checkedInAt,
-                orderStatus = dto.orderStatus,
-                isWalkin = dto.isWalkin,
-                tags = dto.tags?.joinToString(","),
-                buyerName = dto.buyerName,
-                buyerEmail = dto.buyerEmail,
-                paymentMethod = dto.paymentMethod,
-                purchaserNip = dto.purchaserNip,
-                purchaserCompany = dto.purchaserCompany,
-                orderParticipantsTotal = dto.orderParticipantsTotal,
-                orderParticipantsCheckedIn = dto.orderParticipantsCheckedIn,
-                rsvpSent = dto.rsvpSent,
-                rsvpResponse = dto.rsvpResponse,
-                rsvpRespondedAt = dto.rsvpRespondedAt
-            )
-        }
+        val entities = body.participants.map { dto -> dto.toEntity(eventId) }
 
         if (since == null) {
             participantDao.replaceAll(eventId, entities)

@@ -35,6 +35,7 @@ include(":core:core-datastore")
 include(":core:core-ui")
 include(":core:core-sync")
 include(":core:core-analytics")
+include(":core:core-mappers")
 
 // Feature modules (Limited for Simple App)
 include(":features:feature-auth")

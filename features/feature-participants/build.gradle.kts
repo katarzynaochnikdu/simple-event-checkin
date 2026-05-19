@@ -14,5 +14,6 @@ dependencies {
     implementation(libs.lifecycle.runtime.compose)
     implementation(libs.hilt.navigation.compose)
     implementation(project(":core:core-sync"))
+    implementation(project(":core:core-mappers"))
     implementation(project(":features:feature-add-order"))
 }

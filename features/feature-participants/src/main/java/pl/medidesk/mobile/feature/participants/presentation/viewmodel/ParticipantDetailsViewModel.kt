@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import pl.medidesk.mobile.core.database.dao.ParticipantDao
+import pl.medidesk.mobile.core.mappers.toDomain
 import pl.medidesk.mobile.core.model.Participant
 import pl.medidesk.mobile.core.network.MobileApiService
 import pl.medidesk.mobile.core.network.dto.CheckinRequest
@@ -62,7 +63,7 @@ class ParticipantDetailsViewModel @Inject constructor(
                 participantDao.getParticipantByIdFlow(participantId).collect { entity ->
                     if (BuildConfig.DEBUG) Log.d("ParticipantDetails", "Flow emit for $participantId: status=${entity?.status} checkedInAt=${entity?.checkedInAt}")
                     if (entity != null) {
-                        _uiState.value = ParticipantDetailsUiState.Success(entity.toParticipant())
+                        _uiState.value = ParticipantDetailsUiState.Success(entity.toDomain())
                     } else if (_uiState.value is ParticipantDetailsUiState.Loading) {
                         _uiState.value = ParticipantDetailsUiState.Error("Nie znaleziono uczestnika w bazie")
                     }
@@ -155,36 +156,6 @@ class ParticipantDetailsViewModel @Inject constructor(
         }
     }
 
-    private fun pl.medidesk.mobile.core.database.entities.ParticipantEntity.toParticipant() = Participant(
-        id = id,
-        ticketId = ticketId,
-        backstageTicketId = backstageTicketId,
-        firstName = firstName,
-        lastName = lastName,
-        email = email,
-        company = company,
-        ticketClassId = ticketClassId,
-        ticketName = ticketName,
-        status = status,
-        attendanceStatus = attendanceStatus,
-        eventOrderId = eventOrderId,
-        eventId = eventId,
-        checkedInAt = checkedInAt,
-        orderStatus = orderStatus,
-        isWalkin = isWalkin,
-        tags = tags?.split(",")?.filter { it.isNotBlank() } ?: emptyList(),
-        buyerName = buyerName,
-        buyerEmail = buyerEmail,
-        paymentMethod = paymentMethod,
-        purchaserNip = purchaserNip,
-        purchaserCompany = purchaserCompany,
-        orderParticipantsTotal = orderParticipantsTotal,
-        orderParticipantsCheckedIn = orderParticipantsCheckedIn,
-        rsvpSent = rsvpSent,
-        rsvpResponse = rsvpResponse,
-        rsvpRespondedAt = rsvpRespondedAt
-    )
-
     fun resetCheckinResult() {
         _checkinResult.value = CheckinResult.Idle
     }
@@ -195,37 +166,7 @@ class ParticipantDetailsViewModel @Inject constructor(
             try {
                 val entity = participantDao.getParticipantById(id)
                 if (entity != null) {
-                    _uiState.value = ParticipantDetailsUiState.Success(
-                        Participant(
-                            id = entity.id,
-                            ticketId = entity.ticketId,
-                            backstageTicketId = entity.backstageTicketId,
-                            firstName = entity.firstName,
-                            lastName = entity.lastName,
-                            email = entity.email,
-                            company = entity.company,
-                            ticketClassId = entity.ticketClassId,
-                            ticketName = entity.ticketName,
-                            status = entity.status,
-                            attendanceStatus = entity.attendanceStatus,
-                            eventOrderId = entity.eventOrderId,
-                            eventId = entity.eventId,
-                            checkedInAt = entity.checkedInAt,
-                            orderStatus = entity.orderStatus,
-                            isWalkin = entity.isWalkin,
-                            tags = entity.tags?.split(",")?.filter { it.isNotBlank() } ?: emptyList(),
-                            buyerName = entity.buyerName,
-                            buyerEmail = entity.buyerEmail,
-                            paymentMethod = entity.paymentMethod,
-                            purchaserNip = entity.purchaserNip,
-                            purchaserCompany = entity.purchaserCompany,
-                            orderParticipantsTotal = entity.orderParticipantsTotal,
-                            orderParticipantsCheckedIn = entity.orderParticipantsCheckedIn,
-                            rsvpSent = entity.rsvpSent,
-                            rsvpResponse = entity.rsvpResponse,
-                            rsvpRespondedAt = entity.rsvpRespondedAt
-                        )
-                    )
+                    _uiState.value = ParticipantDetailsUiState.Success(entity.toDomain())
                 } else {
                     _uiState.value = ParticipantDetailsUiState.Error("Nie znaleziono uczestnika w bazie")
                 }

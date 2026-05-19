@@ -11,6 +11,7 @@ import pl.medidesk.mobile.core.database.dao.OfflineCheckinDao
 import pl.medidesk.mobile.core.database.dao.ParticipantDao
 import pl.medidesk.mobile.core.database.dao.TicketClassDao
 import pl.medidesk.mobile.core.database.entities.OfflineCheckinEntity
+import pl.medidesk.mobile.core.mappers.toDomain
 import pl.medidesk.mobile.core.model.Participant
 import pl.medidesk.mobile.core.model.SyncState
 import pl.medidesk.mobile.core.model.TicketClass
@@ -53,38 +54,7 @@ class ParticipantsViewModel @Inject constructor(
         viewModelScope.launch {
             participantDao.getParticipantsFlow(eventId).collect { entities ->
                 if (BuildConfig.DEBUG) Log.d("ParticipantsVM", "Received ${entities.size} entities from DB")
-                val participants = entities.map { e ->
-                    Participant(
-                        id = e.id,
-                        ticketId = e.ticketId,
-                        backstageTicketId = e.backstageTicketId,
-                        firstName = e.firstName,
-                        lastName = e.lastName,
-                        email = e.email,
-                        phone = e.phone,
-                        company = e.company,
-                        ticketClassId = e.ticketClassId,
-                        ticketName = e.ticketName,
-                        status = e.status,
-                        attendanceStatus = e.attendanceStatus,
-                        eventOrderId = e.eventOrderId,
-                        eventId = e.eventId,
-                        checkedInAt = e.checkedInAt,
-                        orderStatus = e.orderStatus,
-                        isWalkin = e.isWalkin,
-                        tags = e.tags?.split(",")?.filter { it.isNotBlank() } ?: emptyList(),
-                        buyerName = e.buyerName,
-                        buyerEmail = e.buyerEmail,
-                        paymentMethod = e.paymentMethod,
-                        purchaserNip = e.purchaserNip,
-                        purchaserCompany = e.purchaserCompany,
-                        orderParticipantsTotal = e.orderParticipantsTotal,
-                        orderParticipantsCheckedIn = e.orderParticipantsCheckedIn,
-                        rsvpSent = e.rsvpSent,
-                        rsvpResponse = e.rsvpResponse,
-                        rsvpRespondedAt = e.rsvpRespondedAt
-                    )
-                }
+                val participants = entities.map { it.toDomain() }
                 val current = _uiState.value
                 _uiState.value = current.copy(
                     participants = participants,
