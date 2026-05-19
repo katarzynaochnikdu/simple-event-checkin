@@ -14,3 +14,4 @@
 | WO-MOB-004 | Refactor — likwidacja 4-way duplication mappera Participant (DTO.toEntity + Entity.toDomain) | [TBD] | ⏳ Otwarty | 2026-05-19 |
 | WO-MOB-005 | Backend SELECT extension — uzupełnij brakujące 5 pól w get_participants_for_mobile() endpoint | [TBD] | ⏳ Otwarty | 2026-05-19 |
 | WO-MOB-006 | RSVP semantics unification desktop↔mobile (strict dla wszystkich, modyfikuje backend desktop) | [TBD] | ⏳ Otwarty | 2026-05-19 |
+| WO-MOB-007 | Fix drift `get_all_participants` rsvp_sent — dodaj scheduled campaign OR clause (linia 10791) | [TBD] | ⏳ Otwarty | 2026-05-19 |
