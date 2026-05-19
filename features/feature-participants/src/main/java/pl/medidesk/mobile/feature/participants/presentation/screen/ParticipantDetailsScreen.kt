@@ -336,17 +336,17 @@ private fun StatusIconsRow(participant: Participant) {
             modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp, horizontal = 8.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            val attendanceRaw = participant.attendanceStatus?.lowercase() ?: ""
-            val (rsvpIcon, rsvpColor) = when {
-                attendanceRaw in listOf("attending", "confirmed", "rsvp_confirmed") ->
-                    Icons.Default.EventAvailable to StatusGreen
-                attendanceRaw in listOf("declined", "rsvp_declined", "cancelled") ->
-                    Icons.Default.EventBusy to StatusRed
-                attendanceRaw.isNotBlank() && attendanceRaw != "n/a" ->
-                    Icons.Default.HelpOutline to StatusGray
-                else -> Icons.Outlined.Event to cs.outlineVariant
+            // WO-MOB-003: conditional render — RSVP icon hidden entirely when not sent.
+            // Slot is removed from the row (no placeholder), so when rsvp_sent=false
+            // the row shows only Payment + Check-In.
+            if (participant.rsvpSent) {
+                val (rsvpIcon, rsvpColor) = when (participant.rsvpResponse?.lowercase()) {
+                    "confirmed" -> Icons.Default.EventAvailable to StatusGreen
+                    "declined" -> Icons.Default.EventBusy to StatusRed
+                    else -> Icons.Default.HourglassEmpty to StatusGray  // czeka na odpowiedź
+                }
+                StatusIcon(rsvpIcon, rsvpColor, "RSVP")
             }
-            StatusIcon(rsvpIcon, rsvpColor, "RSVP")
 
             val orderRaw = participant.orderStatus?.lowercase() ?: ""
             val (payIcon, payColor) = when {
@@ -729,16 +729,6 @@ private fun translateStatus(raw: String): Pair<String, Color> {
         "payment_expired" -> "Płatność wygasła" to StatusGray
         "cancelled" -> "Anulowane" to StatusRed
         "refunded" -> "Zwrócone" to StatusRed
-        else -> if (raw.isNotBlank()) raw.replaceFirstChar { it.uppercaseChar() } to StatusGray else "" to StatusGray
-    }
-}
-
-private fun translateRsvp(raw: String): Pair<String, Color> {
-    return when (raw.replace(" ", "_")) {
-        "attending", "confirmed", "rsvp_confirmed" -> "Potwierdzony" to StatusGreen
-        "registered" -> "Zarejestrowany" to AccentBlue
-        "declined", "rsvp_declined" -> "Odrzucony" to StatusRed
-        "cancelled" -> "Anulowany" to StatusRed
         else -> if (raw.isNotBlank()) raw.replaceFirstChar { it.uppercaseChar() } to StatusGray else "" to StatusGray
     }
 }

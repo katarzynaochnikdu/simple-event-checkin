@@ -25,7 +25,10 @@ data class Participant(
     val purchaserNip: String? = null,
     val purchaserCompany: String? = null,
     val orderParticipantsTotal: Int? = null,
-    val orderParticipantsCheckedIn: Int? = null
+    val orderParticipantsCheckedIn: Int? = null,
+    val rsvpSent: Boolean = false,
+    val rsvpResponse: String? = null,
+    val rsvpRespondedAt: String? = null
 ) {
     val displayName: String get() = "${firstName.orEmpty()} ${lastName.orEmpty()}".trim()
     val isCheckedIn: Boolean get() = checkedInAt != null

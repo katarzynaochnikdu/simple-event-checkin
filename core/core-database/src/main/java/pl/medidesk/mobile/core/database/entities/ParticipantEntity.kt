@@ -40,5 +40,8 @@ data class ParticipantEntity(
     @ColumnInfo(name = "purchaser_nip") val purchaserNip: String? = null,
     @ColumnInfo(name = "purchaser_company") val purchaserCompany: String? = null,
     @ColumnInfo(name = "order_participants_total") val orderParticipantsTotal: Int? = null,
-    @ColumnInfo(name = "order_participants_checked_in") val orderParticipantsCheckedIn: Int? = null
+    @ColumnInfo(name = "order_participants_checked_in") val orderParticipantsCheckedIn: Int? = null,
+    @ColumnInfo(name = "rsvp_sent", defaultValue = "0") val rsvpSent: Boolean = false,
+    @ColumnInfo(name = "rsvp_response") val rsvpResponse: String? = null,
+    @ColumnInfo(name = "rsvp_responded_at") val rsvpRespondedAt: String? = null
 )

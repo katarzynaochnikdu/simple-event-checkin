@@ -165,7 +165,10 @@ class SyncWorker @AssistedInject constructor(
                 purchaserNip = dto.purchaserNip,
                 purchaserCompany = dto.purchaserCompany,
                 orderParticipantsTotal = dto.orderParticipantsTotal,
-                orderParticipantsCheckedIn = dto.orderParticipantsCheckedIn
+                orderParticipantsCheckedIn = dto.orderParticipantsCheckedIn,
+                rsvpSent = dto.rsvpSent,
+                rsvpResponse = dto.rsvpResponse,
+                rsvpRespondedAt = dto.rsvpRespondedAt
             )
         }
 

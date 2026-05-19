@@ -179,7 +179,10 @@ class ParticipantDetailsViewModel @Inject constructor(
         purchaserNip = purchaserNip,
         purchaserCompany = purchaserCompany,
         orderParticipantsTotal = orderParticipantsTotal,
-        orderParticipantsCheckedIn = orderParticipantsCheckedIn
+        orderParticipantsCheckedIn = orderParticipantsCheckedIn,
+        rsvpSent = rsvpSent,
+        rsvpResponse = rsvpResponse,
+        rsvpRespondedAt = rsvpRespondedAt
     )
 
     fun resetCheckinResult() {
@@ -217,7 +220,10 @@ class ParticipantDetailsViewModel @Inject constructor(
                             purchaserNip = entity.purchaserNip,
                             purchaserCompany = entity.purchaserCompany,
                             orderParticipantsTotal = entity.orderParticipantsTotal,
-                            orderParticipantsCheckedIn = entity.orderParticipantsCheckedIn
+                            orderParticipantsCheckedIn = entity.orderParticipantsCheckedIn,
+                            rsvpSent = entity.rsvpSent,
+                            rsvpResponse = entity.rsvpResponse,
+                            rsvpRespondedAt = entity.rsvpRespondedAt
                         )
                     )
                 } else {

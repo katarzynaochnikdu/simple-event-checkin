@@ -79,7 +79,10 @@ class ParticipantsViewModel @Inject constructor(
                         purchaserNip = e.purchaserNip,
                         purchaserCompany = e.purchaserCompany,
                         orderParticipantsTotal = e.orderParticipantsTotal,
-                        orderParticipantsCheckedIn = e.orderParticipantsCheckedIn
+                        orderParticipantsCheckedIn = e.orderParticipantsCheckedIn,
+                        rsvpSent = e.rsvpSent,
+                        rsvpResponse = e.rsvpResponse,
+                        rsvpRespondedAt = e.rsvpRespondedAt
                     )
                 }
                 val current = _uiState.value

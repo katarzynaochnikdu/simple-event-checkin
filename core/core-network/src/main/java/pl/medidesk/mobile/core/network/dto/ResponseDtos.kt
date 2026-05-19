@@ -89,7 +89,10 @@ data class ParticipantDto(
     @Json(name = "purchaser_nip") val purchaserNip: String? = null,
     @Json(name = "purchaser_company") val purchaserCompany: String? = null,
     @Json(name = "order_participants_total") val orderParticipantsTotal: Int? = null,
-    @Json(name = "order_participants_checked_in") val orderParticipantsCheckedIn: Int? = null
+    @Json(name = "order_participants_checked_in") val orderParticipantsCheckedIn: Int? = null,
+    @Json(name = "rsvp_sent") val rsvpSent: Boolean = false,
+    @Json(name = "rsvp_response") val rsvpResponse: String? = null,
+    @Json(name = "rsvp_responded_at") val rsvpRespondedAt: String? = null
 )
 
 @JsonClass(generateAdapter = true)
