@@ -315,7 +315,8 @@ private fun MainScreen(eventId: String, onLogout: () -> Unit, onBackToEvents: ()
                         Text(
                             text = if (isDashboard) "Lista wydarzeń" else (eventName ?: "Wydarzenie"),
                             maxLines = 2,
-                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
                     },
                     selected = false,
