@@ -3,8 +3,8 @@
 **Zgłoszony:** 2026-05-20
 **Scope:** mobile
 **Severity:** P1
-**Status:** ✅ Resolved (2026-05-20, Wątek A) — Wątek B w WO-MOB-013
-**Powiązany WO:** [WO-MOB-012](../work_orders/WO-MOB-012-fix-checkin-counts-mismatch-historical-events.md)
+**Status:** ✅ Resolved (2026-05-20, Wątek A + Wątek B)
+**Powiązany WO:** [WO-MOB-012](../work_orders/WO-MOB-012-fix-checkin-counts-mismatch-historical-events.md) (Wątek A) + [WO-MOB-013](../work_orders/WO-MOB-013-fix-totals-mismatch-attendance-status-filter.md) (Wątek B)
 
 ## Gdzie
 Aplikacja mobilna — ekran szczegółów wydarzenia (po wybraniu z listy wydarzeń), sekcja **POSTĘP CHECK-IN** + 3 liczniki **ODZNACZENI / OCZEKUJĄCY / ŁĄCZNIE**.
