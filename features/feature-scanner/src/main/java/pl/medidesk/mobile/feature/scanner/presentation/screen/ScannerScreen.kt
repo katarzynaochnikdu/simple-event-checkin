@@ -10,7 +10,6 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -88,7 +87,6 @@ fun ScannerScreen(
 
         ScanResultOverlay(
             uiState = uiState,
-            onUndo = { viewModel.undoLastScan() },
             onDismiss = { viewModel.dismissFeedback() }
         )
 
@@ -214,7 +212,6 @@ private fun ScanConfirmDialog(
 @Composable
 private fun ScanResultOverlay(
     uiState: ScannerUiState,
-    onUndo: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val showOverlay = uiState.feedback != ScanFeedback.NONE && uiState.feedback != ScanFeedback.PROCESSING
@@ -237,12 +234,11 @@ private fun ScanResultOverlay(
             ScanFeedback.WRONG_EVENT -> ScanError.copy(alpha = 0.95f) to "BILET Z INNEGO WYDARZENIA"
             ScanFeedback.ERROR -> ScanError.copy(alpha = 0.92f) to "BŁĄD"
             ScanFeedback.UNDOING -> ScanDuplicate.copy(alpha = 0.92f) to "COFANIE..."
-            ScanFeedback.UNDONE -> ScanSuccess.copy(alpha = 0.92f) to "COFNIĘTO"
+            ScanFeedback.UNDONE -> ScanError.copy(alpha = 0.92f) to "COFNIĘTO"
             ScanFeedback.DENIED -> ScanError.copy(alpha = 0.95f) to "Niepotwierdzone wejście"
             else -> Color.Transparent to ""
         }
 
-        val showUndoButton = uiState.feedback == ScanFeedback.SUCCESS || uiState.feedback == ScanFeedback.SUCCESS_OFFLINE
         val showCheckmarkAnim = uiState.feedback == ScanFeedback.SUCCESS || uiState.feedback == ScanFeedback.UNDONE
         val showCrossmarkAnim = uiState.feedback == ScanFeedback.DENIED
 
@@ -334,16 +330,6 @@ private fun ScanResultOverlay(
                                 )
                             }
                         }
-                    }
-                }
-                if (showUndoButton) {
-                    Spacer(Modifier.height(24.dp))
-                    OutlinedButton(
-                        onClick = onUndo,
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
-                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.7f))
-                    ) {
-                        Text("Cofnij wejście", style = MaterialTheme.typography.titleMedium)
                     }
                 }
             }

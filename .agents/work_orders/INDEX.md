@@ -16,3 +16,5 @@
 | WO-MOB-006 | RSVP semantics unification desktop↔mobile (strict dla wszystkich, modyfikuje backend desktop) | [TBD] | ⏳ Otwarty | 2026-05-19 |
 | WO-MOB-007 | Fix drift `get_all_participants` rsvp_sent — dodaj scheduled campaign OR clause (linia 10791) | [TBD] | ⏳ Otwarty | 2026-05-19 |
 | WO-MOB-009 | Fix — feedback check-in (zielony/czerwony) zawsze jako top-level overlay nad tab barem | [TBD] | ⏳ Otwarty | 2026-05-19 |
+| WO-MOB-010 | Fix UNDONE color (ScanError) + remove "Cofnij wejście" button from ScanResultOverlay SUCCESS | [TBD] | ⏳ Otwarty | 2026-05-20 |
+| WO-MOB-011 | Events list — stała pozycja ikony karty + wrap tytułu do 2 linii przed ellipsis | [TBD] | ⏳ Otwarty | 2026-05-20 |
