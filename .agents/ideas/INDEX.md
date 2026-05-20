@@ -8,5 +8,4 @@
 
 | ID | Tytuł | Moduł | Status | Zgłoszony |
 |---|---|---|---|---|
-
-_(brak wpisów — INDEX utworzony 2026-05-18)_
+| IDEA-MOB-001 | Wydanie simple-event-checkin na iOS — analiza 4 ścieżek (Swift / KMP / Compose MP / Expo) | Inbox | Inbox | 2026-05-19 |
