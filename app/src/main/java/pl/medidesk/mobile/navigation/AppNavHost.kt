@@ -314,7 +314,7 @@ private fun MainScreen(eventId: String, onLogout: () -> Unit, onBackToEvents: ()
                     label = {
                         Text(
                             text = if (isDashboard) "Lista wydarzeń" else (eventName ?: "Wydarzenie"),
-                            maxLines = 1,
+                            maxLines = 2,
                             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                         )
                     },
