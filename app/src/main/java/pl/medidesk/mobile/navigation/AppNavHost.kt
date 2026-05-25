@@ -48,6 +48,8 @@ import pl.medidesk.mobile.ui.AnalyticsConsentDialog
 import pl.medidesk.mobile.feature.auth.presentation.screen.LoginScreen
 import pl.medidesk.mobile.feature.auth.presentation.screen.ResetPasswordScreen
 import pl.medidesk.mobile.feature.dashboard.presentation.screen.DashboardScreen
+import pl.medidesk.mobile.feature.speakers.presentation.screen.SpeakersScreen
+import pl.medidesk.mobile.feature.speakers.presentation.screen.SpeakerDetailScreen
 import pl.medidesk.mobile.feature.dashboard.presentation.screen.MyMenteesScreen
 import pl.medidesk.mobile.feature.dashboard.presentation.screen.StatsScreen
 import pl.medidesk.mobile.feature.events.presentation.screen.EventsScreen
@@ -391,9 +393,34 @@ private fun MainScreen(eventId: String, onLogout: () -> Unit, onBackToEvents: ()
                     onNavigateToInHub = { /* Disabled */ },
                     onNavigateToStats = { innerNav.navigate(Screen.Stats.createRoute(eventId)) },
                     onNavigateToMyMentees = { innerNav.navigate(Screen.MyMentees.createRoute(eventId)) },
+                    onNavigateToSpeakers = { innerNav.navigate(Screen.Speakers.createRoute(eventId)) },
                     onBackToEvents = onBackToEvents,
                     onEventColorLoaded = { color -> eventAccentColor = color },
                     onEventNameLoaded = { name -> eventName = name }
+                )
+            }
+
+            // WO-MOB-015 hotfix (2026-05-25): wire SpeakersScreen + SpeakerDetailScreen
+            // composable destinations. Previously SpeakersScreen had no entry in NavHost
+            // and onNavigateToSpeakers in DashboardScreen defaulted to no-op {}.
+            composable(
+                route = Screen.Speakers.route,
+                arguments = Screen.Speakers.arguments
+            ) {
+                SpeakersScreen(
+                    onNavigateBack = goBack,
+                    onSpeakerClick = { speakerId ->
+                        innerNav.navigate(Screen.SpeakerDetail.createRoute(eventId, speakerId))
+                    }
+                )
+            }
+
+            composable(
+                route = Screen.SpeakerDetail.route,
+                arguments = Screen.SpeakerDetail.arguments
+            ) {
+                SpeakerDetailScreen(
+                    onNavigateBack = goBack
                 )
             }
 
