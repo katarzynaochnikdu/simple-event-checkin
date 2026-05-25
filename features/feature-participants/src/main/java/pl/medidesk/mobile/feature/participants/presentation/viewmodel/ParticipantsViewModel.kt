@@ -34,6 +34,16 @@ data class ParticipantsUiState(
     val checkoutDialogParticipant: Participant? = null
 )
 
+/**
+ * One-shot events emitted by ViewModel for the UI to consume (e.g. show Snackbar).
+ * Used ONLY for explicit user-initiated sync (manual button + pull-to-refresh) —
+ * silent background sync (LifecycleResumeEffect) does NOT emit events to avoid Snackbar spam.
+ */
+sealed class SyncResultEvent {
+    data class Success(val count: Int) : SyncResultEvent()
+    data class Error(val message: String?) : SyncResultEvent()
+}
+
 @HiltViewModel
 class ParticipantsViewModel @Inject constructor(
     private val participantDao: ParticipantDao,
@@ -47,6 +57,9 @@ class ParticipantsViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(ParticipantsUiState())
     val uiState: StateFlow<ParticipantsUiState> = _uiState.asStateFlow()
+
+    private val _events = MutableSharedFlow<SyncResultEvent>(extraBufferCapacity = 4)
+    val events: SharedFlow<SyncResultEvent> = _events.asSharedFlow()
 
     init {
         if (BuildConfig.DEBUG) Log.d("ParticipantsVM", "Initializing for eventId: $eventId")
@@ -108,8 +121,9 @@ class ParticipantsViewModel @Inject constructor(
     }
 
     /**
-     * Explicit pull-to-refresh: shows spinner, waits for sync to finish.
-     * Use this only when the user deliberately pulled down to refresh.
+     * Explicit user-initiated refresh (manual sync button + pull-to-refresh): shows spinner,
+     * waits for sync to finish, emits SyncResultEvent for the UI to surface a Snackbar.
+     * Silent background sync should use [silentSync] instead — it does NOT emit events.
      */
     fun refresh(eventId: String) {
         _uiState.value = _uiState.value.copy(isRefreshing = true)
@@ -117,12 +131,15 @@ class ParticipantsViewModel @Inject constructor(
             try {
                 syncEngine.runImmediateSyncAndWait(eventId)
                 if (BuildConfig.DEBUG) Log.d("ParticipantsVM", "Sync finished — local DB should now reflect server state")
+                val count = participantDao.countForEvent(eventId)
+                _events.emit(SyncResultEvent.Success(count))
             } catch (e: Exception) {
                 if (BuildConfig.DEBUG) {
                     Log.e("ParticipantsVM", "Sync wait failed: ${e.message}", e)
                 } else {
                     Log.e("ParticipantsVM", "Sync wait failed")
                 }
+                _events.emit(SyncResultEvent.Error(e.message))
             } finally {
                 _uiState.value = _uiState.value.copy(isRefreshing = false)
             }

@@ -13,6 +13,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MeetingRoom
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.HowToReg
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.*
@@ -32,6 +33,7 @@ import pl.medidesk.mobile.core.model.Participant
 import pl.medidesk.mobile.core.ui.theme.StatusColors
 import pl.medidesk.mobile.feature.addorder.presentation.screen.AddOrderSheet
 import pl.medidesk.mobile.feature.participants.presentation.viewmodel.ParticipantsViewModel
+import pl.medidesk.mobile.feature.participants.presentation.viewmodel.SyncResultEvent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,6 +49,27 @@ fun ParticipantsScreen(
     var showFilterSheet by remember { mutableStateOf(false) }
     var showAddOrderSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(Unit) {
+        viewModel.events.collect { event ->
+            when (event) {
+                is SyncResultEvent.Success -> {
+                    snackbarHostState.showSnackbar("Zsynchronizowano (${event.count} uczestników)")
+                }
+                is SyncResultEvent.Error -> {
+                    val result = snackbarHostState.showSnackbar(
+                        message = "Nie udało się zsynchronizować. Sprawdź połączenie.",
+                        actionLabel = "Ponów",
+                        duration = SnackbarDuration.Long
+                    )
+                    if (result == SnackbarResult.ActionPerformed) {
+                        viewModel.refresh(eventId)
+                    }
+                }
+            }
+        }
+    }
 
     LaunchedEffect(filterType, ticketClassId) {
         when (filterType) {
@@ -101,6 +124,7 @@ fun ParticipantsScreen(
         // Outer MainScreen Scaffold już zarezerwowało miejsce na NavigationBar — bez tego
         // wewnętrzny Scaffold dubluje system inset i zostawia pusty pas nad bottom nav.
         contentWindowInsets = WindowInsets(0),
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -123,6 +147,21 @@ fun ParticipantsScreen(
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, null)
+                    }
+                },
+                actions = {
+                    IconButton(
+                        onClick = { viewModel.refresh(eventId) },
+                        enabled = !uiState.isRefreshing
+                    ) {
+                        if (uiState.isRefreshing) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Icon(Icons.Default.Refresh, contentDescription = "Synchronizuj uczestników")
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
