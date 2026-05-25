@@ -113,6 +113,24 @@ interface MobileApiService {
         @Path("speakerId") speakerId: String
     ): Response<SpeakerDto>
 
+    // Speaker check-in — WO-MOB-015 (2026-05-25)
+    @POST("api/mobile/events/{eventId}/speakers/{speakerId}/checkin")
+    suspend fun speakerCheckin(
+        @Path("eventId") eventId: String,
+        @Path("speakerId") speakerId: String,
+        @Body body: SpeakerCheckinRequestDto
+    ): Response<SpeakerCheckinResponseDto>
+
+    @POST("api/mobile/speakers/checkin/sync")
+    suspend fun speakerCheckinSync(
+        @Body body: SpeakerCheckinSyncBatchDto
+    ): Response<SpeakerCheckinSyncResultDto>
+
+    @GET("api/mobile/events/{eventId}/speakers/checkin-stats")
+    suspend fun speakerCheckinStats(
+        @Path("eventId") eventId: String
+    ): Response<SpeakerCheckinStatsDto>
+
     // Sponsors
     @GET("api/mobile/events/{eventId}/sponsors")
     suspend fun getSponsors(@Path("eventId") eventId: String): Response<EventSponsorsResponse>

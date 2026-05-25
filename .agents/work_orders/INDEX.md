@@ -19,4 +19,4 @@
 | WO-MOB-010 | Fix UNDONE color (ScanError) + remove "Cofnij wejście" button from ScanResultOverlay SUCCESS | [TBD] | ⏳ Otwarty | 2026-05-20 |
 | WO-MOB-011 | Bottom NavBar — wrap labela "Wydarzenie" do 2 linii (opcja A, accept icon shift) | Master | ✅ DONE | 2026-05-20 |
 | WO-MOB-014 | Sync button — odswiezanie listy uczestnikow w cache wydarzenia (manual refresh) | Master + worker-implementer | ✅ DONE | 2026-05-25 |
-| WO-MOB-015 | Reczny check-in prelegentow (bez QR) w mobile | [TBD] | ⏳ Otwarty | 2026-05-25 |
+| WO-MOB-015 | Reczny check-in prelegentow (bez QR) w mobile (3 fazy: backend+DB + mobile online + offline queue) | Master + worker-implementer | ✅ DONE | 2026-05-25 |

@@ -18,7 +18,10 @@ data class DashboardData(
     val logoUrl: String? = null,
     val primaryColor: String? = null,
     val secondaryColor: String? = null,
-    val accentColor: String? = null
+    val accentColor: String? = null,
+    // WO-MOB-015 (2026-05-25): speakers attendance stats
+    val speakersTotal: Int = 0,
+    val speakersAttended: Int = 0
 )
 
 data class TicketClassStat(

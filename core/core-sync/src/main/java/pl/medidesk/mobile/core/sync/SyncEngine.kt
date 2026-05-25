@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.stateIn
 import pl.medidesk.mobile.core.database.dao.OfflineCheckinDao
+import pl.medidesk.mobile.core.database.dao.SpeakerCheckinDao
 import pl.medidesk.mobile.core.database.dao.WalkinDao
 import pl.medidesk.mobile.core.model.SyncState
 import pl.medidesk.mobile.core.model.SyncStatus
@@ -39,7 +40,8 @@ data class ParticipantStatusChange(
 class SyncEngine @Inject constructor(
     @ApplicationContext private val context: Context,
     private val offlineCheckinDao: OfflineCheckinDao,
-    private val walkinDao: WalkinDao
+    private val walkinDao: WalkinDao,
+    private val speakerCheckinDao: SpeakerCheckinDao
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val workManager = WorkManager.getInstance(context)
@@ -53,11 +55,12 @@ class SyncEngine @Inject constructor(
 
     val syncState: StateFlow<SyncState> = combine(
         offlineCheckinDao.getUnsyncedCountFlow(),
-        walkinDao.getPendingCountFlow()
-    ) { pendingCheckins, pendingWalkins ->
+        walkinDao.getPendingCountFlow(),
+        speakerCheckinDao.getUnsyncedCountFlow()
+    ) { pendingCheckins, pendingWalkins, pendingSpeakerCheckins ->
         SyncState(
-            status = if (pendingCheckins > 0 || pendingWalkins > 0) SyncStatus.IDLE else SyncStatus.SUCCESS,
-            pendingCheckins = pendingCheckins,
+            status = if (pendingCheckins > 0 || pendingWalkins > 0 || pendingSpeakerCheckins > 0) SyncStatus.IDLE else SyncStatus.SUCCESS,
+            pendingCheckins = pendingCheckins + pendingSpeakerCheckins,
             pendingWalkins = pendingWalkins
         )
     }.stateIn(scope, SharingStarted.WhileSubscribed(5_000), SyncState())

@@ -119,6 +119,8 @@ dependencies {
     implementation(project(":features:feature-dashboard"))
     implementation(project(":features:feature-more"))
     implementation(project(":features:feature-add-order"))
+    // WO-MOB-015 (2026-05-25): manual speaker check-in (without QR).
+    implementation(project(":features:feature-speakers"))
 
     // Analytics
     implementation(project(":core:core-analytics"))

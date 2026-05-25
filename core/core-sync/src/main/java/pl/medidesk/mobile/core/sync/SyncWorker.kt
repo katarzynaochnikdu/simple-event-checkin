@@ -8,6 +8,7 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import pl.medidesk.mobile.core.database.dao.OfflineCheckinDao
 import pl.medidesk.mobile.core.database.dao.ParticipantDao
+import pl.medidesk.mobile.core.database.dao.SpeakerCheckinDao
 import pl.medidesk.mobile.core.database.dao.SyncMetadataDao
 import pl.medidesk.mobile.core.database.dao.WalkinDao
 import pl.medidesk.mobile.core.database.entities.SyncMetadataEntity
@@ -18,6 +19,8 @@ import pl.medidesk.mobile.core.analytics.AnalyticsEvent
 import pl.medidesk.mobile.core.sync.BuildConfig
 import pl.medidesk.mobile.core.network.dto.CheckinSyncItem
 import pl.medidesk.mobile.core.network.dto.CheckinSyncRequest
+import pl.medidesk.mobile.core.network.dto.SpeakerCheckinBatchEntryDto
+import pl.medidesk.mobile.core.network.dto.SpeakerCheckinSyncBatchDto
 import pl.medidesk.mobile.core.network.dto.WalkinBatchRequest
 import pl.medidesk.mobile.core.network.dto.WalkinRequest
 import java.time.Instant
@@ -30,7 +33,8 @@ class SyncWorker @AssistedInject constructor(
     private val participantDao: ParticipantDao,
     private val offlineCheckinDao: OfflineCheckinDao,
     private val syncMetadataDao: SyncMetadataDao,
-    private val walkinDao: WalkinDao
+    private val walkinDao: WalkinDao,
+    private val speakerCheckinDao: SpeakerCheckinDao
 ) : CoroutineWorker(context, workerParams) {
 
     companion object {
@@ -92,6 +96,14 @@ class SyncWorker @AssistedInject constructor(
             pushWalkins()
         } catch (e: Exception) {
             Log.e(TAG, "Error pushing walkins", e)
+            hasError = true
+        }
+
+        // 4. Push Speaker Check-ins (WO-MOB-015)
+        try {
+            pushSpeakerCheckins(eventId)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error pushing speaker check-ins", e)
             hasError = true
         }
 
@@ -214,6 +226,42 @@ class SyncWorker @AssistedInject constructor(
             walkinDao.markAllSynced()
         } else {
             Log.e(TAG, "Failed to push walkins: ${response.code()}")
+        }
+    }
+
+    /**
+     * Push offline speaker check-ins (WO-MOB-015) — batch entries → /api/mobile/speakers/checkin/sync.
+     * Backend idempotent: dedup po (event_id, speaker_id, last action) — duplicates traktowane
+     * jako sukces (no-op po stronie DB). Mark all synced for event po HTTP 200.
+     */
+    private suspend fun pushSpeakerCheckins(eventId: String): Int {
+        val unsynced = speakerCheckinDao.getUnsynced().filter { it.eventId == eventId }
+        if (unsynced.isEmpty()) return 0
+
+        if (BuildConfig.DEBUG) Log.d(TAG, "Pushing ${unsynced.size} speaker check-ins to server")
+
+        val entries = unsynced.map { e ->
+            SpeakerCheckinBatchEntryDto(
+                eventId = e.eventId,
+                speakerId = e.speakerId,
+                scannedAt = e.scannedAt,
+                deviceId = e.deviceId,
+                action = e.action
+            )
+        }
+
+        val response = apiService.speakerCheckinSync(SpeakerCheckinSyncBatchDto(entries))
+        if (response.isSuccessful) {
+            if (BuildConfig.DEBUG) Log.d(TAG, "Successfully synced ${entries.size} speaker check-ins")
+            speakerCheckinDao.markAllSyncedForEvent(eventId)
+            return entries.size
+        } else {
+            if (BuildConfig.DEBUG) {
+                Log.e(TAG, "Failed to push speaker check-ins: ${response.code()} ${response.errorBody()?.string()}")
+            } else {
+                Log.e(TAG, "Failed to push speaker check-ins: ${response.code()}")
+            }
+            throw Exception("Speaker check-in sync failed")
         }
     }
 }

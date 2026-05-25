@@ -45,9 +45,10 @@ include(":features:feature-participants")
 include(":features:feature-dashboard")
 include(":features:feature-more")
 include(":features:feature-add-order")
+// WO-MOB-015 (2026-05-25): re-enabled feature-speakers for manual speaker check-in.
+include(":features:feature-speakers")
 
 // Modules hidden/removed for simplification
 // include(":features:feature-walkin")
 // include(":features:feature-inhub")
-// include(":features:feature-speakers")
 // include(":features:feature-sponsors")

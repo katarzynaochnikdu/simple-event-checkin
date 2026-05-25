@@ -13,8 +13,10 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,6 +37,15 @@ fun SpeakerDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(uiState.snackbarMessage) {
+        val msg = uiState.snackbarMessage
+        if (!msg.isNullOrBlank()) {
+            snackbarHostState.showSnackbar(msg)
+            viewModel.dismissSnackbar()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -49,7 +60,8 @@ fun SpeakerDetailScreen(
                     containerColor = MaterialTheme.colorScheme.surface
                 )
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
         when {
             uiState.isLoading -> {
@@ -63,7 +75,7 @@ fun SpeakerDetailScreen(
                     modifier = Modifier.fillMaxSize().padding(padding),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(uiState.error ?: "Błąd", color = MaterialTheme.colorScheme.error)
+                    Text(uiState.error ?: "Blad", color = MaterialTheme.colorScheme.error)
                 }
             }
             uiState.speaker != null -> {
@@ -114,7 +126,18 @@ fun SpeakerDetailScreen(
                         )
                     }
 
-                    Spacer(Modifier.height(24.dp))
+                    Spacer(Modifier.height(20.dp))
+
+                    // WO-MOB-015: Attendance CTA
+                    AttendanceCta(
+                        isCheckedIn = uiState.isCheckedIn,
+                        isPending = uiState.isPending,
+                        attendedAt = uiState.attendedAt,
+                        onMark = viewModel::markAttended,
+                        onUndoRequest = viewModel::requestUndoConfirm
+                    )
+
+                    Spacer(Modifier.height(20.dp))
 
                     // Contact section
                     val hasContact = speaker.email.isNotBlank() || speaker.phone.isNotBlank()
@@ -202,6 +225,107 @@ fun SpeakerDetailScreen(
                     }
                 }
             }
+        }
+    }
+
+    if (uiState.showUndoDialog) {
+        AlertDialog(
+            onDismissRequest = viewModel::dismissUndoConfirm,
+            title = { Text("Cofnac check-in?") },
+            text = {
+                val name = uiState.speaker?.displayName.orEmpty()
+                Text(
+                    if (name.isNotBlank())
+                        "Cofnac check-in dla $name?"
+                    else "Cofnac check-in?"
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = viewModel::undoAttended) { Text("Cofnij") }
+            },
+            dismissButton = {
+                TextButton(onClick = viewModel::dismissUndoConfirm) { Text("Anuluj") }
+            }
+        )
+    }
+}
+
+@Composable
+private fun AttendanceCta(
+    isCheckedIn: Boolean,
+    isPending: Boolean,
+    attendedAt: String?,
+    onMark: () -> Unit,
+    onUndoRequest: () -> Unit
+) {
+    if (isPending) {
+        Box(
+            modifier = Modifier.fillMaxWidth().height(48.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(24.dp))
+        }
+        return
+    }
+    if (!isCheckedIn) {
+        Button(
+            onClick = onMark,
+            modifier = Modifier.fillMaxWidth().height(56.dp),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Icon(Icons.Default.CheckCircle, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text("Oznacz jako obecny", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        }
+    } else {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = buildString {
+                            append("Obecny")
+                            val hhmm = parseHourMinute(attendedAt)
+                            if (!hhmm.isNullOrBlank()) append(" od $hhmm")
+                        },
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                Spacer(Modifier.height(8.dp))
+                OutlinedButton(onClick = onUndoRequest) { Text("Cofnij") }
+            }
+        }
+    }
+}
+
+/**
+ * Format ISO8601 timestamp → "HH:mm" or null on parse failure.
+ * Uses java.time.OffsetDateTime/ZonedDateTime/Instant — accepts most common formats from the backend.
+ */
+private fun parseHourMinute(iso: String?): String? {
+    if (iso.isNullOrBlank()) return null
+    return try {
+        val zoned = java.time.OffsetDateTime.parse(iso).atZoneSameInstant(java.time.ZoneId.systemDefault())
+        java.time.format.DateTimeFormatter.ofPattern("HH:mm").format(zoned)
+    } catch (e: Exception) {
+        try {
+            val instant = java.time.Instant.parse(iso)
+            java.time.format.DateTimeFormatter.ofPattern("HH:mm")
+                .withZone(java.time.ZoneId.systemDefault())
+                .format(instant)
+        } catch (_: Exception) {
+            null
         }
     }
 }

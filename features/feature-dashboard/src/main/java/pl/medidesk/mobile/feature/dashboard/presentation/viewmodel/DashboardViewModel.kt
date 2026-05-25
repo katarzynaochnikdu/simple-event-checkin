@@ -12,6 +12,7 @@ import pl.medidesk.mobile.core.network.MobileApiService
 import pl.medidesk.mobile.core.analytics.Analytics
 import pl.medidesk.mobile.core.analytics.AnalyticsEvent
 import pl.medidesk.mobile.core.network.dto.DashboardResponse
+import pl.medidesk.mobile.core.network.dto.SpeakerCheckinStatsDto
 import pl.medidesk.mobile.core.sync.SyncEngine
 import pl.medidesk.mobile.feature.events.domain.repository.EventsRepository
 import retrofit2.Response
@@ -84,8 +85,13 @@ class DashboardViewModel @Inject constructor(
                 User(id?.toIntOrNull() ?: 0, email ?: "", first ?: "", last ?: "", role ?: "PARTICIPANT")
             }
 
-            val dashboardFlow: Flow<Response<DashboardResponse>?> = flow { 
+            val dashboardFlow: Flow<Response<DashboardResponse>?> = flow {
                 try { emit(apiService.getDashboard(eventId)) } catch (e: Exception) { emit(null) }
+            }
+
+            // WO-MOB-015: speakers attendance counters (best-effort — falls back to 0/0 on failure)
+            val speakerStatsFlow: Flow<SpeakerCheckinStatsDto?> = flow {
+                try { emit(apiService.speakerCheckinStats(eventId).body()) } catch (e: Exception) { emit(null) }
             }
 
             val eventInfoFlow: Flow<EventItem?> = flow {
@@ -102,7 +108,8 @@ class DashboardViewModel @Inject constructor(
                 participantDao.countCheckedInFlow(eventId),
                 participantDao.getRecentCheckinsFlow(eventId),
                 eventInfoFlow,
-                syncEngine.syncState
+                syncEngine.syncState,
+                speakerStatsFlow
             ) { args: Array<Any?> ->
                 val user = args[0] as User
                 val response = args[1] as? Response<DashboardResponse>
@@ -111,13 +118,14 @@ class DashboardViewModel @Inject constructor(
                 val recentEntities = args[4] as List<*>
                 val eventInfo = args[5] as? EventItem
                 val syncState = args[6] as SyncState
+                val speakerStats = args[7] as? SpeakerCheckinStatsDto
 
                 val participants = recentEntities.mapNotNull { it as? Participant }
                 val body = response?.body()
-                
+
                 val total = body?.totalRegistered ?: localTotal
                 val checked = body?.checkedIn ?: localCheckedIn
-                
+
                 val data = DashboardData(
                     eventId = body?.eventId ?: eventId,
                     totalRegistered = total,
@@ -136,9 +144,11 @@ class DashboardViewModel @Inject constructor(
                     logoUrl = body?.logoUrl ?: eventInfo?.logoUrl,
                     primaryColor = body?.primaryColor ?: eventInfo?.primaryColor,
                     secondaryColor = body?.secondaryColor ?: eventInfo?.secondaryColor,
-                    accentColor = body?.accentColor ?: eventInfo?.accentColor
+                    accentColor = body?.accentColor ?: eventInfo?.accentColor,
+                    speakersTotal = speakerStats?.total ?: 0,
+                    speakersAttended = speakerStats?.attended ?: 0
                 )
-                
+
                 DashboardUiState.Success(data, syncState, user)
             }.collect { _uiState.value = it }
         }

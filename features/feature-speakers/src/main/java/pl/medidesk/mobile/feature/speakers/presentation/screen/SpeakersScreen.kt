@@ -13,8 +13,10 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,6 +37,16 @@ fun SpeakersScreen(
     viewModel: SpeakersViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // Push pending snackbar messages from ViewModel
+    LaunchedEffect(uiState.snackbarMessage) {
+        val msg = uiState.snackbarMessage
+        if (!msg.isNullOrBlank()) {
+            snackbarHostState.showSnackbar(msg)
+            viewModel.dismissSnackbar()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -49,7 +61,8 @@ fun SpeakersScreen(
                     containerColor = MaterialTheme.colorScheme.surface
                 )
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -69,6 +82,26 @@ fun SpeakersScreen(
                 shape = RoundedCornerShape(12.dp)
             )
 
+            // Header — attended counter + "Tylko nieobecni" filter chip
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "Obecni: ${uiState.attended}/${uiState.total.coerceAtLeast(uiState.speakers.size)}",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                FilterChip(
+                    selected = uiState.onlyAbsentFilter,
+                    onClick = viewModel::toggleOnlyAbsentFilter,
+                    label = { Text("Tylko nieobecni") }
+                )
+            }
+
             when {
                 uiState.isLoading -> {
                     Box(
@@ -84,20 +117,23 @@ fun SpeakersScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(uiState.error ?: "Błąd", color = MaterialTheme.colorScheme.error)
+                            Text(uiState.error ?: "Blad", color = MaterialTheme.colorScheme.error)
                             Spacer(Modifier.height(8.dp))
-                            Button(onClick = viewModel::loadSpeakers) { Text("Ponów") }
+                            Button(onClick = viewModel::loadSpeakers) { Text("Ponow") }
                         }
                     }
                 }
-                uiState.filteredSpeakers.isEmpty() -> {
+                uiState.visibleSpeakers.isEmpty() -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            if (uiState.searchQuery.isNotBlank()) "Brak wyników"
-                            else "Brak prelegentów",
+                            text = when {
+                                uiState.searchQuery.isNotBlank() -> "Brak wynikow"
+                                uiState.onlyAbsentFilter && uiState.attended > 0 -> "Wszyscy odhaczeni"
+                                else -> "Brak prelegentow"
+                            },
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -105,19 +141,28 @@ fun SpeakersScreen(
                 }
                 else -> {
                     Text(
-                        "${uiState.filteredSpeakers.size} prelegentów",
+                        "${uiState.visibleSpeakers.size} prelegentow",
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelMedium,
+                        style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     LazyColumn(
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(uiState.filteredSpeakers, key = { it.speakerId }) { speaker ->
+                        items(uiState.visibleSpeakers, key = { it.speakerId }) { speaker ->
                             SpeakerCard(
                                 speaker = speaker,
-                                onClick = { onSpeakerClick(speaker.speakerId) }
+                                isCheckedIn = speaker.speakerId in uiState.checkedInSpeakerIds,
+                                isPending = speaker.speakerId in uiState.pendingSpeakerIds,
+                                onClick = { onSpeakerClick(speaker.speakerId) },
+                                onCheckClick = {
+                                    if (speaker.speakerId in uiState.checkedInSpeakerIds) {
+                                        viewModel.requestUndoConfirm(speaker.speakerId)
+                                    } else {
+                                        viewModel.markAttended(speaker.speakerId)
+                                    }
+                                }
                             )
                         }
                     }
@@ -125,10 +170,39 @@ fun SpeakersScreen(
             }
         }
     }
+
+    // Undo confirm dialog
+    val undoTarget = uiState.undoConfirmSpeakerId
+    if (undoTarget != null) {
+        val targetName = uiState.speakers.firstOrNull { it.speakerId == undoTarget }?.displayName.orEmpty()
+        AlertDialog(
+            onDismissRequest = viewModel::dismissUndoConfirm,
+            title = { Text("Cofnac check-in?") },
+            text = {
+                Text(
+                    if (targetName.isNotBlank())
+                        "Cofnac check-in dla $targetName?"
+                    else "Cofnac check-in?"
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { viewModel.undoAttended(undoTarget) }) { Text("Cofnij") }
+            },
+            dismissButton = {
+                TextButton(onClick = viewModel::dismissUndoConfirm) { Text("Anuluj") }
+            }
+        )
+    }
 }
 
 @Composable
-private fun SpeakerCard(speaker: Speaker, onClick: () -> Unit) {
+private fun SpeakerCard(
+    speaker: Speaker,
+    isCheckedIn: Boolean,
+    isPending: Boolean,
+    onClick: () -> Unit,
+    onCheckClick: () -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -183,24 +257,25 @@ private fun SpeakerCard(speaker: Speaker, onClick: () -> Unit) {
                         overflow = TextOverflow.Ellipsis
                     )
                 }
-                if (speaker.bio.isNotBlank()) {
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        speaker.bio,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
             }
 
-            Icon(
-                Icons.Default.Person,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            // Right-side check toggle — WO-MOB-015
+            if (isPending) {
+                Box(
+                    modifier = Modifier.size(48.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp
+                    )
+                }
+            } else {
+                Checkbox(
+                    checked = isCheckedIn,
+                    onCheckedChange = { onCheckClick() }
+                )
+            }
         }
     }
 }

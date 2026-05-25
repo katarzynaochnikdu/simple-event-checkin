@@ -75,6 +75,7 @@ fun DashboardScreen(
                     onParticipantsClick = onNavigateToParticipants,
                     onStatsClick = onNavigateToStats,
                     onMyMenteesClick = onNavigateToMyMentees,
+                    onSpeakersClick = onNavigateToSpeakers,
                     onBackToEvents = onBackToEvents
                 )
             }
@@ -90,6 +91,7 @@ private fun OrganizerDashboard(
     onParticipantsClick: (filterType: String?) -> Unit,
     onStatsClick: () -> Unit,
     onMyMenteesClick: () -> Unit,
+    onSpeakersClick: () -> Unit,
     onBackToEvents: () -> Unit
 ) {
     var showAddOrderSheet by remember { mutableStateOf(false) }
@@ -102,6 +104,20 @@ private fun OrganizerDashboard(
                 SummaryCard(data.checkedIn.toString(), "ODZNACZENI", StatusColors.Paid, Modifier.weight(1f)) { onParticipantsClick("checkedIn") }
                 SummaryCard((data.totalRegistered - data.checkedIn).toString(), "OCZEKUJĄCY", StatusColors.Pending, Modifier.weight(1f)) { onParticipantsClick("pending") }
                 SummaryCard(data.totalRegistered.toString(), "ŁĄCZNIE", MaterialTheme.colorScheme.onBackground, Modifier.weight(1f)) { onParticipantsClick(null) }
+            }
+            // WO-MOB-015 (2026-05-25): Prelegenci K/N — 1 wiersz statystyk obok uczestnikow
+            if (data.speakersTotal > 0) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    SummaryCard(
+                        value = "${data.speakersAttended}/${data.speakersTotal}",
+                        label = "PRELEGENCI",
+                        color = StatusColors.Paid,
+                        modifier = Modifier.weight(1f)
+                    ) { onSpeakersClick() }
+                }
             }
         }
         Row(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
