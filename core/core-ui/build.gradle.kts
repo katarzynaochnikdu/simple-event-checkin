@@ -9,6 +9,8 @@ android {
 
 dependencies {
     implementation(project(":core:core-model"))
+    // WO-MOB-016: ParticipantTagChip Composable konsumuje ParticipantTagDefinitionDto
+    implementation(project(":core:core-network"))
     api(platform(libs.compose.bom))
     api(libs.compose.ui)
     api(libs.compose.ui.graphics)

@@ -13,6 +13,10 @@ interface MobileApiService {
     @GET("api/mobile/me")
     suspend fun me(): Response<UserDto>
 
+    // WO-MOB-016: kanoniczne definicje tagow uczestnikow (label_pl + kolory)
+    @GET("api/mobile/participant-tags")
+    suspend fun getParticipantTags(): Response<ParticipantTagsResponse>
+
     // Events
     @GET("api/mobile/events")
     suspend fun getEvents(): Response<EventsResponse>

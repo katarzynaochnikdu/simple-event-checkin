@@ -12,4 +12,6 @@ dependencies {
     implementation(libs.navigation.compose)
     implementation(libs.hilt.navigation.compose)
     implementation(project(":core:core-analytics"))
+    // WO-MOB-016: ParticipantTagsRepository.refresh() po loginie
+    implementation(project(":core:core-sync"))
 }

@@ -11,6 +11,7 @@ import pl.medidesk.mobile.core.analytics.Analytics
 import pl.medidesk.mobile.core.analytics.AnalyticsEvent
 import pl.medidesk.mobile.core.network.MobileApiService
 import pl.medidesk.mobile.core.network.dto.ForgotPasswordRequest
+import pl.medidesk.mobile.core.sync.ParticipantTagsRepository
 import pl.medidesk.mobile.feature.auth.domain.usecase.LoginUseCase
 import javax.inject.Inject
 
@@ -29,7 +30,8 @@ data class LoginUiState(
 @HiltViewModel
 class LoginViewModel @Inject constructor(
     private val loginUseCase: LoginUseCase,
-    private val apiService: MobileApiService
+    private val apiService: MobileApiService,
+    private val participantTagsRepository: ParticipantTagsRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
@@ -48,6 +50,9 @@ class LoginViewModel @Inject constructor(
                 // Identify user — only userId + role (no PII like email/name)
                 user?.let { Analytics.identify(userId = it.id.toString(), role = it.role) }
                 Analytics.capture(AnalyticsEvent.USER_LOGGED_IN, mapOf(AnalyticsEvent.Props.ROLE to (user?.role ?: "")))
+                // WO-MOB-016: fire-and-forget refresh kanonicznych definicji tagow
+                // (label_pl + kolory chipow). Fail-soft - repo zostawia defaults.
+                viewModelScope.launch { participantTagsRepository.refresh() }
                 state.copy(isLoading = false, isSuccess = true, mustChangePassword = user?.mustChangePassword == true)
             } else {
                 state.copy(isLoading = false, error = result.exceptionOrNull()?.message ?: "Błąd logowania")

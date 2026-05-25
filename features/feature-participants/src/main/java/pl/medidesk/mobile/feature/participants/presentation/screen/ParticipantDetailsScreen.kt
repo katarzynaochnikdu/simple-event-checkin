@@ -41,7 +41,9 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import pl.medidesk.mobile.core.model.Participant
+import pl.medidesk.mobile.core.sync.ParticipantTagsRepository
 import pl.medidesk.mobile.core.ui.components.LoadingScreen
+import pl.medidesk.mobile.core.ui.components.ParticipantTagChip
 import pl.medidesk.mobile.core.ui.theme.MdBlue
 import pl.medidesk.mobile.core.ui.theme.StatusColors
 import pl.medidesk.mobile.feature.participants.presentation.viewmodel.CheckinResult
@@ -167,6 +169,7 @@ fun ParticipantDetailsScreen(
                 onCheckinClick = { showCheckinDialog = true },
                 onUndoClick = { showUndoDialog = true },
                 onBackClick = onBackClick,
+                tagsRepository = viewModel.tagsRepository,
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -187,8 +190,11 @@ private fun ParticipantDetailsContent(
     onCheckinClick: () -> Unit,
     onUndoClick: () -> Unit,
     onBackClick: () -> Unit,
+    tagsRepository: ParticipantTagsRepository,
     modifier: Modifier = Modifier
 ) {
+    // WO-MOB-016: subscribe na cache zeby chip re-renderowal po refresh()
+    val tagDefs by tagsRepository.tags.collectAsState()
     val context = LocalContext.current
 
     Column(
@@ -197,7 +203,7 @@ private fun ParticipantDetailsContent(
             .verticalScroll(scrollState)
             .statusBarsPadding()
     ) {
-        HeroHeader(participant, onBackClick)
+        HeroHeader(participant, onBackClick, tagDefs)
         Spacer(Modifier.height(20.dp))
         StatusIconsRow(participant)
         Spacer(Modifier.height(16.dp))
@@ -211,7 +217,11 @@ private fun ParticipantDetailsContent(
 }
 
 @Composable
-private fun HeroHeader(participant: Participant, onBackClick: () -> Unit) {
+private fun HeroHeader(
+    participant: Participant,
+    onBackClick: () -> Unit,
+    tagDefs: Map<String, pl.medidesk.mobile.core.network.dto.ParticipantTagDefinitionDto>
+) {
     val cs = MaterialTheme.colorScheme
 
     val initials = buildString {
@@ -302,19 +312,10 @@ private fun HeroHeader(participant: Participant, onBackClick: () -> Unit) {
             ) {
                 Spacer(Modifier.weight(1f))
                 participant.tags.forEach { tag ->
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = cs.surfaceVariant,
-                        border = BorderStroke(1.dp, cs.outlineVariant)
-                    ) {
-                        Text(
-                            tag,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                            fontSize = 11.sp,
-                            color = cs.onSurfaceVariant,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
+                    ParticipantTagChip(
+                        rawKey = tag,
+                        definition = tagDefs[tag]
+                    )
                 }
                 Spacer(Modifier.weight(1f))
             }

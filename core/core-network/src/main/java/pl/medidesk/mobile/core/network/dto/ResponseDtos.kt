@@ -472,3 +472,23 @@ data class SuccessResponse(
     val success: Boolean,
     val error: String? = null
 )
+
+// WO-MOB-016: Participant tag definitions (canonical labels + colors).
+// Mirror endpointu desktop /admin/api/global-settings/participant-tags
+// dla zalogowanego mobile usera (read-only).
+@JsonClass(generateAdapter = true)
+data class ParticipantTagDefinitionDto(
+    val key: String,
+    @Json(name = "label_pl") val labelPl: String,
+    @Json(name = "color_bg") val colorBg: String,
+    @Json(name = "color_text") val colorText: String,
+    @Json(name = "display_order") val displayOrder: Int,
+    @Json(name = "is_active") val isActive: Boolean
+)
+
+@JsonClass(generateAdapter = true)
+data class ParticipantTagsResponse(
+    val success: Boolean,
+    val tags: List<ParticipantTagDefinitionDto> = emptyList(),
+    val error: String? = null
+)

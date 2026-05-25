@@ -16,6 +16,7 @@ import pl.medidesk.mobile.core.network.MobileApiService
 import pl.medidesk.mobile.core.network.dto.CheckinRequest
 import pl.medidesk.mobile.core.network.dto.UndoCheckinRequest
 import pl.medidesk.mobile.core.sync.ParticipantStatusChange
+import pl.medidesk.mobile.core.sync.ParticipantTagsRepository
 import pl.medidesk.mobile.core.sync.SyncEngine
 import pl.medidesk.mobile.feature.participants.BuildConfig
 import java.time.Instant
@@ -41,6 +42,7 @@ class ParticipantDetailsViewModel @Inject constructor(
     private val participantDao: ParticipantDao,
     private val apiService: MobileApiService,
     private val syncEngine: SyncEngine,
+    val tagsRepository: ParticipantTagsRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
