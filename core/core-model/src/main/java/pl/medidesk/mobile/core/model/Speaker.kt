@@ -17,8 +17,10 @@ data class Speaker(
     val website: String = "",
     val academicTitle: String = ""
 ) {
+    // WO-MOB-015 hotfix3 (2026-05-25): pomijaj honorific "Pan"/"Pani" (es.title) w displayName.
+    // Zachowaj academicTitle (Dr/Prof./mgr) bo to faktyczna kwalifikacja prelegenta.
     val displayName: String get() = buildString {
-        if (title.isNotBlank()) append("$title ")
+        if (academicTitle.isNotBlank()) append("$academicTitle ")
         append("$firstName $lastName")
     }.trim()
 
