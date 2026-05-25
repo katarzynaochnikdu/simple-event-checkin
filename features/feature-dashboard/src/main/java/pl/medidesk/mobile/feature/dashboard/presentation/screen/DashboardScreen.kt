@@ -105,24 +105,22 @@ private fun OrganizerDashboard(
                 SummaryCard((data.totalRegistered - data.checkedIn).toString(), "OCZEKUJĄCY", StatusColors.Pending, Modifier.weight(1f)) { onParticipantsClick("pending") }
                 SummaryCard(data.totalRegistered.toString(), "ŁĄCZNIE", MaterialTheme.colorScheme.onBackground, Modifier.weight(1f)) { onParticipantsClick(null) }
             }
-            // WO-MOB-015 (2026-05-25): Prelegenci K/N — 1 wiersz statystyk obok uczestnikow
-            if (data.speakersTotal > 0) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    SummaryCard(
-                        value = "${data.speakersAttended}/${data.speakersTotal}",
-                        label = "PRELEGENCI",
-                        color = StatusColors.Paid,
-                        modifier = Modifier.weight(1f)
-                    ) { onSpeakersClick() }
-                }
-            }
         }
         Row(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             MenuButton("Uczestnicy", Icons.Default.Group, MaterialTheme.colorScheme.secondary, { onParticipantsClick(null) }, Modifier.weight(1f))
             MenuButton("Dodaj uczestnika", Icons.Default.PersonAdd, MaterialTheme.colorScheme.primary, { showAddOrderSheet = true }, Modifier.weight(1f))
+        }
+        // WO-MOB-015 hotfix2 (2026-05-25): full-width Prelegenci tile w kolorze ProgressCard,
+        // białe liczby + ikona mówcy. Pozycja: między rzędami akcji (po Uczestnikach, przed Moimi podopiecznymi).
+        if (data.speakersTotal > 0) {
+            Box(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
+                SpeakersCard(
+                    attended = data.speakersAttended,
+                    total = data.speakersTotal,
+                    primaryColor = data.primaryColor,
+                    onClick = onSpeakersClick
+                )
+            }
         }
         Row(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             MenuButton("Moi podopieczni", Icons.Default.SupervisorAccount, MaterialTheme.colorScheme.primary, onMyMenteesClick, Modifier.weight(1f))
@@ -215,6 +213,48 @@ private fun MenuButton(title: String, icon: ImageVector, iconColor: Color, onCli
             }
             Spacer(Modifier.width(12.dp))
             Text(title, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
+        }
+    }
+}
+
+// WO-MOB-015 hotfix2 (2026-05-25): pełnoszerokościowy kafelek "Prelegenci K/N"
+// w kolorze wydarzenia (parseHexColor — identyczny pattern jak ProgressCard).
+// Białe liczby + ikona mówcy (Mic) + label "PRELEGENCI".
+@Composable
+private fun SpeakersCard(attended: Int, total: Int, primaryColor: String?, onClick: () -> Unit) {
+    val cardColor = pl.medidesk.mobile.feature.events.presentation.screen.parseHexColor(primaryColor)
+        ?: MaterialTheme.colorScheme.primary
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth().height(72.dp),
+        colors = CardDefaults.cardColors(containerColor = cardColor),
+        elevation = CardDefaults.cardElevation(2.dp),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                Icons.Default.Mic,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(28.dp)
+            )
+            Spacer(Modifier.width(12.dp))
+            Text(
+                "$attended/$total",
+                color = Color.White,
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(Modifier.weight(1f))
+            Text(
+                "PRELEGENCI",
+                color = Color.White.copy(alpha = 0.85f),
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold
+            )
         }
     }
 }
