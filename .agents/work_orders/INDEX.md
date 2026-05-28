@@ -24,3 +24,6 @@
 | WO-MOB-015 | Reczny check-in prelegentow (bez QR) w mobile (3 fazy: backend+DB + mobile online + offline queue) | Master + worker-implementer | ✅ DONE | 2026-05-25 |
 | WO-MOB-016 | Mobile etykiety tagów uczestników zgodne z modelem kanonicznym (desktop) | worker-implementer | ✅ DONE | 2026-05-25 |
 | WO-MOB-017 | Zakładka „Trwające" na liście wydarzeń (dynamiczna, dev-gated Sandbox) + fix data-granularny „dzień wydarzenia wpada w przeszłość" | Master + worker-implementer | ✅ DONE | 2026-05-28 |
+| WO-MOB-018 | Sandbox events inline w grupach z pomarańczowym pillem „SANDBOX" (dev-only), usunięcie osobnej zakładki Sandbox | Master + worker-implementer | ✅ DONE | 2026-05-28 |
+| WO-MOB-021 | Autoscroll na sekcję „Szczegóły zamówienia" w karcie uczestnika (ParticipantDetailsScreen) | worker-implementer | ✅ DONE | 2026-05-28 |
+| WO-MOB-022 | Auto-scroll/focus rozwiniętej CompanyCard na ekranie „Moi podopieczni" (MyMenteesScreen, LazyColumn → animateScrollToItem) | worker-implementer | ✅ DONE | 2026-05-28 |

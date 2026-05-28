@@ -76,7 +76,6 @@ fun EventsScreen(
                             EventTab.ONGOING -> "Trwające"
                             EventTab.UPCOMING -> "Nadchodzące"
                             EventTab.PAST -> "Przeszłe"
-                            EventTab.SANDBOX -> "Sandbox"
                         }
                         Tab(
                             selected = uiState.selectedTab == tab,
@@ -179,14 +178,21 @@ private fun EventCompactCard(event: EventItem, onClick: () -> Unit, modifier: Mo
                     .padding(horizontal = 12.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.Center
             ) {
-                Text(
-                    text = event.eventName,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = event.eventName,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+                    if (isSandbox(event)) {
+                        Spacer(Modifier.width(6.dp))
+                        SandboxPill()
+                    }
+                }
                 Spacer(Modifier.height(2.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.CalendarToday, null, modifier = Modifier.size(11.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -215,6 +221,28 @@ private fun EventCompactCard(event: EventItem, onClick: () -> Unit, modifier: Mo
                 }
             }
         }
+    }
+}
+
+/**
+ * Pomarańczowy pill „SANDBOX" (orange-500) — oznaczenie wydarzeń sandboxowych na karcie.
+ * Widoczny tylko gdy [isSandbox] = true; sandbox events są dev-gated w VM.
+ */
+@Composable
+private fun SandboxPill() {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(6.dp))
+            .background(Color(0xFFF97316))
+            .padding(horizontal = 6.dp, vertical = 2.dp)
+    ) {
+        Text(
+            text = "SANDBOX",
+            color = Color.White,
+            fontSize = 9.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 0.5.sp
+        )
     }
 }
 
@@ -298,6 +326,16 @@ private fun EmptyState(isSearching: Boolean) {
             fontSize = 14.sp
         )
     }
+}
+
+/**
+ * Detekcja wydarzenia sandbox — pojedyncze top-level źródło prawdy używane zarówno
+ * przez [EventsViewModel] (dev-gate) jak i przez kartę (pomarańczowy pill „SANDBOX").
+ * Caveat: event z „test" w nazwie również jest traktowany jako sandbox (zachowanie pre-existing).
+ */
+fun isSandbox(event: EventItem): Boolean {
+    val name = event.eventName.lowercase()
+    return name.contains("sandbox") || name.contains("test") || event.status?.lowercase() == "draft"
 }
 
 fun parseToDateTime(raw: String?): LocalDateTime {
