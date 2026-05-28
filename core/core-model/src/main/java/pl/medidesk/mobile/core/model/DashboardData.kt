@@ -10,7 +10,9 @@ data class DashboardData(
     val byTicketClass: List<TicketClassStat> = emptyList(),
     val timeline: List<TimelineEntry> = emptyList(),
     val topScanners: List<ScannerStat> = emptyList(),
-    val recentCheckins: List<Participant> = emptyList(),
+    // WO-MOB-020 (2026-05-28): per-company ranking of checked-in attendees (TOP FIRMY).
+    // Aggregated in DashboardViewModel from checked-in participants (company -> purchaserCompany fallback).
+    val companyStats: List<CompanyStat> = emptyList(),
     val eventName: String = "",
     val startDate: String = "",
     val venue: String = "",
@@ -37,6 +39,11 @@ data class TimelineEntry(
 
 data class ScannerStat(
     val email: String,
+    val count: Int
+)
+
+data class CompanyStat(
+    val name: String,
     val count: Int
 )
 

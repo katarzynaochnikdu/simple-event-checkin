@@ -6,6 +6,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import pl.medidesk.mobile.core.database.dao.ParticipantDao
+import pl.medidesk.mobile.core.database.entities.ParticipantEntity
+import pl.medidesk.mobile.core.mappers.toDomain
 import pl.medidesk.mobile.core.datastore.AuthDataStore
 import pl.medidesk.mobile.core.model.*
 import pl.medidesk.mobile.core.network.MobileApiService
@@ -106,7 +108,7 @@ class DashboardViewModel @Inject constructor(
                 dashboardFlow,
                 participantDao.countTotalFlow(eventId),
                 participantDao.countCheckedInFlow(eventId),
-                participantDao.getRecentCheckinsFlow(eventId),
+                participantDao.getCheckedInParticipantsFlow(eventId),
                 eventInfoFlow,
                 syncEngine.syncState,
                 speakerStatsFlow
@@ -115,12 +117,26 @@ class DashboardViewModel @Inject constructor(
                 val response = args[1] as? Response<DashboardResponse>
                 val localTotal = args[2] as Int
                 val localCheckedIn = args[3] as Int
-                val recentEntities = args[4] as List<*>
+                // Room query returns List<ParticipantEntity> — must map through toDomain()
+                // (the previous `it as? Participant` cast silently dropped every row → TOP FIRMY always empty).
+                val checkedIn = (args[4] as List<*>).filterIsInstance<ParticipantEntity>().map { it.toDomain() }
                 val eventInfo = args[5] as? EventItem
                 val syncState = args[6] as SyncState
                 val speakerStats = args[7] as? SpeakerCheckinStatsDto
 
-                val participants = recentEntities.mapNotNull { it as? Participant }
+                // TOP FIRMY ranking: per-company count of checked-in attendees.
+                // Fallback company -> purchaserCompany because per-participant `company` is often blank
+                // in this product; real org name lives in purchaser_company.
+                val companyStats = checkedIn
+                    .map { p -> p.company?.takeIf { it.isNotBlank() } ?: p.purchaserCompany }
+                    .filterNot { it.isNullOrBlank() }
+                    .groupingBy { it!!.trim() }
+                    .eachCount()
+                    .toList()
+                    .sortedByDescending { it.second }
+                    .take(8)
+                    .map { CompanyStat(it.first, it.second) }
+
                 val body = response?.body()
 
                 val total = body?.totalRegistered ?: localTotal
@@ -136,7 +152,7 @@ class DashboardViewModel @Inject constructor(
                     byTicketClass = body?.byTicketClass?.map { TicketClassStat(it.ticketName, it.total, it.checkedIn) } ?: emptyList(),
                     timeline = body?.timeline?.map { TimelineEntry(it.hour, it.count) } ?: emptyList(),
                     topScanners = body?.topScanners?.map { ScannerStat(it.email, it.count) } ?: emptyList(),
-                    recentCheckins = participants,
+                    companyStats = companyStats,
                     eventName = eventInfo?.eventName ?: body?.eventId ?: "Wydarzenie",
                     startDate = eventInfo?.startDate ?: "",
                     venue = eventInfo?.venue ?: "",

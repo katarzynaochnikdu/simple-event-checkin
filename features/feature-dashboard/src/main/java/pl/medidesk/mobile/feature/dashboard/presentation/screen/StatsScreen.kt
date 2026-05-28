@@ -2,6 +2,8 @@ package pl.medidesk.mobile.feature.dashboard.presentation.screen
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -110,18 +112,28 @@ private fun StatsContent(data: DashboardData, syncState: SyncState, onSyncClick:
                             Text("Brak danych czasowych", color = mutedColor)
                         }
                     } else {
+                        // maxOf(maxCount, 1) guards against divide-by-zero when all counts are 0.
+                        val maxCount = (data.timeline.maxOfOrNull { it.count } ?: 0).coerceAtLeast(1)
+                        // horizontalScroll so the chart stays readable with up to ~48 hourly buckets
+                        // (48h window) instead of squeezing them with SpaceBetween.
                         Row(
-                            Modifier.fillMaxWidth().height(120.dp).padding(horizontal = 8.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
+                            Modifier
+                                .fillMaxWidth()
+                                .height(140.dp)
+                                .horizontalScroll(rememberScrollState())
+                                .padding(horizontal = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
                             verticalAlignment = Alignment.Bottom
                         ) {
-                            val maxCount = data.timeline.maxOfOrNull { it.count } ?: 1
                             data.timeline.forEach { entry ->
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    // Count label above the bar.
+                                    Text(entry.count.toString(), fontSize = 10.sp, color = labelColor)
+                                    Spacer(Modifier.height(2.dp))
                                     val barHeight = (entry.count.toFloat() / maxCount.toFloat() * 80).dp
                                     Box(
                                         modifier = Modifier
-                                            .width(24.dp)
+                                            .width(28.dp)
                                             .height(barHeight)
                                             .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
                                             .background(barColor)
@@ -148,24 +160,16 @@ private fun StatsContent(data: DashboardData, syncState: SyncState, onSyncClick:
                     Text("TOP FIRMY / ORGANIZACJE", style = MaterialTheme.typography.labelMedium, color = labelColor)
                     Spacer(Modifier.height(16.dp))
 
-                    val companyStats = data.recentCheckins
-                        .mapNotNull { it.company }
-                        .filter { it.isNotBlank() }
-                        .groupingBy { it }
-                        .eachCount()
-                        .toList()
-                        .sortedByDescending { it.second }
-                        .take(5)
-
-                    if (companyStats.isEmpty()) {
+                    // Aggregation moved to DashboardViewModel (companyStats) — Compose just renders.
+                    if (data.companyStats.isEmpty()) {
                         Text("Brak danych o firmach", color = mutedColor, modifier = Modifier.padding(vertical = 8.dp))
                     } else {
-                        companyStats.forEach { (name, count) ->
+                        data.companyStats.forEach { stat ->
                             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 8.dp)) {
                                 Icon(Icons.Default.Business, null, tint = accentColor, modifier = Modifier.size(16.dp))
                                 Spacer(Modifier.width(12.dp))
-                                Text(name, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
-                                Text("$count osób", fontWeight = FontWeight.Bold)
+                                Text(stat.name, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                                Text("${stat.count} osób", fontWeight = FontWeight.Bold)
                             }
                             HorizontalDivider(color = dividerColor)
                         }

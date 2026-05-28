@@ -51,6 +51,11 @@ interface ParticipantDao {
     @Query("SELECT * FROM participants WHERE event_id = :eventId AND checked_in_at IS NOT NULL ORDER BY checked_in_at DESC LIMIT 10")
     fun getRecentCheckinsFlow(eventId: String): Flow<List<ParticipantEntity>>
 
+    // WO-MOB-020 (2026-05-28): full checked-in list (NO limit) for company ranking on StatsScreen.
+    // Distinct from getRecentCheckinsFlow ("recent 10") so TOP FIRMY can aggregate the whole event.
+    @Query("SELECT * FROM participants WHERE event_id = :eventId AND checked_in_at IS NOT NULL")
+    fun getCheckedInParticipantsFlow(eventId: String): Flow<List<ParticipantEntity>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(participants: List<ParticipantEntity>)
 
