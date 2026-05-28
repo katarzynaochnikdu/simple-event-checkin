@@ -4,6 +4,9 @@
 **Worker:** Implementer (mobile + backend)
 **Stage:** Mobile UX polish — alignment z desktop "Tagi uczestników"
 **Priorytet:** Normalny (kosmetyczne + spójność, nie blokuje)
+**Status:** ✅ **DONE** (2026-05-28 closure; kod zacommitowany backend `5fa1764` + mobile `27ae602` przed sesją, wypchnięty)
+
+> **Closure note (2026-05-28):** Pre-flight verification wykazała, że WO był już w pełni zaimplementowany i zacommitowany — workera NIE dispatchowano. `ParticipantDetailsScreen` ma kanoniczne labele ✅. **`SponsorDetailScreen` świadomie POZA ZAKRESEM** (user-confirmed): tagi sponsora to słownik firmowy/branżowy, nie `participant_tag` — migracja byłaby błędem kategorii. Szczegóły: [REVIEW-WO-MOB-016](review_notes/REVIEW-WO-MOB-016.md) + [IMPLEMENTATION_REPORT](IMPLEMENTATION_REPORT_WO_MOB_016.md).
 
 ## Cel
 

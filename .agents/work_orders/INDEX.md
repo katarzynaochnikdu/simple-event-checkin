@@ -15,8 +15,11 @@
 | WO-MOB-005 | Backend SELECT extension — uzupełnij brakujące 5 pól w get_participants_for_mobile() endpoint | [TBD] | ⏳ Otwarty | 2026-05-19 |
 | WO-MOB-006 | RSVP semantics unification desktop↔mobile (strict dla wszystkich, modyfikuje backend desktop) | [TBD] | ⏳ Otwarty | 2026-05-19 |
 | WO-MOB-007 | Fix drift `get_all_participants` rsvp_sent — dodaj scheduled campaign OR clause (linia 10791) | [TBD] | ⏳ Otwarty | 2026-05-19 |
-| WO-MOB-009 | Fix — feedback check-in (zielony/czerwony) zawsze jako top-level overlay nad tab barem | [TBD] | ⏳ Otwarty | 2026-05-19 |
-| WO-MOB-010 | Fix UNDONE color (ScanError) + remove "Cofnij wejście" button from ScanResultOverlay SUCCESS | [TBD] | ⏳ Otwarty | 2026-05-20 |
+| WO-MOB-009 | Fix — feedback check-in (zielony/czerwony) zawsze jako top-level overlay nad tab barem | worker-implementer | ✅ DONE | 2026-05-19 |
+| WO-MOB-010 | Fix UNDONE color (ScanError) + remove "Cofnij wejście" button from ScanResultOverlay SUCCESS | worker-implementer | ✅ DONE | 2026-05-20 |
 | WO-MOB-011 | Bottom NavBar — wrap labela "Wydarzenie" do 2 linii (opcja A, accept icon shift) | Master | ✅ DONE | 2026-05-20 |
+| WO-MOB-012 | Fix mobile undercount check-in (Wątek A z BUG-MOB-002) — kanoniczny predykat OR-3 | Master + worker-debugger | ✅ DONE | 2026-05-20 |
+| WO-MOB-013 | Fix totals mismatch — attendance_status filter (Wątek B z BUG-MOB-002) | Master + worker-implementer | ✅ DONE | 2026-05-20 |
 | WO-MOB-014 | Sync button — odswiezanie listy uczestnikow w cache wydarzenia (manual refresh) | Master + worker-implementer | ✅ DONE | 2026-05-25 |
 | WO-MOB-015 | Reczny check-in prelegentow (bez QR) w mobile (3 fazy: backend+DB + mobile online + offline queue) | Master + worker-implementer | ✅ DONE | 2026-05-25 |
+| WO-MOB-016 | Mobile etykiety tagów uczestników zgodne z modelem kanonicznym (desktop) | worker-implementer | ✅ DONE | 2026-05-25 |
