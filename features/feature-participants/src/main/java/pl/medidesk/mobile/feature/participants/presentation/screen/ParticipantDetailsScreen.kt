@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.delay
 import pl.medidesk.mobile.core.model.Participant
 import pl.medidesk.mobile.core.sync.ParticipantTagsRepository
 import pl.medidesk.mobile.core.ui.components.LoadingScreen
@@ -197,6 +198,22 @@ private fun ParticipantDetailsContent(
     val tagDefs by tagsRepository.tags.collectAsState()
     val context = LocalContext.current
 
+    // WO-MOB-021: auto-scroll na świadome rozwinięcie sekcji "Szczegóły zamówienia".
+    // Stan `expanded` podniesiony tutaj, by zareagować scrollem. Sekcja jest ostatnim
+    // elementem Column, więc scroll do `maxValue` (dół) odsłania całą rozwiniętą tabelkę.
+    var orderExpanded by remember { mutableStateOf(false) }
+    LaunchedEffect(orderExpanded) {
+        if (orderExpanded) {
+            // poczekaj aż rozwinięcie (tween 250ms) ułoży layout i urośnie maxValue,
+            // potem przewiń na dół — cała tabelka widoczna.
+            delay(270)
+            scrollState.animateScrollTo(scrollState.maxValue)
+        } else {
+            // zwinięcie → powrót do HERO od góry
+            scrollState.animateScrollTo(0)
+        }
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -211,7 +228,11 @@ private fun ParticipantDetailsContent(
         Spacer(Modifier.height(16.dp))
         ContactCard(participant, context)
         Spacer(Modifier.height(12.dp))
-        OrderSection(participant)
+        OrderSection(
+            participant = participant,
+            expanded = orderExpanded,
+            onToggle = { orderExpanded = !orderExpanded }
+        )
         Spacer(Modifier.height(24.dp))
     }
 }
@@ -546,9 +567,13 @@ private fun ContactRow(icon: ImageVector, label: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun OrderSection(participant: Participant) {
+private fun OrderSection(
+    participant: Participant,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     val cs = MaterialTheme.colorScheme
-    var expanded by remember { mutableStateOf(false) }
     val hasOrderDetails = !participant.eventOrderId.isNullOrBlank()
             || !participant.buyerName.isNullOrBlank()
             || !participant.buyerEmail.isNullOrBlank()
@@ -557,7 +582,7 @@ private fun OrderSection(participant: Participant) {
     if (!hasOrderDetails) return
 
     Surface(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+        modifier = modifier.fillMaxWidth().padding(horizontal = 20.dp),
         shape = RoundedCornerShape(14.dp),
         color = cs.surface,
         border = BorderStroke(1.dp, cs.outlineVariant)
@@ -566,7 +591,7 @@ private fun OrderSection(participant: Participant) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { expanded = !expanded }
+                    .clickable { onToggle() }
                     .padding(horizontal = 16.dp, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -606,7 +631,11 @@ private fun OrderSection(participant: Participant) {
                 )
             }
 
-            AnimatedVisibility(visible = expanded, enter = expandVertically(), exit = shrinkVertically()) {
+            AnimatedVisibility(
+                visible = expanded,
+                enter = expandVertically(animationSpec = tween(250)),
+                exit = shrinkVertically(animationSpec = tween(200))
+            ) {
                 Column(modifier = Modifier.padding(bottom = 8.dp)) {
                     HorizontalDivider(color = cs.outlineVariant.copy(alpha = 0.5f), modifier = Modifier.padding(horizontal = 16.dp))
                     Spacer(Modifier.height(4.dp))
