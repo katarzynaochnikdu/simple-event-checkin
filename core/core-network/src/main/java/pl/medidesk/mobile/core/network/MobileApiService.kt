@@ -183,7 +183,8 @@ interface MobileApiService {
     // Review360 — insight360 dashboard session
     @POST("api/mobile/crm/accounts/{accountId}/review360/view")
     suspend fun review360View(
-        @Path("accountId") accountId: Long
+        @Path("accountId") accountId: Long,
+        @Body body: Review360ViewRequest
     ): Response<Review360ViewResponse>
 
     @HTTP(

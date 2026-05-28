@@ -27,3 +27,4 @@
 | WO-MOB-018 | Sandbox events inline w grupach z pomarańczowym pillem „SANDBOX" (dev-only), usunięcie osobnej zakładki Sandbox | Master + worker-implementer | ✅ DONE | 2026-05-28 |
 | WO-MOB-021 | Autoscroll na sekcję „Szczegóły zamówienia" w karcie uczestnika (ParticipantDetailsScreen) | worker-implementer | ✅ DONE | 2026-05-28 |
 | WO-MOB-022 | Auto-scroll/focus rozwiniętej CompanyCard na ekranie „Moi podopieczni" (MyMenteesScreen, LazyColumn → animateScrollToItem) | worker-implementer | ✅ DONE | 2026-05-28 |
+| WO-MOB-023 | Fix dashboard firmy (Review360) z „Moi podopieczni" — dosłanie `event_id` w body (WO-SEC-009 compat) | worker-debugger | ✅ DONE | 2026-05-28 |

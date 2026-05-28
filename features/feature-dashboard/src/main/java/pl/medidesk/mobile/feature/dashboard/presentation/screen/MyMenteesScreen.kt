@@ -45,6 +45,7 @@ import pl.medidesk.mobile.core.network.MobileApiService
 import pl.medidesk.mobile.core.network.dto.CheckinRequest
 import pl.medidesk.mobile.core.network.dto.DeleteCompanyAssignmentRequest
 import pl.medidesk.mobile.core.network.dto.MenteeDto
+import pl.medidesk.mobile.core.network.dto.Review360ViewRequest
 import pl.medidesk.mobile.core.sync.SyncEngine
 import pl.medidesk.mobile.core.sync.ParticipantStatusChange
 import pl.medidesk.mobile.core.ui.theme.StatusColors
@@ -278,11 +279,11 @@ class MyMenteesViewModel @Inject constructor(
         }
     }
 
-    fun openReview360(accountId: Long, onUrlReady: (String) -> Unit) {
+    fun openReview360(accountId: Long, eventId: String, onUrlReady: (String) -> Unit) {
         viewModelScope.launch {
             _uiState.update { it.copy(review360Loading = accountId) }
             try {
-                val response = api.review360View(accountId)
+                val response = api.review360View(accountId, Review360ViewRequest(eventId))
                 val body = response.body()
                 val viewUrl = body?.url
                 if (response.isSuccessful && body?.success == true && !viewUrl.isNullOrBlank()) {
@@ -498,7 +499,7 @@ fun MyMenteesScreen(
                                 onParticipantClick = onParticipantClick,
                                 onCheckInRequest = { mentee -> viewModel.requestCheckIn(mentee) },
                                 onReview360Click = { accountId ->
-                                    viewModel.openReview360(accountId) { url ->
+                                    viewModel.openReview360(accountId, eventId) { url ->
                                         uriHandler.openUri(url)
                                     }
                                 }

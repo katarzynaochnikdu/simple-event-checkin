@@ -456,6 +456,11 @@ data class MenteesResponse(
 )
 
 @JsonClass(generateAdapter = true)
+data class Review360ViewRequest(
+    @Json(name = "event_id") val eventId: String
+)
+
+@JsonClass(generateAdapter = true)
 data class Review360ViewResponse(
     val success: Boolean,
     val url: String? = null,
