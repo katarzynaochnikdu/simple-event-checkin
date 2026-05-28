@@ -275,8 +275,11 @@ private fun HeroHeader(
             textAlign = TextAlign.Center
         )
 
+        // Firma z identyfikatora uczestnika (participants.company), nie formalna nazwa
+        // z faktury/płatnika. Fallback na firmę formalną z zamówienia gdy uczestnik nie ma
+        // własnej; nigdy osoba kupująca (buyerName). Brak obu — linia ukryta.
         val identifier = participant.company?.takeIf { it.isNotBlank() }
-            ?: participant.buyerName?.takeIf { it.isNotBlank() }
+            ?: participant.purchaserCompany?.takeIf { it.isNotBlank() }
         if (identifier != null) {
             Spacer(Modifier.height(4.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -286,38 +289,35 @@ private fun HeroHeader(
             }
         }
 
-        Spacer(Modifier.height(8.dp))
-
-        if (!participant.ticketName.isNullOrBlank()) {
-            Surface(
-                shape = RoundedCornerShape(6.dp),
-                color = cs.primaryContainer
-            ) {
-                Text(
-                    text = participant.ticketName!!,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = cs.onPrimaryContainer
-                )
-            }
-        }
-
-        if (participant.tags.isNotEmpty()) {
+        // Badge nazwy biletu + status/tag osoby w JEDNEJ linii (wycentrowane, lekko rozsunięte).
+        val hasTicket = !participant.ticketName.isNullOrBlank()
+        if (hasTicket || participant.tags.isNotEmpty()) {
             Spacer(Modifier.height(10.dp))
             Row(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Spacer(Modifier.weight(1f))
+                if (hasTicket) {
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = cs.primaryContainer
+                    ) {
+                        Text(
+                            text = participant.ticketName!!,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = cs.onPrimaryContainer
+                        )
+                    }
+                }
                 participant.tags.forEach { tag ->
                     ParticipantTagChip(
                         rawKey = tag,
                         definition = tagDefs[tag]
                     )
                 }
-                Spacer(Modifier.weight(1f))
             }
         }
     }
