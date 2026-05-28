@@ -4,7 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -362,6 +363,9 @@ fun MyMenteesScreen(
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val uriHandler = LocalUriHandler.current
+    // WO-MOB-022: focus na świadomie rozwiniętą kartę firmy — animateScrollToItem(index).
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(eventId) { viewModel.load(eventId) }
 
@@ -473,16 +477,21 @@ fun MyMenteesScreen(
 
                 else -> {
                     LazyColumn(
+                        state = listState,
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        items(state.companies, key = { it.companyName }) { group ->
+                        itemsIndexed(state.companies, key = { _, it -> it.companyName }) { index, group ->
                             CompanyCard(
                                 group = group,
                                 isWithdrawing = state.withdrawingCompany == group.companyName,
                                 checkingInParticipantId = state.checkingInParticipantId,
                                 review360Loading = state.review360Loading,
+                                onExpand = {
+                                    // świadome rozwinięcie → przewiń kartę pod górę widoku
+                                    scope.launch { listState.animateScrollToItem(index) }
+                                },
                                 onWithdraw = {
                                     viewModel.withdrawGuardianship(eventId, group.companyName)
                                 },
@@ -518,6 +527,7 @@ private fun CompanyCard(
     isWithdrawing: Boolean,
     checkingInParticipantId: Long?,
     review360Loading: Long?,
+    onExpand: () -> Unit,
     onWithdraw: () -> Unit,
     onParticipantClick: (Long) -> Unit,
     onCheckInRequest: (MenteeDto) -> Unit,
@@ -530,7 +540,10 @@ private fun CompanyCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { expanded = !expanded },
+            .clickable {
+                expanded = !expanded
+                if (expanded) onExpand()  // focus tylko przy świadomym rozwinięciu
+            },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
