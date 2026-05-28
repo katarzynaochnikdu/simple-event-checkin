@@ -33,8 +33,11 @@ android {
         // 2026-05-25: bump 1.0.0 (code 1) -> 1.0.1 (code 2) — release APK z WO-MOB-005..016
         // Zmiany: speaker checkin offline-first, mic icon nav, navHost wiring, drop honorific,
         // canonical participant tag labels + colors (WO-MOB-016).
-        versionCode = 2
-        versionName = "1.0.1"
+        // 2026-05-28: bump 1.0.1 (code 2) -> 1.0.2 (code 3) — release APK z WO-MOB-017..023
+        // Zmiany: events "Trwające" tab + sandbox inline pill (dev), autoscroll order/company card,
+        // stats TOP FIRMY fix, fix dashboard firmy Review360 z "Moi podopieczni" (WO-MOB-023).
+        versionCode = 3
+        versionName = "1.0.2"
 
         // Read BASE_URL from local.properties or env var or use default
         val baseUrl = localProperties.getProperty("BASE_URL")
