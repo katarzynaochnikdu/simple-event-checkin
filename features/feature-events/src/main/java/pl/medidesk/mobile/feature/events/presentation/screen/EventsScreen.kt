@@ -69,10 +69,11 @@ fun EventsScreen(
 
                 // Tabs — domyślne kolory M3 (primary indicator + onSurface text)
                 TabRow(
-                    selectedTabIndex = uiState.selectedTab.ordinal
+                    selectedTabIndex = uiState.visibleTabs.indexOf(uiState.selectedTab).coerceAtLeast(0)
                 ) {
-                    EventTab.entries.forEach { tab ->
+                    uiState.visibleTabs.forEach { tab ->
                         val label = when(tab) {
+                            EventTab.ONGOING -> "Trwające"
                             EventTab.UPCOMING -> "Nadchodzące"
                             EventTab.PAST -> "Przeszłe"
                             EventTab.SANDBOX -> "Sandbox"

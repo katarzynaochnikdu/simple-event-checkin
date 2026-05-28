@@ -23,3 +23,4 @@
 | WO-MOB-014 | Sync button — odswiezanie listy uczestnikow w cache wydarzenia (manual refresh) | Master + worker-implementer | ✅ DONE | 2026-05-25 |
 | WO-MOB-015 | Reczny check-in prelegentow (bez QR) w mobile (3 fazy: backend+DB + mobile online + offline queue) | Master + worker-implementer | ✅ DONE | 2026-05-25 |
 | WO-MOB-016 | Mobile etykiety tagów uczestników zgodne z modelem kanonicznym (desktop) | worker-implementer | ✅ DONE | 2026-05-25 |
+| WO-MOB-017 | Zakładka „Trwające" na liście wydarzeń (dynamiczna, dev-gated Sandbox) + fix data-granularny „dzień wydarzenia wpada w przeszłość" | Master + worker-implementer | ✅ DONE | 2026-05-28 |
