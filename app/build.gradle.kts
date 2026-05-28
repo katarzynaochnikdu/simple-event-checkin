@@ -30,8 +30,11 @@ android {
     base.archivesName.set("mEventLab")
     defaultConfig {
         applicationId = "pl.medidesk.mobile"
-        versionCode = 1
-        versionName = "1.0.0"
+        // 2026-05-25: bump 1.0.0 (code 1) -> 1.0.1 (code 2) — release APK z WO-MOB-005..016
+        // Zmiany: speaker checkin offline-first, mic icon nav, navHost wiring, drop honorific,
+        // canonical participant tag labels + colors (WO-MOB-016).
+        versionCode = 2
+        versionName = "1.0.1"
 
         // Read BASE_URL from local.properties or env var or use default
         val baseUrl = localProperties.getProperty("BASE_URL")
