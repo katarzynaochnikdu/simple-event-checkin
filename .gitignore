@@ -22,3 +22,7 @@ local.properties
 # Release signing
 *.jks
 RELEASE_SIGNING.md
+
+# Stray Gradle build-log dumps (./gradlew ... > build_output.txt)
+/build_output.txt
+/build_apk_output.txt
