@@ -36,6 +36,8 @@ include(":core:core-ui")
 include(":core:core-sync")
 include(":core:core-analytics")
 include(":core:core-mappers")
+// WO-MOB-024 (2026-05-28): test-infra foundation (TestDispatchers, MainDispatcherRule, MockWebServer dispatcher).
+include(":core:core-testing")
 
 // Feature modules (Limited for Simple App)
 include(":features:feature-auth")

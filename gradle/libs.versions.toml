@@ -37,6 +37,13 @@ coroutines = "1.9.0"
 junit = "4.13.2"
 junitExt = "1.2.1"
 espresso = "3.6.1"
+# Test — unit/integration infra (WO-MOB-024, Faza 0)
+# coroutines-test reuses `coroutines` (1.9.0); mockwebserver reuses `okhttp` (4.12.0);
+# hilt-android-testing reuses `hilt` (2.59.2) — see [libraries] below.
+mockk = "1.13.13"
+turbine = "1.2.0"
+robolectric = "4.14.1"
+truth = "1.4.4"
 
 # Image Loading
 coil = "2.7.0"
@@ -126,6 +133,20 @@ junit-ext = { group = "androidx.test.ext", name = "junit", version.ref = "junitE
 espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espresso" }
 compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
+
+# Test — unit/integration infra (WO-MOB-024, Faza 0; consumed by :core:core-testing)
+mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
+mockk-android = { group = "io.mockk", name = "mockk-android", version.ref = "mockk" }
+turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
+okhttp-mockwebserver = { group = "com.squareup.okhttp3", name = "mockwebserver", version.ref = "okhttp" }
+hilt-android-testing = { group = "com.google.dagger", name = "hilt-android-testing", version.ref = "hilt" }
+robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
+truth = { group = "com.google.truth", name = "truth", version.ref = "truth" }
+
+[bundles]
+# WO-MOB-024 (Faza 0): convenience bundle for module unit-test source sets (wired in Faza 3).
+unit-test = ["junit", "mockk", "turbine", "kotlinx-coroutines-test"]
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
