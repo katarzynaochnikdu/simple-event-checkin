@@ -33,6 +33,15 @@ class AddOrderViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(AddOrderUiState())
     val uiState: StateFlow<AddOrderUiState> = _uiState.asStateFlow()
 
+    /**
+     * WO-296: re-fetch cart-config after a 410/409 availability error.
+     * Bypasses the `cartConfig != null` short-circuit in [loadCartConfig].
+     */
+    fun reloadCartConfig(eventId: String) {
+        _uiState.value = _uiState.value.copy(cartConfig = null)
+        loadCartConfig(eventId)
+    }
+
     fun loadCartConfig(eventId: String) {
         if (_uiState.value.cartConfig != null) return
         Analytics.capture(AnalyticsEvent.ADD_ORDER_STARTED, mapOf(AnalyticsEvent.Props.EVENT_ID to eventId))
@@ -546,8 +555,16 @@ class AddOrderViewModel @Inject constructor(
                 submitResult = AddOrderResult.Success(orderId, successMsg)
             )
         } else {
+            // WO-296: backend returns 410 ticket_sales_window_closed when the
+            // sales window just closed between cart-config load and submit, and
+            // 409 ticket_sold_out when quantity_sold caught up to quantity_limit.
+            // Both cases warrant a refresh CTA (Snackbar action in AddOrderSheet)
+            // instead of a plain Toast — the user needs to reload cart-config.
+            val isAvailability = code == 410 || code == 409
             val parsedErr = parseErrorMessage(errorBody)
             val errMsg = when {
+                code == 410 -> parsedErr ?: "Sprzedaż tego biletu właśnie się zakończyła"
+                code == 409 -> parsedErr ?: "Bilet został właśnie wyprzedany"
                 parsedErr != null -> parsedErr
                 code == 401 -> "Sesja wygasła — zaloguj się ponownie"
                 code == 403 -> "Brak uprawnień do tej operacji"
@@ -555,7 +572,7 @@ class AddOrderViewModel @Inject constructor(
             }
             _uiState.value = _uiState.value.copy(
                 isSubmitting = false,
-                submitResult = AddOrderResult.Error(errMsg)
+                submitResult = AddOrderResult.Error(errMsg, isAvailabilityError = isAvailability)
             )
         }
     }

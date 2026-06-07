@@ -50,7 +50,13 @@ data class PayerFormData(
 
 sealed class AddOrderResult {
     data class Success(val orderId: String, val message: String) : AddOrderResult()
-    data class Error(val message: String) : AddOrderResult()
+    // WO-296: `isAvailabilityError = true` for 410 ticket_sales_window_closed /
+    // 409 ticket_sold_out — AddOrderSheet uses this to surface a Snackbar with
+    // an "Odśwież" action that reloads cart-config (instead of a plain Toast).
+    data class Error(
+        val message: String,
+        val isAvailabilityError: Boolean = false
+    ) : AddOrderResult()
 }
 
 data class AppliedDiscount(

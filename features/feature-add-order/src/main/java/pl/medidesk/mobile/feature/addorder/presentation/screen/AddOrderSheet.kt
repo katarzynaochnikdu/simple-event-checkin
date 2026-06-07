@@ -34,6 +34,10 @@ fun AddOrderSheet(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val context = LocalContext.current
+    // WO-296: snackbar host for 410/409 availability errors — surfaces an
+    // "Odśwież" action that re-fetches cart-config (replaces plain Toast for
+    // this specific case where the user has an actionable recovery path).
+    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(eventId) { viewModel.loadCartConfig(eventId) }
 
@@ -46,7 +50,20 @@ fun AddOrderSheet(
                 onDismiss()
             }
             is AddOrderResult.Error -> {
-                Toast.makeText(context, r.message, Toast.LENGTH_LONG).show()
+                if (r.isAvailabilityError) {
+                    // WO-296: explicit refresh CTA — sheet stays open so the
+                    // user can re-pick a still-available ticket after reload.
+                    val result = snackbarHostState.showSnackbar(
+                        message = r.message,
+                        actionLabel = "Odśwież",
+                        duration = SnackbarDuration.Long
+                    )
+                    if (result == SnackbarResult.ActionPerformed) {
+                        viewModel.reloadCartConfig(eventId)
+                    }
+                } else {
+                    Toast.makeText(context, r.message, Toast.LENGTH_LONG).show()
+                }
                 viewModel.consumeSubmitResult()
             }
             null -> {}
@@ -219,6 +236,10 @@ fun AddOrderSheet(
                     }
                 }
             }
+            // WO-296: snackbar host for 410/409 availability errors. Pinned to
+            // the bottom of the sheet so it stays visible under any current
+            // step's button row.
+            SnackbarHost(hostState = snackbarHostState)
         }
     }
 }

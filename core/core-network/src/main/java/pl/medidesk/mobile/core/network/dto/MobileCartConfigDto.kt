@@ -35,7 +35,19 @@ data class MobileCartTicketClassDto(
     val currency: String = "PLN",
     @Json(name = "max_quantity") val maxQuantity: Int = 999,
     @Json(name = "min_quantity") val minQuantity: Int = 1,
-    val available: Boolean = true
+    val available: Boolean = true,
+    // WO-296 / WO-287: Early Bird pricing + sales-window + sold-out metadata.
+    // All optional with safe defaults — backend returns these for events with
+    // migration 0044 applied; older snapshots default to "no EB, available".
+    // base_gross = gross BEFORE Early Bird discount; final_gross = AFTER EB.
+    @Json(name = "base_gross") val baseGross: Double? = null,
+    @Json(name = "final_gross") val finalGross: Double? = null,
+    @Json(name = "eb_active") val ebActive: Boolean = false,
+    @Json(name = "eb_pct") val ebPct: Double = 0.0,
+    @Json(name = "eb_until") val ebUntil: String? = null,
+    @Json(name = "sales_start_date") val salesStartDate: String? = null,
+    @Json(name = "sales_end_date") val salesEndDate: String? = null,
+    @Json(name = "sold_out") val soldOut: Boolean = false
 )
 
 @JsonClass(generateAdapter = true)
