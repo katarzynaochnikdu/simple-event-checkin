@@ -4,7 +4,7 @@
 **Worker:** `worker-implementer`
 **Stage:** Mobile Security Audit Sprint 2 — Faza 2.5 (rider low-cost)
 **Finding:** F2A-003 (ŚREDNIE — re-affirm MOB-MED-003 z MASVS Sprint 1) — [F2A_STORAGE_PLATFORM_REVIEW.md](../../../.agents/context/_audits/2026-06-mobile-security-sprint-2/F2A_STORAGE_PLATFORM_REVIEW.md)
-**Status:** ✅ DONE 2026-06-10 (implementer) — MainActivity.kt +8 linii (import WindowManager + blok FLAG_SECURE po super.onCreate, przed enableEdgeToEdge/setContent, gated `!BuildConfig.DEBUG`). assembleDebug BUILD SUCCESSFUL 1m47s. Delta czysta (pliki WO-MOB-028 nietknięte). Test manualny screenshot-block = post-deploy na release buildzie (user). NIEZACOMMITOWANE. **Nota Mastera:** finding ŚR wykonany jako low-cost auto-fix rider (rekomendacja F0+F2A) — odnotować w raporcie końcowym jako odstępstwo in-plus. Gotcha-kandydat: bash agenta nie dziedziczy JAVA_HOME (inline `JAVA_HOME=...jbr`); truststore Norton w %TEMP% ulotny.
+**Status:** ✅ DONE 2026-06-10 (implementer) — MainActivity.kt +8 linii (import WindowManager + blok FLAG_SECURE po super.onCreate, przed enableEdgeToEdge/setContent, gated `!BuildConfig.DEBUG`). assembleDebug BUILD SUCCESSFUL 1m47s. Delta czysta (pliki WO-MOB-028 nietknięte). Test manualny screenshot-block = post-deploy na release buildzie (user). COMMITTED mobile `09a1300` (2026-06-10, pushed). **Nota Mastera:** finding ŚR wykonany jako low-cost auto-fix rider (rekomendacja F0+F2A) — odnotować w raporcie końcowym jako odstępstwo in-plus. Gotcha-kandydat: bash agenta nie dziedziczy JAVA_HOME (inline `JAVA_HOME=...jbr`); truststore Norton w %TEMP% ulotny.
 **Snapshot:** `snapshot/pre-mobile-security-sprint-2-remediation-2026-06-10` @ mobile `1876fbe`
 **Sizing:** 🟢 mały (1 plik)
 
