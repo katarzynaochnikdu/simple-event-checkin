@@ -1,6 +1,7 @@
 package pl.medidesk.mobile.feature.speakers.data.repository
 
 import android.util.Log
+import pl.medidesk.mobile.feature.speakers.BuildConfig
 import pl.medidesk.mobile.core.database.dao.SpeakerCheckinDao
 import pl.medidesk.mobile.core.database.entities.SpeakerCheckinEntity
 import pl.medidesk.mobile.core.network.MobileApiService
@@ -90,11 +91,17 @@ class SpeakerCheckinRepository @Inject constructor(
             } else if (response.code() == 404) {
                 Result.NotFound
             } else {
-                Log.w(TAG, "Online speaker $action failed (HTTP ${response.code()}) — falling back to offline queue")
+                // WO-MOB-034 (F2B-005): DEBUG-guard — bez logu w release (higiena MOB-7).
+                if (BuildConfig.DEBUG) {
+                    Log.w(TAG, "Online speaker $action failed (HTTP ${response.code()}) — falling back to offline queue")
+                }
                 queueOffline(eventId, speakerId, scannedAt, action)
             }
         } catch (e: Exception) {
-            Log.w(TAG, "Online speaker $action exception (${e.message}) — falling back to offline queue")
+            // WO-MOB-034 (F2B-005): DEBUG-guard — e.message poza release (higiena MOB-7).
+            if (BuildConfig.DEBUG) {
+                Log.w(TAG, "Online speaker $action exception (${e.message}) — falling back to offline queue")
+            }
             queueOffline(eventId, speakerId, scannedAt, action)
         }
     }

@@ -3,6 +3,7 @@ package pl.medidesk.mobile.core.sync
 import android.util.Log
 import pl.medidesk.mobile.core.database.dao.ParticipantDao
 import pl.medidesk.mobile.core.network.MobileApiService
+import pl.medidesk.mobile.core.sync.BuildConfig
 import javax.inject.Inject
 
 /**
@@ -48,7 +49,10 @@ class LookupParticipantByTicketUseCase @Inject constructor(
         return try {
             val response = apiService.getParticipants(eventId, since = null)
             if (!response.isSuccessful) {
-                Log.w("LookupParticipantByTicket", "Server lookup failed: code=${response.code()}")
+                // WO-MOB-034 (F2B-005): DEBUG-guard — bez logu w release (higiena MOB-7).
+                if (BuildConfig.DEBUG) {
+                    Log.w("LookupParticipantByTicket", "Server lookup failed: code=${response.code()}")
+                }
                 return LookupResult.NotFound
             }
             val match = response.body()?.participants.orEmpty().firstOrNull {
@@ -61,7 +65,10 @@ class LookupParticipantByTicketUseCase @Inject constructor(
                 match.ticketName, match.company, match.checkedInAt != null,
                 match.orderStatus)
         } catch (e: Exception) {
-            Log.w("LookupParticipantByTicket", "Server lookup error: ${e.message}")
+            // WO-MOB-034 (F2B-005): DEBUG-guard — e.message poza release (higiena MOB-7).
+            if (BuildConfig.DEBUG) {
+                Log.w("LookupParticipantByTicket", "Server lookup error: ${e.message}")
+            }
             LookupResult.NotFound
         }
     }

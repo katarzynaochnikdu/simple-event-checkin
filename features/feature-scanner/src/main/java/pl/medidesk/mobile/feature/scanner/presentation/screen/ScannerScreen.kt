@@ -44,6 +44,7 @@ import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
+import pl.medidesk.mobile.core.ui.components.SecureDialogEffect
 import pl.medidesk.mobile.core.ui.theme.ScanDuplicate
 import pl.medidesk.mobile.core.ui.theme.ScanError
 import pl.medidesk.mobile.core.ui.theme.ScanSuccess
@@ -52,6 +53,13 @@ import pl.medidesk.mobile.feature.scanner.presentation.viewmodel.ScanFeedback
 import pl.medidesk.mobile.feature.scanner.presentation.viewmodel.ScannerUiState
 import pl.medidesk.mobile.feature.scanner.presentation.viewmodel.ScannerViewModel
 import java.util.concurrent.Executors
+
+/**
+ * WO-MOB-034 (F2B-006): dozwolony charset surowej wartości QR (Backstage ticket ID).
+ * Alfanumeryczne + `_`/`-`, 1–100 znaków. Wszystko poza tym (control chars, emoji,
+ * metaznaki) odrzucane przed lookupem — defense-in-depth nad parametryzowanym SQL.
+ */
+private val TICKET_ID_REGEX = Regex("^[A-Za-z0-9_-]{1,100}$")
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -133,6 +141,9 @@ private fun ScanConfirmDialog(
         title = { Text("Potwierdzenie Check-In", fontWeight = FontWeight.Bold) },
         text = {
             Column {
+                // WO-MOB-034 (N-3): dialog potwierdzenia pokazuje PII uczestnika
+                // (imię, email, firma) — okno chronione przed zrzutem w release.
+                SecureDialogEffect()
                 if (pending.participantName.isNotBlank()) {
                     Text("Zweryfikuj dane osoby przed zatwierdzeniem:")
                     Spacer(Modifier.height(12.dp))
@@ -226,6 +237,9 @@ private fun ScanResultOverlay(
             dismissOnClickOutside = false
         )
     ) {
+        // WO-MOB-034 (N-3): overlay wyniku skanu pokazuje PII (nazwisko/firma)
+        // przy WRONG_EVENT i DENIED — okno chronione przed zrzutem w release.
+        SecureDialogEffect()
         val (bgColor, statusText) = when (uiState.feedback) {
             ScanFeedback.SUCCESS -> ScanSuccess.copy(alpha = 0.95f) to "WEJŚCIE OK"
             ScanFeedback.SUCCESS_OFFLINE -> ScanDuplicate.copy(alpha = 0.92f) to "ZAPISANO OFFLINE"
@@ -512,7 +526,13 @@ private fun CameraPreview(
                                     // WO-204: client-side guard — reject blank or oversized values
                                     // before passing to ViewModel/API. Backstage ticket IDs are
                                     // alphanumeric strings, never longer than ~100 chars.
-                                    if (ticketId.isNotBlank() && ticketId.length <= 200) {
+                                    // WO-MOB-034 (F2B-006): defense-in-depth charset-whitelist —
+                                    // odrzuca control chars / emoji / metaznaki ZANIM trafią do
+                                    // lookupu. Length<=200 zostaje jako zewnętrzny strażnik.
+                                    if (ticketId.isNotBlank() &&
+                                        ticketId.length <= 200 &&
+                                        TICKET_ID_REGEX.matches(ticketId)
+                                    ) {
                                         onQrDetected(ticketId)
                                     }
                                 }
@@ -526,8 +546,10 @@ private fun CameraPreview(
                 try {
                     cameraProvider.unbindAll()
                     cameraProvider.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, imageAnalysis)
-                } catch (e: Exception) {
-                    e.printStackTrace()
+                } catch (_: Exception) {
+                    // WO-MOB-034 (F2B-005): usunięto e.printStackTrace() (ungated log
+                    // wyjątku bindowania kamery). Awaria preview jest niegroźna — UI po
+                    // prostu nie wystartuje skanera; brak danych do zalogowania.
                 }
             }, ContextCompat.getMainExecutor(ctx))
             previewView

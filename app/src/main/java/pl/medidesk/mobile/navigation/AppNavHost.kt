@@ -62,6 +62,14 @@ import javax.inject.Inject
 
 enum class AuthCheck { CHECKING, LOGGED_IN, NOT_LOGGED_IN }
 
+/**
+ * WO-MOB-034 (F2A-010): dozwolony charset tokenu resetu hasła z deep linka.
+ * Legalne tokeny backendu są URL-safe (regex serwerowy, mobile.py). Klient odrzuca
+ * tokeny spoza tego wzorca ZANIM zbuduje route — anti crash-DoS spreparowanym linkiem
+ * (np. token ze znakiem `/`). Długość 16–128 z zapasem ponad realny format backendu.
+ */
+private val RESET_TOKEN_REGEX = Regex("^[A-Za-z0-9_-]{16,128}$")
+
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val authDataStore: AuthDataStore,
@@ -165,7 +173,10 @@ fun AppNavHost(
         val link = pendingDeepLink ?: return@LaunchedEffect
         if (link.scheme == "medidesk" && link.host == "reset-password") {
             val token = link.getQueryParameter("token").orEmpty()
-            if (token.isNotBlank()) {
+            // WO-MOB-034 (F2A-010): walidacja charsetu PRZED budową route — odrzuca
+            // spreparowane tokeny (znaki łamiące wzorzec route → crash NavControllera).
+            // isNotBlank() było jedynym checkiem; pełna walidacja formatu zostaje na backendzie.
+            if (RESET_TOKEN_REGEX.matches(token)) {
                 navController.navigate(Screen.ResetPassword.createRoute(token)) {
                     // Reset zawsze "świeży" — czyścimy stack
                     popUpTo(0) { inclusive = true }

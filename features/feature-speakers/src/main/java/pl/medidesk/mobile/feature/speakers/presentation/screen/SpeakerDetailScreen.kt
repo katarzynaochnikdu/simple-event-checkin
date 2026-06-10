@@ -26,6 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import pl.medidesk.mobile.core.ui.components.MdAsyncImage
+import pl.medidesk.mobile.core.ui.util.openExternalUrl
 import pl.medidesk.mobile.core.model.Speaker
 import pl.medidesk.mobile.feature.speakers.presentation.viewmodel.SpeakerDetailViewModel
 
@@ -182,25 +183,27 @@ fun SpeakerDetailScreen(
                             Column(modifier = Modifier.padding(16.dp)) {
                                 Text("Social", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                                 Spacer(Modifier.height(8.dp))
+                                // WO-MOB-034 (F2A-011): URL-e social pochodzą z panelu admina —
+                                // openExternalUrl wpuszcza wyłącznie http(s) (allowlist schematów).
                                 if (speaker.socialLinkedin.isNotBlank()) {
                                     ContactRow(
                                         icon = Icons.Default.Person,
                                         label = "LinkedIn",
-                                        onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(speaker.socialLinkedin))) }
+                                        onClick = { openExternalUrl(context, speaker.socialLinkedin) }
                                     )
                                 }
                                 if (speaker.socialTwitter.isNotBlank()) {
                                     ContactRow(
                                         icon = Icons.Default.Share,
                                         label = "Twitter / X",
-                                        onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(speaker.socialTwitter))) }
+                                        onClick = { openExternalUrl(context, speaker.socialTwitter) }
                                     )
                                 }
                                 if (speaker.website.isNotBlank()) {
                                     ContactRow(
                                         icon = Icons.Default.Info,
                                         label = speaker.website,
-                                        onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(speaker.website))) }
+                                        onClick = { openExternalUrl(context, speaker.website) }
                                     )
                                 }
                             }

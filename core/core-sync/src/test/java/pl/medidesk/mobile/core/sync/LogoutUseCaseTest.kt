@@ -10,6 +10,8 @@ import io.mockk.mockkObject
 import io.mockk.Runs
 import io.mockk.unmockkAll
 import io.mockk.verify
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertTrue
@@ -37,6 +39,7 @@ class LogoutUseCaseTest {
     private lateinit var database: MdDatabase
     private lateinit var authDataStore: AuthDataStore
     private lateinit var syncEngine: SyncEngine
+    private lateinit var imageCacheCleaner: ImageCacheCleaner
 
     private lateinit var offlineCheckinDao: OfflineCheckinDao
     private lateinit var walkinDao: WalkinDao
@@ -49,6 +52,7 @@ class LogoutUseCaseTest {
         database = mockk()
         authDataStore = mockk()
         syncEngine = mockk()
+        imageCacheCleaner = mockk()
 
         offlineCheckinDao = mockk()
         walkinDao = mockk()
@@ -58,6 +62,7 @@ class LogoutUseCaseTest {
         // nie dotykał niezainicjalizowanego SDK.
         mockkObject(Analytics)
         every { Analytics.reset() } just Runs
+        every { Analytics.optOut() } just Runs
 
         every { database.clearAllTables() } just Runs
         every { database.offlineCheckinDao() } returns offlineCheckinDao
@@ -71,8 +76,9 @@ class LogoutUseCaseTest {
         every { syncEngine.stopPeriodicSync() } just Runs
         every { syncEngine.cancelImmediateSync() } just Runs
         coEvery { syncEngine.runImmediateSyncAndWait(any()) } just Runs
+        every { imageCacheCleaner.clear() } just Runs
 
-        logoutUseCase = LogoutUseCase(database, authDataStore, syncEngine)
+        logoutUseCase = LogoutUseCase(database, authDataStore, syncEngine, imageCacheCleaner)
     }
 
     @After
@@ -86,13 +92,19 @@ class LogoutUseCaseTest {
         // Act
         logoutUseCase()
 
-        // Assert — sync zatrzymany PRZED wipe'em, Room wyczyszczony przed prefs.
+        // Assert — sync zatrzymany PRZED wipe'em, Room wyczyszczony przed prefs,
+        // a po prefs reset+optOut analytics oraz czyszczenie cache'u obrazów (WO-MOB-033).
         coVerifyOrder {
             syncEngine.stopPeriodicSync()
             database.clearAllTables()
             authDataStore.clearAll()
+            Analytics.reset()
+            Analytics.optOut()
+            imageCacheCleaner.clear()
         }
         verify(exactly = 1) { Analytics.reset() }
+        verify(exactly = 1) { Analytics.optOut() }
+        verify(exactly = 1) { imageCacheCleaner.clear() }
         verify(exactly = 1) { syncEngine.cancelImmediateSync() }
     }
 
@@ -138,11 +150,33 @@ class LogoutUseCaseTest {
         // Act
         val result = runCatching { logoutUseCase() }
 
-        // Assert — wyjątek propaguje, ale token/dane usera i tożsamość analytics
-        // są wyczyszczone MIMO awarii wipe'u (blok finally w use casie).
+        // Assert — wyjątek propaguje, ale token/dane usera, tożsamość analytics, opt-out
+        // SDK i cache obrazów są wyczyszczone MIMO awarii wipe'u (blok finally w use casie).
         assertTrue(result.isFailure)
         coVerify(exactly = 1) { authDataStore.clearAll() }
         verify(exactly = 1) { Analytics.reset() }
+        verify(exactly = 1) { Analytics.optOut() }
+        verify(exactly = 1) { imageCacheCleaner.clear() }
+    }
+
+    @Test
+    fun test_logout_finishes_cleanup_when_coroutine_cancelled_during_room_wipe() = runTest {
+        // Arrange — symulujemy anulowanie coroutine W TRAKCIE wipe'u Room: clearAllTables()
+        // anuluje Joba, pod którym leci logout. Bez NonCancellable w bloku finally
+        // (finding N-1) suspendowy authDataStore.clearAll() rzuciłby CancellationException
+        // na pierwszym suspension poincie i sekrety/analytics/cache zostałyby nietknięte.
+        val job = Job()
+        every { database.clearAllTables() } answers { job.cancel() }
+
+        // Act — uruchamiamy logout pod anulowalnym Jobem i czekamy aż się zakończy.
+        launch(job) { runCatching { logoutUseCase() } }.join()
+
+        // Assert — mimo anulowania całe sprzątanie z bloku finally wykonane (NonCancellable):
+        // token/dane usera, reset+optOut analytics oraz cache obrazów.
+        coVerify(exactly = 1) { authDataStore.clearAll() }
+        verify(exactly = 1) { Analytics.reset() }
+        verify(exactly = 1) { Analytics.optOut() }
+        verify(exactly = 1) { imageCacheCleaner.clear() }
     }
 
     @Test

@@ -3,6 +3,7 @@ package pl.medidesk.mobile.core.sync
 import android.util.Log
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import pl.medidesk.mobile.core.analytics.Analytics
@@ -34,7 +35,8 @@ import javax.inject.Inject
 class LogoutUseCase @Inject constructor(
     private val database: MdDatabase,
     private val authDataStore: AuthDataStore,
-    private val syncEngine: SyncEngine
+    private val syncEngine: SyncEngine,
+    private val imageCacheCleaner: ImageCacheCleaner
 ) {
 
     /**
@@ -65,12 +67,34 @@ class LogoutUseCase @Inject constructor(
                 database.clearAllTables()
             }
         } finally {
-            // 5. Token i dane usera czyścimy ZAWSZE — nawet gdy wipe Room rzuci (uszkodzony
-            //    plik DB itp.). Żywy token + brak wipe'u = najgorszy scenariusz F2A-001.
-            authDataStore.clearAll()
+            // 5. Czyszczenie sekretów/identyfikatorów/cache'u owijamy w NonCancellable
+            //    (WO-MOB-033, finding N-1). authDataStore.clearAll() jest suspend; gdyby
+            //    rodzic anulował coroutine w trakcie clearAllTables() (krok 4), bez tej
+            //    ochrony CancellationException wszedłby w blok finally i przerwał go na
+            //    pierwszym suspension poincie — token + reset analytics zostałyby pominięte
+            //    (żywy token przy "wylogowanym" UI = najgorszy scenariusz F2A-001).
+            //    NonCancellable gwarantuje wykonanie całego sprzątania mimo anulowania.
+            withContext(NonCancellable) {
+                // 5a. Token i dane usera czyścimy ZAWSZE — także gdy wipe Room rzuci
+                //     (uszkodzony plik DB itp.).
+                authDataStore.clearAll()
 
-            // 6. Reset tożsamości analytics (distinct id PostHog) — koniec sesji usera.
-            Analytics.reset()
+                // 5b. Reset tożsamości analytics (distinct id PostHog) — koniec sesji usera.
+                Analytics.reset()
+
+                // 5c. Opt-out żywego SDK (WO-MOB-033, finding F2B-007 residual b).
+                //     clearAll() wyczyścił flagę consent w DataStore, ale PostHog w bieżącym
+                //     procesie pozostałby opted-in do restartu i lifecycle/$screen eventy
+                //     mogłyby polecieć, zanim user ponownie odpowie na dialog zgody. Zgoda
+                //     na analytics NIE jest per-konto — po logout domyślnie wracamy do
+                //     opted-out (kolejny login z zapamiętaną zgodą wykona optIn() ponownie).
+                Analytics.optOut()
+
+                // 5d. Wyczyść cache obrazów Coil (WO-MOB-033, finding N-2) — zdjęcia
+                //     prelegentów / branding (dysk 50 MB + memory) przeżywały logout.
+                //     Przez port [ImageCacheCleaner] (Coil ImageLoader żyje w module app).
+                imageCacheCleaner.clear()
+            }
         }
     }
 

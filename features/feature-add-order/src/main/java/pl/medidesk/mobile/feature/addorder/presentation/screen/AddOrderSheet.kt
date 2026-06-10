@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.widget.Toast
+import pl.medidesk.mobile.core.ui.components.SecureDialogEffect
 import pl.medidesk.mobile.feature.addorder.presentation.component.ConsentsForm
 import pl.medidesk.mobile.feature.addorder.presentation.component.DiscountCodeForm
 import pl.medidesk.mobile.feature.addorder.presentation.component.ParticipantFieldsForm
@@ -71,6 +72,9 @@ fun AddOrderSheet(
     }
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+        // WO-MOB-034 (N-3): formularz zamówienia niesie PII płatnika/uczestnika
+        // (email, NIP) — okno arkusza chronione przed zrzutem ekranu w release.
+        SecureDialogEffect()
         Column(
             modifier = Modifier
                 .fillMaxWidth()

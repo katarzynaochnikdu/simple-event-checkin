@@ -18,6 +18,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import pl.medidesk.mobile.core.ui.components.SecureDialogEffect
 import pl.medidesk.mobile.feature.more.presentation.viewmodel.SettingsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -270,6 +271,9 @@ private fun ChangePasswordDialog(
         title = { Text("Zmień hasło") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                // WO-MOB-034 (N-3): okno dialogu zmiany hasła chronione przed
+                // zrzutem ekranu / nagrywaniem w release (pola haseł).
+                SecureDialogEffect()
                 OutlinedTextField(
                     value = currentPassword,
                     onValueChange = { currentPassword = it },

@@ -50,7 +50,18 @@ include(":features:feature-add-order")
 // WO-MOB-015 (2026-05-25): re-enabled feature-speakers for manual speaker check-in.
 include(":features:feature-speakers")
 
-// Modules hidden/removed for simplification
+// Modules hidden/removed for simplification — NIE shipują w APK (zero project()-deps).
+//
+// 🛑 WO-MOB-034 (F2A-012) — STRAŻNIK BEZPIECZEŃSTWA:
+// Odkomentowanie któregokolwiek z poniższych modułów WYMAGA security review PRZED
+// re-enable. Powód: każdy wnosi wrażliwą powierzchnię, dziś poza audytem MASVS:
+//   - feature-inhub    → flow PIN-u (uwierzytelnianie wejścia do strefy)
+//   - feature-sponsors → dane finansowe + NIP firm (PII osób trzecich)
+//   - feature-walkin   → formularz PII gościa (UWAGA: data-path walk-in
+//                        WalkinEntity/WalkinDao/SyncWorker SHIPUJE przez
+//                        core-database/core-sync bez własnego UI — to OSOBNA sprawa,
+//                        NIE ruszać; tu chodzi tylko o moduł UI).
+// Re-enable bez review = regresja audytu Sprint 2.
 // include(":features:feature-walkin")
 // include(":features:feature-inhub")
 // include(":features:feature-sponsors")

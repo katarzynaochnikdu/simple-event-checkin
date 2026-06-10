@@ -4,7 +4,7 @@
 **Worker:** worker-implementer
 **Stage:** Mobile Sprint 2 Remediation — Faza 2 (NISK bundle #1)
 **Priorytet:** 🟢 P2 (5× NISK — follow-upy z gate'u 2.5 + residualy)
-**Status:** **OPEN**
+**Status:** ✅ DONE 2026-06-10 (gate fali mobile 033+034 PASS 0/0/0/2; committed mobile wave) — N-1 `withContext(NonCancellable)` w finally LogoutUseCase (+ Analytics.optOut F2B-007b) · N-2 Coil cache wipe przez port `ImageCacheCleaner` (interfejs core-sync + @Provides impl w app — rozwiązuje cykl, pokrywa 5 ścieżek logout) · F2B-007a SettingsViewModel optOut/capture order · F2B-009 redactHeader Authorization+Cookie w NetworkModule DEBUG. assembleDebug PASS; LogoutUseCaseTest 6/6 (nowy guard cancelacji). 2 nowe pliki + 4 zmienione. **Follow-up flagga:** AppNavHost `saveAnalyticsConsent` ma analogiczny consent-race (poza scope). Gotcha-kandydaci: Coil clear() wymaga @OptIn(ExperimentalCoilApi); suspend w finally → NonCancellable. F2A-006 (deleteSynced) rider POMINIĘTY (opcjonalny).
 **Findings:** **N-1 + N-2** ([F2_5_REMEDIATION_SECURITY_GATE.md](../../../.agents/context/_audits/2026-06-mobile-security-sprint-2/F2_5_REMEDIATION_SECURITY_GATE.md)) + **F2B-007 residualy + F2B-009 residual** ([F2B](../../../.agents/context/_audits/2026-06-mobile-security-sprint-2/F2B_NETWORK_AUTH_TELEMETRY_REVIEW.md)) + rider **F2A-006**
 
 ---

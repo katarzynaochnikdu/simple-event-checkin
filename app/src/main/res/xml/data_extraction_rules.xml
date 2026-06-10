@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  WO-MOB-034 (F2A-008): defense-in-depth wobec android:allowBackup="false".
+  Android 12+ rozdziela backup chmurowy (cloud-backup) od transferu na nowe
+  urządzenie (device-transfer). Wykluczamy CAŁY katalog danych aplikacji z OBU
+  ścieżek — Room md_checkin.db (PII uczestników), EncryptedSharedPreferences
+  (JWT) i kolejki offline NIE opuszczają urządzenia żadnym kanałem systemowym.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" />
+    </device-transfer>
+</data-extraction-rules>

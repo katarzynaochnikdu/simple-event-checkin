@@ -35,6 +35,13 @@ object NetworkModule {
                 if (BuildConfig.DEBUG) {
                     addInterceptor(HttpLoggingInterceptor().apply {
                         level = HttpLoggingInterceptor.Level.HEADERS
+                        // WO-MOB-033 (finding F2B-009): Level.HEADERS loguje też
+                        // "Authorization: Bearer <JWT>" do logcat. Interceptor jest tylko
+                        // w buildach DEBUG, ale pełny token operatora w logcat dev-urządzenia
+                        // to zbędna ekspozycja credentiala. redactHeader zastępuje wartość
+                        // tych nagłówków placeholderem ██ w logach (Cookie profilaktycznie).
+                        redactHeader("Authorization")
+                        redactHeader("Cookie")
                     })
                 }
             }

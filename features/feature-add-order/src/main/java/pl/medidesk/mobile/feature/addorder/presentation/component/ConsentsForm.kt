@@ -1,7 +1,5 @@
 package pl.medidesk.mobile.feature.addorder.presentation.component
 
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -12,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import pl.medidesk.mobile.core.ui.util.openExternalUrl
 import pl.medidesk.mobile.feature.addorder.domain.OrderConsentsConfig
 
 @Composable
@@ -52,9 +51,10 @@ fun ConsentsForm(
                                 "Zobacz dokument",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.primary,
+                                // WO-MOB-034 (F2A-011): URL dokumentu zgody pochodzi z panelu
+                                // admina — openExternalUrl wpuszcza wyłącznie http(s).
                                 modifier = Modifier.clickable {
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(consent.url))
-                                    context.startActivity(intent)
+                                    openExternalUrl(context, consent.url)
                                 }
                             )
                         }

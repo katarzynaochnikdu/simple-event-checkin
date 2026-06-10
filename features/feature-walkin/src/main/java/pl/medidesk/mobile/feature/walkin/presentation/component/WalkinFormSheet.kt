@@ -8,6 +8,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import pl.medidesk.mobile.core.model.TicketClass
+import pl.medidesk.mobile.core.ui.components.SecureDialogEffect
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,6 +30,9 @@ fun WalkinFormSheet(
     var lastNameError by remember { mutableStateOf(false) }
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
+        // WO-MOB-034 (N-3): formularz walk-in niesie PII gościa (imię, nazwisko,
+        // email, telefon, firma, notatki) — okno chronione przed zrzutem w release.
+        SecureDialogEffect()
         Column(
             modifier = Modifier
                 .fillMaxWidth()

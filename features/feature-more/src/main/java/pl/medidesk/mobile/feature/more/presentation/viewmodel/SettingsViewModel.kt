@@ -95,11 +95,24 @@ class SettingsViewModel @Inject constructor(
     fun setAnalyticsConsent(consent: Boolean) {
         viewModelScope.launch {
             authDataStore.saveAnalyticsConsent(consent)
-            if (consent) Analytics.optIn() else Analytics.optOut()
-            Analytics.capture(
-                AnalyticsEvent.ANALYTICS_CONSENT_CHANGED,
-                mapOf(AnalyticsEvent.Props.ACTION to if (consent) "opted_in" else "opted_out")
-            )
+            // WO-MOB-033 (finding F2B-007 residual a): event audytowy zgody MUSI być
+            // wysłany, gdy SDK jest opted-IN — inaczej PostHog go odrzuca i audit trail
+            // zmian zgody jest niewiarygodny (TELEMETRY.md §… deklaruje wysyłkę).
+            // - opt-OUT: capture PRZED optOut() (SDK jeszcze opted-in → event przechodzi).
+            // - opt-IN:  optIn() PRZED capture() (SDK startuje opted-out → najpierw włącz).
+            if (consent) {
+                Analytics.optIn()
+                Analytics.capture(
+                    AnalyticsEvent.ANALYTICS_CONSENT_CHANGED,
+                    mapOf(AnalyticsEvent.Props.ACTION to "opted_in")
+                )
+            } else {
+                Analytics.capture(
+                    AnalyticsEvent.ANALYTICS_CONSENT_CHANGED,
+                    mapOf(AnalyticsEvent.Props.ACTION to "opted_out")
+                )
+                Analytics.optOut()
+            }
         }
     }
 

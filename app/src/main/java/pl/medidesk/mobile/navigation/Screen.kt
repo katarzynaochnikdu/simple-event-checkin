@@ -1,5 +1,6 @@
 package pl.medidesk.mobile.navigation
 
+import android.net.Uri
 import androidx.navigation.NamedNavArgument
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
@@ -135,6 +136,10 @@ sealed class Screen(val route: String, val arguments: List<NamedNavArgument> = e
     data object ResetPassword : Screen("reset_password/{token}", listOf(
         navArgument("token") { type = NavType.StringType }
     )) {
-        fun createRoute(token: String) = "reset_password/$token"
+        // WO-MOB-034 (F2A-010): Uri.encode(token) — surowy token w route bez enkodowania
+        // mógł zawierać `/` `?` `#` (np. ze spreparowanego deep linka) → route nie matchuje
+        // wzorca → IllegalArgumentException NavControllera → crash (lokalny DoS).
+        // NavType.StringType URL-dekoduje argument przy odczycie, więc round-trip jest spójny.
+        fun createRoute(token: String) = "reset_password/${Uri.encode(token)}"
     }
 }

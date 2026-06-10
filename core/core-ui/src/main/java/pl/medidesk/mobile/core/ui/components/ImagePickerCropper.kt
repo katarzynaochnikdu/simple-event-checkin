@@ -1,5 +1,13 @@
 package pl.medidesk.mobile.core.ui.components
 
+// 🛑 WO-MOB-034 (F2A-012) — MARTWY KOD (zero konsumentów w app/features, zweryfikowane
+// greppem 2026-06-10). Pozostałość po wyłączonych modułach feature-* (image upload/crop).
+// Para z dead `MobileApiService.uploadImage` (core-network, też bez wywołań) +
+// `ImageCropScreen` (zapisuje PNG do cacheDir/crop_results bez cleanupu).
+// Zachowane świadomie (wariant „komentarz-strażnik", mniej inwazyjny niż przeniesienie).
+// RE-USE WYMAGA security review: upload obrazów = wektor F2C-001 (sniff MIME, SVG),
+// a write na cacheDir bez retencji = higiena at-rest. NIE podłączać bez audytu.
+
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest

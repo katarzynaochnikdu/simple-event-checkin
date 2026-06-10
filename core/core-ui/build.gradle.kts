@@ -5,6 +5,11 @@ plugins {
 
 android {
     namespace = "pl.medidesk.mobile.core.ui"
+    // WO-MOB-034 (N-3): SecureDialogEffect gatuje FLAG_SECURE na `!BuildConfig.DEBUG`.
+    // Plugin md.android.library nie generuje BuildConfig domyślnie — opt-in tutaj.
+    buildFeatures {
+        buildConfig = true
+    }
 }
 
 dependencies {

@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import pl.medidesk.mobile.core.network.MobileApiService
+import pl.medidesk.mobile.core.sync.BuildConfig
 import pl.medidesk.mobile.core.network.dto.ParticipantTagDefinitionDto
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -41,12 +42,19 @@ class ParticipantTagsRepository @Inject constructor(
             val body = response.body()
             if (response.isSuccessful && body != null && body.success && body.tags.isNotEmpty()) {
                 _tags.value = body.tags.associateBy { it.key }
-                Log.d(TAG, "Loaded ${body.tags.size} tag definitions from backend")
+                // WO-MOB-034 (F2B-005): DEBUG-guard logów (higiena MOB-7, brak logu w release).
+                if (BuildConfig.DEBUG) {
+                    Log.d(TAG, "Loaded ${body.tags.size} tag definitions from backend")
+                }
             } else {
-                Log.w(TAG, "Refresh failed: code=${response.code()}, success=${body?.success} - keeping cached/defaults")
+                if (BuildConfig.DEBUG) {
+                    Log.w(TAG, "Refresh failed: code=${response.code()}, success=${body?.success} - keeping cached/defaults")
+                }
             }
         } catch (e: Exception) {
-            Log.w(TAG, "Refresh exception: ${e.message} - keeping cached/defaults")
+            if (BuildConfig.DEBUG) {
+                Log.w(TAG, "Refresh exception: ${e.message} - keeping cached/defaults")
+            }
         }
     }
 
