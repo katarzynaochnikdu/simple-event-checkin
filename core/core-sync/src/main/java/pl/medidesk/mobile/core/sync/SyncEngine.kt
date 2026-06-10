@@ -101,4 +101,14 @@ class SyncEngine @Inject constructor(
     fun stopPeriodicSync() {
         workManager.cancelUniqueWork(SyncWorker.WORK_NAME_PERIODIC)
     }
+
+    /**
+     * Anuluje zakolejkowany/wykonujący się immediate sync — używane przy logout (WO-MOB-028),
+     * żeby straggler-worker nie odpalił się PO wipe bez tokenu (401 → pętla notifySessionExpired
+     * resetująca ekran logowania). Mieszka tu, a nie w LogoutUseCase, bo SyncEngine jest
+     * właścicielem lifecycle'u sync worków (start/stop/trigger) i już trzyma WorkManager.
+     */
+    fun cancelImmediateSync() {
+        workManager.cancelUniqueWork(SyncWorker.WORK_NAME_IMMEDIATE)
+    }
 }

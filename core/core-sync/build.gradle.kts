@@ -22,4 +22,13 @@ dependencies {
     implementation(libs.hilt.work)
     ksp(libs.hilt.work.compiler)
     implementation(libs.kotlinx.coroutines.android)
+
+    // WO-MOB-028: LogoutUseCase woła MdDatabase.clearAllTables() — metodę supertypu RoomDatabase.
+    // core-database trzyma room-runtime jako `implementation`, więc typ RoomDatabase nie jest
+    // widoczny transytywnie w compile classpath tego modułu; runtime'owo był tu od zawsze.
+    implementation(libs.room.runtime)
+
+    // WO-MOB-028: unit test LogoutUseCase (MockK verify clearAllTables + clearAll).
+    // core-testing eksponuje junit/mockk/coroutines-test przez `api` (WO-MOB-024).
+    testImplementation(project(":core:core-testing"))
 }

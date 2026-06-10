@@ -11,7 +11,8 @@ import javax.inject.Inject
 
 class AuthInterceptor @Inject constructor(
     private val authDataStore: AuthDataStore,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val sessionWipeHook: SessionWipeHook
 ) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val token = runBlocking {
@@ -31,7 +32,21 @@ class AuthInterceptor @Inject constructor(
         val isLoginRequest = chain.request().url.encodedPath.endsWith("/login")
         if (response.code == 401 && !isLoginRequest) {
             Log.w("AuthInterceptor", "401 — session expired, forcing logout")
-            runBlocking { authDataStore.clearAll() }
+            runBlocking {
+                // Token czyścimy bezpośrednio NAJPIERW — nawet gdyby pełny wipe rzucił,
+                // żadne kolejne żądanie nie może wyjść z martwym (a wciąż lokalnie żywym) JWT.
+                authDataStore.clearAll()
+                // WO-MOB-028 (F2A-001): pełny wipe lokalnego cache'u PII (Room) musi wykonać
+                // się także na ścieżce 401 — przez SessionWipeHook, bo core-network nie może
+                // zależeć od core-sync (cykl modułów). Hook jest idempotentny względem clearAll().
+                try {
+                    sessionWipeHook.onSessionExpired()
+                } catch (e: Exception) {
+                    // Nie zatruwamy łańcucha interceptorów wyjątkiem nie-IO — response 401
+                    // i tak wraca do callera, a nawigację do logowania robi SessionManager.
+                    Log.e("AuthInterceptor", "Local PII wipe after 401 failed", e)
+                }
+            }
             sessionManager.notifySessionExpired()
         }
 

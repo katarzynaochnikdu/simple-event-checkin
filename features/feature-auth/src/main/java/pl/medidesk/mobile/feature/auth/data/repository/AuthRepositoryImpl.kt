@@ -7,12 +7,14 @@ import pl.medidesk.mobile.core.datastore.AuthDataStore
 import pl.medidesk.mobile.core.model.User
 import pl.medidesk.mobile.core.network.MobileApiService
 import pl.medidesk.mobile.core.network.dto.LoginRequest
+import pl.medidesk.mobile.core.sync.LogoutUseCase
 import pl.medidesk.mobile.feature.auth.domain.repository.AuthRepository
 import javax.inject.Inject
 
 class AuthRepositoryImpl @Inject constructor(
     private val apiService: MobileApiService,
-    private val authDataStore: AuthDataStore
+    private val authDataStore: AuthDataStore,
+    private val logoutUseCase: LogoutUseCase
 ) : AuthRepository {
 
     override suspend fun login(email: String, password: String): Result<User> {
@@ -33,7 +35,10 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun logout() {
-        authDataStore.clearAll()
+        // WO-MOB-028 (F2A-001): pełny wipe lokalnych danych (Room + encrypted prefs + reset
+        // analytics) zamiast samego clearAll(). Bez best-effort flushu kolejek — kontrakt
+        // repo nie rozróżnia kontekstu wywołania (flush robią jawnie Settings/More).
+        logoutUseCase()
     }
 
     override suspend fun isLoggedIn(): Boolean =

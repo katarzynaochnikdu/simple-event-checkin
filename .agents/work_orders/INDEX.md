@@ -28,3 +28,14 @@
 | WO-MOB-021 | Autoscroll na sekcję „Szczegóły zamówienia" w karcie uczestnika (ParticipantDetailsScreen) | worker-implementer | ✅ DONE | 2026-05-28 |
 | WO-MOB-022 | Auto-scroll/focus rozwiniętej CompanyCard na ekranie „Moi podopieczni" (MyMenteesScreen, LazyColumn → animateScrollToItem) | worker-implementer | ✅ DONE | 2026-05-28 |
 | WO-MOB-023 | Fix dashboard firmy (Review360) z „Moi podopieczni" — dosłanie `event_id` w body (WO-SEC-009 compat) | worker-debugger | ✅ DONE | 2026-05-28 |
+| WO-MOB-025 | Mobile Security Sprint 2 — Faza 1: pre-flight (closures re-verify + disposition WO-207/MASVS) + FULL surface mapping | worker-research | ✅ DONE (10/10 closures PASS; 47 endpointów; 0 KRYT) | 2026-06-10 |
+| WO-MOB-026 | Mobile Security Sprint 2 — Faza 2: FULL MASVS deep dive ×3 parallel (F2A storage/platform · F2B network/auth/PostHog · F2C mobile.py 47 endpointów) | worker-security ×3 | ✅ DONE (0K/5W/10Ś/16N — 31 findings) | 2026-06-10 |
+| WO-MOB-027 | Mobile Security Sprint 2 — Faza 3: op debt + final report (PO Fazie 2.5 inline remediation) + scaffoldy ŚR/NISK | worker-research + technical-writer | ✅ DONE (CONDITIONAL SAFE; 8 scaffoldów; R-135..146) | 2026-06-10 |
+| WO-MOB-028 | Faza 2.5: Logout wipe — clearAllTables() Room w 5 ścieżkach logout (F2A-001 WYS: cross-user PII + misatrybucja audytu) | worker-implementer | ✅ DONE (build PASS, 5/5 testów; uncommitted) | 2026-06-10 |
+| WO-MOB-029 | Deep link resetu hasła: App Links migration LUB ADR accepted-risk (F2A-002 WYS — jedyny WYS deferowany) | Master | ✅ CLOSED — ACCEPTED RISK (ADR-WO-MOB-029; re-review przy Production track) | 2026-06-10 |
+| WO-MOB-030 | Faza 2.5 rider: FLAG_SECURE w MainActivity gated !DEBUG (F2A-003 ŚR — low-cost, 8 ekranów PII) | worker-implementer | ✅ DONE (+8 linii, build PASS; uncommitted) | 2026-06-10 |
+| WO-MOB-031 | Faza 2.5: PostHog hardening — captureDeepLinks=false (F2B-001 WYS: token resetu→PostHog) + captureLogcat=false + redactHeader n/a + optOut order | worker-implementer | ✅ DONE (+36/-10, build PASS; uncommitted) | 2026-06-10 |
+| WO-MOB-032 | Privacy Policy + dialog zgody — sync z implementacją telemetrii (F2B-004 ŚR) + link w Settings + TELEMETRY.md drift §3.4/§5.2 | [TBD] | OPEN (scaffold Sprint 2 F3) | 2026-06-10 |
+| WO-MOB-033 | Sesja/telemetria NISK bundle: N-1 NonCancellable w LogoutUseCase + N-2 Coil cache wipe + F2B-007 residualy (optOut order) + F2B-009 redactHeader local logcat | [TBD] | OPEN (scaffold Sprint 2 F3) | 2026-06-10 |
+| WO-MOB-034 | Platform/build NISK bundle: N-3 FLAG_SECURE dialogs + F2A-007 ProGuard + F2A-008 manifest + F2A-011 ACTION_VIEW allowlist + F2B-005/006 + F2A-012 dead modules | [TBD] | OPEN (scaffold Sprint 2 F3) | 2026-06-10 |
+| WO-MOB-035 | SQLCipher — encryption-at-rest Room md_checkin.db (F2A-004 ŚR, deferred od WO-207#2; pilność spadła po WO-MOB-028) | [TBD] | OPEN (deferred — decyzja usera) | 2026-06-10 |

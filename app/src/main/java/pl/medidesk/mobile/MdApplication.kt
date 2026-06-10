@@ -59,25 +59,51 @@ class MdApplication : Application(), Configuration.Provider, ImageLoaderFactory 
         ).apply {
             debug = BuildConfig.DEBUG
 
-            // Opt-out by default; AppNavHost / AnalyticsConsentDialog will optIn() if user accepted
+            // Opt-out by default; AppNavHost / AnalyticsConsentDialog will optIn() if user accepted.
+            // WO-MOB-031 / F2B-007 (kolejność consent): optOut MUSI być ustawiony tutaj,
+            // w configu PRZED PostHogAndroid.setup() — SDK rodzi się wtedy opted-out i żaden
+            // autocapture (lifecycle/screen view) nie wyprzedzi zgody. NIE zastępować
+            // wywołaniem PostHog.optOut() PO setup() — to otwiera okno capture bez zgody.
             optOut = hasConsent != true
 
             // Autocapture
             captureApplicationLifecycleEvents = true
-            captureDeepLinks = true
+            // WO-MOB-031 / F2B-001: deep link niesie token resetu hasła
+            // (medidesk://reset-password?token=...). Z flagą włączoną (default SDK) leci
+            // event "Deep Link Opened" z KAŻDYM query paramem (w tym token=) + pełnym URL
+            // do PostHog Cloud — credential ląduje bezterminowo w 3rd party storze.
+            // NIGDY nie włączać. Deep-link handling aplikacji (MainActivity._deepLink +
+            // AppNavHost) jest od tej flagi w pełni niezależny.
+            captureDeepLinks = false
             captureScreenViews = true
 
             // Session replay — only when consented (sample rate set in PostHog dashboard, not SDK)
             sessionReplay = hasConsent == true
-            if (hasConsent == true) {
-                sessionReplayConfig.apply {
-                    // Aggressive masking — operator app shows PII (imię, email, telefon, NIP)
-                    // na większości ekranów. Wartość Session Replay = workflow operatora
-                    // (kliknięcia, swipe'y, lagi) — content nie jest potrzebny.
-                    maskAllTextInputs = true  // form inputs (hasła, NIP)
-                    maskAllImages = true       // participant photos, logos with names
-                }
+            // Hardening replay ustawiamy BEZWARUNKOWO (nie tylko przy consent==true):
+            // sessionReplayConfig to zwykły data holder (wartości bez side-effectów przy
+            // replay OFF), a flagi bezpieczeństwa nie mogą zależeć od stanu zgody w chwili
+            // startu — zero fail-open, gdyby warunek włączania replay kiedyś się zmienił.
+            sessionReplayConfig.apply {
+                // WO-MOB-031 / F2B-002: SDK default = true → logcat procesu płynąłby do
+                // PostHog jako console events. To niezadeklarowany kanał danych do 3rd party
+                // (TELEMETRY.md §3.4 / Privacy Policy §4.4) + automatyczna eksfiltracja
+                // każdej przyszłej regresji log-hygiene. Trzymać false.
+                captureLogcat = false
+                // Aggressive masking — operator app shows PII (imię, email, telefon, NIP)
+                // na większości ekranów. Wartość Session Replay = workflow operatora
+                // (kliknięcia, swipe'y, lagi) — content nie jest potrzebny.
+                maskAllTextInputs = true  // form inputs (hasła, NIP)
+                maskAllImages = true       // participant photos, logos with names
             }
+
+            // WO-MOB-031 / F2B-009: redakcja nagłówka Authorization w network capture — n/a.
+            // PostHogOkHttpInterceptor NIE jest dodany do klienta OkHttp (NetworkModule.kt
+            // buduje go wyłącznie z AuthInterceptor + DEBUG-owy HttpLoggingInterceptor),
+            // a sessionReplayConfig w SDK 3.11.0 nie eksponuje captureNetworkTelemetry —
+            // network capture po stronie PostHog jest więc wyłączony i nie ma czego redagować.
+            // Gdyby kiedyś dodawać PostHogOkHttpInterceptor: w 3.11.0 nie wysyła on nagłówków
+            // (tylko url/method/status/timing), ale zweryfikować ponownie przy bumpie SDK
+            // i odnotować w TELEMETRY.md.
         }
 
         PostHogAndroid.setup(this, config)

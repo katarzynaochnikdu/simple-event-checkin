@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import pl.medidesk.mobile.core.datastore.AuthDataStore
 import pl.medidesk.mobile.core.model.SyncState
+import pl.medidesk.mobile.core.sync.LogoutUseCase
 import pl.medidesk.mobile.core.sync.SyncEngine
 import javax.inject.Inject
 
@@ -19,7 +20,8 @@ data class MoreUiState(
 @HiltViewModel
 class MoreViewModel @Inject constructor(
     private val authDataStore: AuthDataStore,
-    private val syncEngine: SyncEngine
+    private val syncEngine: SyncEngine,
+    private val logoutUseCase: LogoutUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MoreUiState())
@@ -43,8 +45,10 @@ class MoreViewModel @Inject constructor(
 
     fun logout(onLogout: () -> Unit) {
         viewModelScope.launch {
-            authDataStore.clearAll()
-            syncEngine.stopPeriodicSync()
+            // WO-MOB-028 (F2A-001): pełny wipe lokalnego cache'u PII (Room clearAllTables +
+            // encrypted prefs + stopPeriodicSync wewnątrz use case'u). Manual logout →
+            // best-effort flush pending kolejek (≤5 s).
+            logoutUseCase(flushPendingQueues = true)
             onLogout()
         }
     }

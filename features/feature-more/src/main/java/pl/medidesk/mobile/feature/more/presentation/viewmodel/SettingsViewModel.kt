@@ -10,6 +10,7 @@ import pl.medidesk.mobile.core.analytics.AnalyticsEvent
 import pl.medidesk.mobile.core.datastore.AuthDataStore
 import pl.medidesk.mobile.core.network.MobileApiService
 import pl.medidesk.mobile.core.network.dto.ChangePasswordRequest
+import pl.medidesk.mobile.core.sync.LogoutUseCase
 import javax.inject.Inject
 
 data class SettingsUiState(
@@ -26,7 +27,8 @@ data class SettingsUiState(
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val authDataStore: AuthDataStore,
-    private val apiService: MobileApiService
+    private val apiService: MobileApiService,
+    private val logoutUseCase: LogoutUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -103,9 +105,12 @@ class SettingsViewModel @Inject constructor(
 
     fun logout(onLogout: () -> Unit) {
         viewModelScope.launch {
+            // Capture PRZED use casem — event ma być jeszcze przypisany do wylogowywanego
+            // usera (Analytics.reset() wykonuje się wewnątrz LogoutUseCase).
             Analytics.capture(AnalyticsEvent.USER_LOGGED_OUT)
-            Analytics.reset()
-            authDataStore.clearAll()
+            // WO-MOB-028 (F2A-001): pełny wipe lokalnego cache'u PII (Room clearAllTables +
+            // encrypted prefs). Manual logout → best-effort flush pending kolejek (≤5 s).
+            logoutUseCase(flushPendingQueues = true)
             onLogout()
         }
     }

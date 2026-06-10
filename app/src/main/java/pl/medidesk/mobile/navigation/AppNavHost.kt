@@ -44,6 +44,7 @@ import pl.medidesk.mobile.core.analytics.Analytics
 import pl.medidesk.mobile.core.datastore.AuthDataStore
 import pl.medidesk.mobile.core.network.MobileApiService
 import pl.medidesk.mobile.core.network.SessionManager
+import pl.medidesk.mobile.core.sync.LogoutUseCase
 import pl.medidesk.mobile.ui.AnalyticsConsentDialog
 import pl.medidesk.mobile.feature.auth.presentation.screen.LoginScreen
 import pl.medidesk.mobile.feature.auth.presentation.screen.ResetPasswordScreen
@@ -65,7 +66,8 @@ enum class AuthCheck { CHECKING, LOGGED_IN, NOT_LOGGED_IN }
 class AuthViewModel @Inject constructor(
     private val authDataStore: AuthDataStore,
     private val apiService: MobileApiService,
-    val sessionManager: SessionManager
+    val sessionManager: SessionManager,
+    private val logoutUseCase: LogoutUseCase
 ) : ViewModel() {
     private val _authState = MutableStateFlow(AuthCheck.CHECKING)
     val authState: StateFlow<AuthCheck> = _authState.asStateFlow()
@@ -85,7 +87,10 @@ class AuthViewModel @Inject constructor(
                 if (resp.isSuccessful && resp.body() != null) {
                     _authState.value = AuthCheck.LOGGED_IN
                 } else {
-                    authDataStore.clearAll()
+                    // WO-MOB-028 (F2A-001): token odrzucony przez backend → pełny wipe
+                    // lokalnego cache'u PII (Room + prefs), nie samo clearAll(). Bez flushu
+                    // kolejek — token jest martwy, sync i tak by padł.
+                    logoutUseCase()
                     _authState.value = AuthCheck.NOT_LOGGED_IN
                 }
             } catch (_: Exception) {
