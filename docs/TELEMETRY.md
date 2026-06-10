@@ -6,7 +6,7 @@ Dokumentacja opisuje konfigurację PostHog, listę śledzonych zdarzeń, mechani
 
 ## 1. Przegląd
 
-Aplikacja operatora check-in (`simple-event-checkin`) wysyła anonimowe dane analityczne do PostHog EU Cloud w celu monitorowania przepływu pracy operatora (logowanie, skanowanie QR, synchronizacja, otwieranie wydarzeń, dodawanie zamówień).
+Aplikacja operatora check-in (`simple-event-checkin`) wysyła **pseudonimowe** dane analityczne do PostHog EU Cloud w celu monitorowania przepływu pracy operatora (logowanie, skanowanie QR, synchronizacja, otwieranie wydarzeń, dodawanie zamówień). Dane są pseudonimowe (a nie anonimowe), bo `Analytics.identify()` wiąże zdarzenia z identyfikatorem konta operatora — patrz niżej.
 
 | Parametr | Wartość |
 |---|---|
@@ -97,10 +97,11 @@ W buildach debug (`BuildConfig.DEBUG == true`) SDK ma włączone `debug = true` 
 
 ### 3.4. Session Replay
 
-Session Replay jest aktywne **wyłącznie gdy użytkownik zaakceptował consent**. Zastosowane maskowania (źródło: [MdApplication.kt, linie 73–79](../app/src/main/java/pl/medidesk/mobile/MdApplication.kt#L73)):
+Session Replay jest aktywne **wyłącznie gdy użytkownik zaakceptował consent**. Zastosowane maskowania (źródło: [MdApplication.kt, linie 86–97](../app/src/main/java/pl/medidesk/mobile/MdApplication.kt#L86)):
 
 | Opcja | Wartość | Uzasadnienie |
 |---|---|---|
+| `captureLogcat` | `false` | **WO-MOB-031 / F2B-002.** SDK domyślnie ustawia `true`, co kierowałoby logcat procesu do PostHog jako *console events* — niezadeklarowany kanał danych do 3rd party + automatyczna eksfiltracja każdej przyszłej regresji higieny logów. Trzymane jawnie na `false`. Flaga ustawiana **bezwarunkowo** (nie tylko przy `consent == true`) — nie może być fail-open. |
 | `maskAllTextInputs` | `true` | Pola formularzy: hasła, NIP, dane osobowe uczestników |
 | `maskAllImages` | `true` | Zdjęcia uczestników, loga z nazwami |
 
@@ -131,10 +132,12 @@ AppNavHost renderuje AnalyticsConsentDialog
         │
         └─── "Odmawiam" ───► AuthViewModel.saveAnalyticsConsent(false)
                                   authDataStore.saveAnalyticsConsent(false)
-                                  Analytics.optOut()
+                                  → reaktywny kolektor analyticsConsentFlow: Analytics.optOut()
                                   Analytics.capture(ANALYTICS_CONSENT_CHANGED, action="opted_out")
-                                  (ten jeden event jest wysłany, reszta zablokowana)
+                                  (przy 1. uruchomieniu SDK startuje opted-out — patrz nota niżej)
 ```
+
+> **Nota (F2B-007, ścieżka first-launch decline):** przy pierwszym uruchomieniu SDK jest skonfigurowane jako `optOut = true` (brak zapisanej zgody → `hasConsent != true`, [MdApplication.kt#L67](../app/src/main/java/pl/medidesk/mobile/MdApplication.kt#L67)). Gdy użytkownik **odmawia** w dialogu pierwszego uruchomienia, SDK jest już opted-out, więc event `opted_out` jest przez nie odrzucany (audit-trail tej jednej decyzji nie powstaje). Akceptacja działa poprawnie. Ścieżka **zmiany zgody w Ustawieniach** ma poprawioną kolejność (§4.3) i wysyła event w obie strony.
 
 ### 4.2. Persystencja
 
@@ -150,12 +153,16 @@ false = user odrzucił → Analytics.optOut()
 
 ### 4.3. Zmiana zgody po pierwszym uruchomieniu
 
-Ścieżka: **Ustawienia** → przełącznik "Analityka" → [`SettingsViewModel.setAnalyticsConsent()`](../features/feature-more/src/main/java/pl/medidesk/mobile/feature/more/presentation/viewmodel/SettingsViewModel.kt#L93).
+Ścieżka: **Ustawienia** → przełącznik "Analityka" → [`SettingsViewModel.setAnalyticsConsent()`](../features/feature-more/src/main/java/pl/medidesk/mobile/feature/more/presentation/viewmodel/SettingsViewModel.kt#L95).
 
-Po zmianie:
+Po zmianie (kolejność istotna — **WO-MOB-033 / F2B-007**, tak by event audytowy nie został odrzucony przez SDK):
+
 1. `authDataStore.saveAnalyticsConsent(consent)` — trwały zapis.
-2. `Analytics.optIn()` lub `Analytics.optOut()` — natychmiastowy efekt w sesji.
-3. `Analytics.capture(ANALYTICS_CONSENT_CHANGED, action="opted_in"|"opted_out")` — event audytowy.
+2. Kolejność `optIn`/`optOut` vs `capture` **zależy od kierunku zmiany**, bo SDK odrzuca eventy wysłane gdy jest opted-out:
+   - **opt-IN** (`consent == true`): najpierw `Analytics.optIn()`, **potem** `Analytics.capture(ANALYTICS_CONSENT_CHANGED, action="opted_in")` — SDK musi być już opted-in, żeby event przeszedł.
+   - **opt-OUT** (`consent == false`): najpierw `Analytics.capture(ANALYTICS_CONSENT_CHANGED, action="opted_out")` (SDK jeszcze opted-in → event przechodzi), **potem** `Analytics.optOut()`.
+
+Dzięki temu event audytowy zmiany zgody jest wiarygodny dla obu kierunków zmiany dokonanej w Ustawieniach. (Wyjątek = first-launch *decline*, patrz nota w §4.1.)
 
 ### 4.4. Wylogowanie
 
@@ -190,7 +197,9 @@ Stałe nazw eventów i kluczy właściwości: [`AnalyticsEvent.kt`](../core/core
 |---|---|---|
 | `$screen` | `LaunchedEffect` w `AppNavHost` — emitowany ręcznie przy każdej zmianie destinacji | Przy każdej nawigacji (patrz sekcja 7) |
 | `Application Opened`, `Application Backgrounded`, `Application Installed`, `Application Updated` | `captureApplicationLifecycleEvents = true` w konfiguracji SDK | Cykl życia aplikacji |
-| Deep link events | `captureDeepLinks = true` | Po odebraniu deep linka `medidesk://reset-password?token=...` |
+| Deep link events | `captureDeepLinks = **false**` — **WYŁĄCZONE** | — |
+
+**Deep-link autocapture jest wyłączony (`captureDeepLinks = false`, WO-MOB-031 / F2B-001).** Z flagą włączoną (default SDK) deep link `medidesk://reset-password?token=...` generował event `Deep Link Opened` z **każdym** query paramem (w tym `token=`) oraz pełnym URL — token resetu hasła (credential) trafiałby bezterminowo do PostHog Cloud. Obsługa deep-linków w aplikacji (`MainActivity._deepLink` + `AppNavHost`) jest od tej flagi w pełni niezależna. **Nigdy nie włączać.**
 
 Natywny autocapture kliknięć View NIE jest włączony (domyślnie wyłączony w PostHog Android SDK v3, nie był explicite włączony w konfiguracji).
 

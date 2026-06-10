@@ -54,8 +54,11 @@ fun AnalyticsConsentDialog(
 
                 Spacer(Modifier.height(12.dp))
 
+                // WO-MOB-032 (F2B-004): dane są PSEUDONIMOWE (powiązane z identyfikatorem
+                // konta operatora przez Analytics.identify), a nie anonimowe — copy musi
+                // to oddawać, inaczej zgoda jest podważalna (RODO art. 13).
                 Text(
-                    text = "Ta aplikacja może zbierać anonimowe dane o sposobie korzystania " +
+                    text = "Ta aplikacja może zbierać pseudonimowe dane o sposobie korzystania " +
                         "(przeglądane ekrany, zdarzenia nawigacyjne, nagrania sesji), " +
                         "aby poprawiać jej działanie.",
                     style = MaterialTheme.typography.bodyMedium,
@@ -65,8 +68,10 @@ fun AnalyticsConsentDialog(
                 Spacer(Modifier.height(8.dp))
 
                 Text(
-                    text = "Dane nie zawierają informacji umożliwiających identyfikację osoby (PII). " +
-                        "Pola haseł i danych osobowych są zawsze maskowane.",
+                    text = "Zbierane są: zdarzenia techniczne (np. otwarcie ekranu), " +
+                        "identyfikator Twojego konta oraz model urządzenia. " +
+                        "Dane nie zawierają imion, nazwisk, e-maili ani innych danych " +
+                        "uczestników — pola haseł i danych osobowych są zawsze maskowane.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

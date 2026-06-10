@@ -4,7 +4,7 @@
 **Worker:** worker-implementer (docs + drobny UI)
 **Stage:** Mobile Sprint 2 Remediation — Faza 2
 **Priorytet:** 🟡 P2 (ŚR — GDPR art. 13 / Play Data Safety)
-**Status:** **OPEN**
+**Status:** ✅ DONE 2026-06-10 — PRIVACY_POLICY_MOBILE.md v1.2 (monorepo docs/: anonimowe→pseudonimowe §4.4/§8/§12 + ścieżka Settings) + AnalyticsConsentDialog copy (pseudonimowe + lista kategorii) + SettingsScreen pozycja „Polityka prywatności" (reuse `openExternalUrl` z WO-MOB-034, stała `PRIVACY_POLICY_URL`, placeholder `digitalunity.pl/privacy-policy` — **URL do potwierdzenia/publikacji usera**) + TELEMETRY.md drift (§3.4 captureLogcat=false, §5.2 captureDeepLinks=false, §4.1/§4.3 consent order). assembleDebug PASS. MdApplication/ChangePasswordDialog NIETKNIĘTE. Security gate NIEwymagany (docs + 1 link na audytowanym helperze; obniża ekspozycję RODO). **Residual flagga:** first-launch decline path (`AppNavHost.AuthViewModel.saveAnalyticsConsent`) nadal gubi event opted_out (F2B-007, poza WO-MOB-033) — follow-up. COMMITTED mobile wave + monorepo (poniżej).
 **Finding:** **F2B-004 (ŚR)** — [F2B_NETWORK_AUTH_TELEMETRY_REVIEW.md](../../../.agents/context/_audits/2026-06-mobile-security-sprint-2/F2B_NETWORK_AUTH_TELEMETRY_REVIEW.md) + doc-residual WO-MOB-031
 
 ---

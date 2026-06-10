@@ -11,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -19,7 +20,15 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import pl.medidesk.mobile.core.ui.components.SecureDialogEffect
+import pl.medidesk.mobile.core.ui.util.openExternalUrl
 import pl.medidesk.mobile.feature.more.presentation.viewmodel.SettingsViewModel
+
+// WO-MOB-032 (F2B-004): publiczny adres Polityki Prywatności otwierany z Ustawień.
+// URL trzymany jako stała (nie hardcode inline w composable). Otwierany przez
+// openExternalUrl — helper wpuszcza wyłącznie http(s) (allowlist schematów, WO-MOB-034).
+// UWAGA: adres do potwierdzenia/publikacji przez usera (op-action poza repo) — patrz
+// docs/PRIVACY_POLICY_MOBILE.md §12.
+private const val PRIVACY_POLICY_URL = "https://digitalunity.pl/privacy-policy"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,6 +38,7 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showPasswordDialog by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -143,8 +153,10 @@ fun SettingsScreen(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text("Dane analityczne", style = MaterialTheme.typography.bodyLarge)
+                        // WO-MOB-032 (F2B-004): dane są pseudonimowe (powiązane z kontem
+                        // operatora), nie anonimowe.
                         Text(
-                            text = "Anonimowe dane o korzystaniu z aplikacji (bez PII)",
+                            text = "Pseudonimowe dane o korzystaniu z aplikacji (bez danych osobowych uczestników)",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -155,6 +167,17 @@ fun SettingsScreen(
                     )
                 }
             }
+
+            Spacer(Modifier.height(8.dp))
+
+            // WO-MOB-032 (F2B-004): link do Polityki Prywatności w aplikacji (wymóg §12
+            // polityki + RODO art. 13). openExternalUrl wpuszcza wyłącznie http(s).
+            SettingsItem(
+                icon = Icons.Default.PrivacyTip,
+                title = "Polityka prywatności",
+                subtitle = "Otwórz w przeglądarce",
+                onClick = { openExternalUrl(context, PRIVACY_POLICY_URL) }
+            )
 
             Spacer(Modifier.weight(1f))
             Spacer(Modifier.height(24.dp))
