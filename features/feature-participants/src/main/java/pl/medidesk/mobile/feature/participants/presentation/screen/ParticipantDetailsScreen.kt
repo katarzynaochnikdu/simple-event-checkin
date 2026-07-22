@@ -45,6 +45,7 @@ import pl.medidesk.mobile.core.model.Participant
 import pl.medidesk.mobile.core.sync.ParticipantTagsRepository
 import pl.medidesk.mobile.core.ui.components.LoadingScreen
 import pl.medidesk.mobile.core.ui.components.ParticipantTagChip
+import pl.medidesk.mobile.core.ui.components.SecureDialogEffect
 import pl.medidesk.mobile.core.ui.theme.MdBlue
 import pl.medidesk.mobile.core.ui.theme.StatusColors
 import pl.medidesk.mobile.feature.participants.presentation.viewmodel.CheckinResult
@@ -109,6 +110,8 @@ fun ParticipantDetailsScreen(
             icon = { Icon(Icons.Default.MeetingRoom, null, tint = MdBlue) },
             title = { Text("Potwierdzenie Check-In", style = MaterialTheme.typography.titleMedium) },
             text = {
+                // WO-MOB-036 (N-3): dialog pokazuje imię uczestnika — okno chronione przed zrzutem w release.
+                SecureDialogEffect()
                 Text(
                     "Czy potwierdzasz wykonanie Check-In dla\n${participant?.displayName ?: "uczestnika"}?",
                     style = MaterialTheme.typography.bodyMedium
@@ -133,6 +136,8 @@ fun ParticipantDetailsScreen(
             icon = { Icon(Icons.Default.Undo, null, tint = StatusRed) },
             title = { Text("Odwołanie Check-In", style = MaterialTheme.typography.titleMedium) },
             text = {
+                // WO-MOB-036 (N-3): dialog pokazuje imię uczestnika — okno chronione przed zrzutem w release.
+                SecureDialogEffect()
                 Text(
                     "Czy na pewno chcesz cofnąć Check-In dla\n${participant?.displayName ?: "uczestnika"}?",
                     style = MaterialTheme.typography.bodyMedium

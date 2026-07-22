@@ -26,6 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import pl.medidesk.mobile.core.ui.components.MdAsyncImage
+import pl.medidesk.mobile.core.ui.components.SecureDialogEffect
 import pl.medidesk.mobile.core.ui.util.openExternalUrl
 import pl.medidesk.mobile.core.model.Speaker
 import pl.medidesk.mobile.feature.speakers.presentation.viewmodel.SpeakerDetailViewModel
@@ -236,6 +237,8 @@ fun SpeakerDetailScreen(
             onDismissRequest = viewModel::dismissUndoConfirm,
             title = { Text("Cofnac check-in?") },
             text = {
+                // WO-MOB-036 (N-3): dialog pokazuje imię prelegenta — okno chronione przed zrzutem w release.
+                SecureDialogEffect()
                 val name = uiState.speaker?.displayName.orEmpty()
                 Text(
                     if (name.isNotBlank())

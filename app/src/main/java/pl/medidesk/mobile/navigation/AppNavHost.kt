@@ -122,13 +122,24 @@ class AuthViewModel @Inject constructor(
     fun saveAnalyticsConsent(consent: Boolean) {
         viewModelScope.launch {
             authDataStore.saveAnalyticsConsent(consent)
-            Analytics.capture(
-                pl.medidesk.mobile.core.analytics.AnalyticsEvent.ANALYTICS_CONSENT_CHANGED,
-                mapOf(
-                    pl.medidesk.mobile.core.analytics.AnalyticsEvent.Props.ACTION to if (consent) "opted_in" else "opted_out",
-                    pl.medidesk.mobile.core.analytics.AnalyticsEvent.Props.APP_VERSION to pl.medidesk.mobile.BuildConfig.VERSION_NAME
-                )
+            // WO-MOB-036 (F2B-007 residual c): mirror kolejności z WO-MOB-033 SettingsViewModel.
+            // SDK rodzi się opted-out (MdApplication: optOut = hasConsent != true), więc event
+            // audytowy zgody MUSI lecieć gdy SDK jest opted-IN — inaczej PostHog go odrzuca:
+            // - opt-IN:  optIn() PRZED capture() (SDK startuje opted-out → najpierw włącz).
+            // - opt-OUT: capture() PRZED optOut() (capture gdy jeszcze opted-in → event przechodzi).
+            // Observer (init, analyticsConsentFlow) nadal stosuje toggle przy restarcie aplikacji —
+            // tu redundantny no-op; ta inline kolejność naprawia tylko zgubę eventu przy first-launch.
+            val props = mapOf(
+                pl.medidesk.mobile.core.analytics.AnalyticsEvent.Props.ACTION to if (consent) "opted_in" else "opted_out",
+                pl.medidesk.mobile.core.analytics.AnalyticsEvent.Props.APP_VERSION to pl.medidesk.mobile.BuildConfig.VERSION_NAME
             )
+            if (consent) {
+                Analytics.optIn()
+                Analytics.capture(pl.medidesk.mobile.core.analytics.AnalyticsEvent.ANALYTICS_CONSENT_CHANGED, props)
+            } else {
+                Analytics.capture(pl.medidesk.mobile.core.analytics.AnalyticsEvent.ANALYTICS_CONSENT_CHANGED, props)
+                Analytics.optOut()
+            }
         }
     }
 }

@@ -48,6 +48,7 @@ import pl.medidesk.mobile.core.network.dto.MenteeDto
 import pl.medidesk.mobile.core.network.dto.Review360ViewRequest
 import pl.medidesk.mobile.core.sync.SyncEngine
 import pl.medidesk.mobile.core.sync.ParticipantStatusChange
+import pl.medidesk.mobile.core.ui.components.SecureDialogEffect
 import pl.medidesk.mobile.core.ui.theme.StatusColors
 import java.time.Instant
 import javax.inject.Inject
@@ -828,6 +829,8 @@ private fun WithdrawGuardianshipDialog(
         onDismissRequest = { if (!isPending) onDismiss() },
         title = { Text("Wycofać opiekę nad firmą?") },
         text = {
+            // WO-MOB-036 (N-3): dialog pokazuje nazwę firmy podopiecznego — okno chronione w release.
+            SecureDialogEffect()
             Text(
                 "Po wycofaniu opieki firma \"$companyName\" przestanie być widoczna na Twojej liście podopiecznych. Inny opiekun może zostać przypisany przez admina."
             )
@@ -872,6 +875,8 @@ private fun CheckInConfirmDialog(
         },
         title = { Text("Potwierdzić przybycie?") },
         text = {
+            // WO-MOB-036 (N-3): dialog pokazuje imię/firmę/bilet podopiecznego — okno chronione w release.
+            SecureDialogEffect()
             Column {
                 Text("Czy potwierdzasz przybycie:")
                 Spacer(Modifier.height(8.dp))
