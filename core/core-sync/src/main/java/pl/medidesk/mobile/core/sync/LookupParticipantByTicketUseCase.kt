@@ -2,6 +2,10 @@ package pl.medidesk.mobile.core.sync
 
 import android.util.Log
 import pl.medidesk.mobile.core.database.dao.ParticipantDao
+import pl.medidesk.mobile.core.mappers.toDomainList
+import pl.medidesk.mobile.core.model.TicketEntitlement
+import pl.medidesk.mobile.core.model.decodeTicketEntitlements
+import pl.medidesk.mobile.core.model.entitlementDisplayNames
 import pl.medidesk.mobile.core.network.MobileApiService
 import pl.medidesk.mobile.core.sync.BuildConfig
 import javax.inject.Inject
@@ -29,9 +33,18 @@ class LookupParticipantByTicketUseCase @Inject constructor(
         // 1. Lokalna baza — strict event match
         val localThis = participantDao.findByTicketAndEvent(ticketId, eventId)
         if (localThis != null) {
-            return found(ticketId, localThis.firstName, localThis.lastName, localThis.email,
-                localThis.ticketName, localThis.company, localThis.checkedInAt != null,
-                localThis.orderStatus)
+            return found(
+                ticketId,
+                localThis.firstName,
+                localThis.lastName,
+                localThis.email,
+                localThis.ticketName,
+                localThis.company,
+                localThis.checkedInAt != null,
+                localThis.orderStatus,
+                localThis.ticketNumber,
+                decodeTicketEntitlements(localThis.ticketsJson)
+            )
         }
 
         // 2. Cross-event check — może mamy bilet, ale dla innego wydarzenia
@@ -61,9 +74,18 @@ class LookupParticipantByTicketUseCase @Inject constructor(
                     || it.backstageTicketId == ticketId
             } ?: return LookupResult.NotFound
 
-            found(ticketId, match.firstName, match.lastName, match.email,
-                match.ticketName, match.company, match.checkedInAt != null,
-                match.orderStatus)
+            found(
+                ticketId,
+                match.firstName,
+                match.lastName,
+                match.email,
+                match.ticketName,
+                match.company,
+                match.checkedInAt != null,
+                match.orderStatus,
+                match.ticketNumber,
+                match.tickets.toDomainList()
+            )
         } catch (e: Exception) {
             // WO-MOB-034 (F2B-005): DEBUG-guard — e.message poza release (higiena MOB-7).
             if (BuildConfig.DEBUG) {
@@ -83,7 +105,9 @@ class LookupParticipantByTicketUseCase @Inject constructor(
     private fun found(
         ticketId: String, first: String?, last: String?, email: String?,
         ticketName: String?, company: String?, alreadyCheckedIn: Boolean,
-        orderStatus: String? = null
+        orderStatus: String? = null,
+        ticketNumber: String? = null,
+        tickets: List<TicketEntitlement> = emptyList()
     ): LookupResult.Found = LookupResult.Found(
         ticketId = ticketId,
         participantName = composeName(first, last, email),
@@ -91,7 +115,9 @@ class LookupParticipantByTicketUseCase @Inject constructor(
         company = company.orEmpty(),
         email = email.orEmpty(),
         alreadyCheckedIn = alreadyCheckedIn,
-        orderStatus = orderStatus
+        orderStatus = orderStatus,
+        ticketNumber = ticketNumber.orEmpty().ifBlank { ticketId },
+        ticketNames = entitlementDisplayNames(tickets, ticketName)
     )
 }
 
@@ -112,6 +138,8 @@ sealed class LookupResult {
         val company: String,
         val email: String,
         val alreadyCheckedIn: Boolean,
-        val orderStatus: String? = null
+        val orderStatus: String? = null,
+        val ticketNumber: String = "",
+        val ticketNames: List<String> = emptyList()
     ) : LookupResult()
 }

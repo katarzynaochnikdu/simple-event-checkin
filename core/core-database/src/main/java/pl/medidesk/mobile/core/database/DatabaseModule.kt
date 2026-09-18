@@ -20,7 +20,7 @@ object DatabaseModule {
         Room.databaseBuilder(context, MdDatabase::class.java, "md_checkin.db")
             // Explicit migrations — preserves offline check-ins and walkins on upgrade (WO-202).
             // Add MIGRATION_<N>_<N+1> here whenever MdDatabase.version bumps.
-            .addMigrations(MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
+            .addMigrations(MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11)
             // Fallback for users still on v1..v6 (pre-production builds).
             // Users on v7+ are covered by the explicit migration above.
             .fallbackToDestructiveMigration()

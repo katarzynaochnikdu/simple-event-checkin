@@ -12,6 +12,8 @@ android {
 dependencies {
     implementation(project(":core:core-sync"))
     implementation(project(":core:core-analytics"))
+    implementation(project(":core:core-model"))
+    implementation(project(":core:core-ui"))
     // WO-MOB-020: ParticipantEntity.toDomain() for company ranking on StatsScreen.
     implementation(project(":core:core-mappers"))
     implementation(project(":features:feature-events"))

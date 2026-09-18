@@ -12,6 +12,7 @@ dependencies {
     implementation(libs.hilt.navigation.compose)
     implementation(project(":core:core-sync"))
     implementation(project(":core:core-analytics"))
+    implementation(project(":core:core-ui"))
 
     // CameraX + MLKit for QR scanning
     implementation(libs.camera.core)

@@ -45,6 +45,7 @@ import pl.medidesk.mobile.core.model.Participant
 import pl.medidesk.mobile.core.sync.ParticipantTagsRepository
 import pl.medidesk.mobile.core.ui.components.LoadingScreen
 import pl.medidesk.mobile.core.ui.components.ParticipantTagChip
+import pl.medidesk.mobile.core.ui.components.TicketNameChips
 import pl.medidesk.mobile.core.ui.components.SecureDialogEffect
 import pl.medidesk.mobile.core.ui.theme.MdBlue
 import pl.medidesk.mobile.core.ui.theme.StatusColors
@@ -315,29 +316,28 @@ private fun HeroHeader(
             }
         }
 
-        // Badge nazwy biletu + status/tag osoby w JEDNEJ linii (wycentrowane, lekko rozsunięte).
-        val hasTicket = !participant.ticketName.isNullOrBlank()
-        if (hasTicket || participant.tags.isNotEmpty()) {
+        val code = participant.ticketNumber?.trim().orEmpty()
+        if (code.isNotBlank()) {
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = "Kod: $code",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = cs.onSurface,
+                textAlign = TextAlign.Center
+            )
+        }
+
+        // Badge'e biletów (wszystkie uprawnienia) + tag osoby.
+        val ticketNames = participant.entitlementNames
+        if (ticketNames.isNotEmpty() || participant.tags.isNotEmpty()) {
             Spacer(Modifier.height(10.dp))
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                if (hasTicket) {
-                    Surface(
-                        shape = RoundedCornerShape(6.dp),
-                        color = cs.primaryContainer
-                    ) {
-                        Text(
-                            text = participant.ticketName!!,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = cs.onPrimaryContainer
-                        )
-                    }
-                }
+                TicketNameChips(names = ticketNames)
                 participant.tags.forEach { tag ->
                     ParticipantTagChip(
                         rawKey = tag,

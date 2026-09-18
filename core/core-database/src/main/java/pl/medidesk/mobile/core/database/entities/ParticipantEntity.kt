@@ -43,5 +43,6 @@ data class ParticipantEntity(
     @ColumnInfo(name = "order_participants_checked_in") val orderParticipantsCheckedIn: Int? = null,
     @ColumnInfo(name = "rsvp_sent", defaultValue = "0") val rsvpSent: Boolean = false,
     @ColumnInfo(name = "rsvp_response") val rsvpResponse: String? = null,
-    @ColumnInfo(name = "rsvp_responded_at") val rsvpRespondedAt: String? = null
+    @ColumnInfo(name = "rsvp_responded_at") val rsvpRespondedAt: String? = null,
+    @ColumnInfo(name = "tickets_json") val ticketsJson: String? = null
 )

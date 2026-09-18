@@ -45,6 +45,7 @@ import com.google.accompanist.permissions.rememberPermissionState
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
 import pl.medidesk.mobile.core.ui.components.SecureDialogEffect
+import pl.medidesk.mobile.core.ui.components.TicketNameChips
 import pl.medidesk.mobile.core.ui.theme.ScanDuplicate
 import pl.medidesk.mobile.core.ui.theme.ScanError
 import pl.medidesk.mobile.core.ui.theme.ScanSuccess
@@ -148,12 +149,20 @@ private fun ScanConfirmDialog(
                     Text("Zweryfikuj dane osoby przed zatwierdzeniem:")
                     Spacer(Modifier.height(12.dp))
                     Text(pending.participantName, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    if (pending.displayCode.isNotBlank()) {
+                        Text(
+                            "Kod: ${pending.displayCode}",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
                     if (pending.email.isNotBlank()) {
                         Text(pending.email, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
                     }
-                    if (pending.ticketName.isNotBlank()) {
-                        Spacer(Modifier.height(4.dp))
-                        Text("Bilet: ${pending.ticketName}", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                    if (pending.entitlementNames.isNotEmpty()) {
+                        Spacer(Modifier.height(8.dp))
+                        TicketNameChips(names = pending.entitlementNames)
                     }
                     if (pending.company.isNotBlank()) {
                         Text("Firma: ${pending.company}", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
@@ -302,12 +311,26 @@ private fun ScanResultOverlay(
                         color = Color.White,
                         textAlign = TextAlign.Center
                     )
-                    Text(
-                        text = p.ticketName,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = Color.White.copy(alpha = 0.85f),
-                        textAlign = TextAlign.Center
-                    )
+                    val code = uiState.lastResult?.ticketNumber
+                        ?.ifBlank { p.ticketNumber }
+                        ?.ifBlank { null }
+                    if (!code.isNullOrBlank()) {
+                        Text(
+                            text = "Kod: $code",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Color.White,
+                            fontWeight = FontWeight.SemiBold,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                    p.entitlementNames.forEach { name ->
+                        Text(
+                            text = name,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Color.White.copy(alpha = 0.85f),
+                            textAlign = TextAlign.Center
+                        )
+                    }
                     if (p.company.isNotBlank()) {
                         Text(
                             text = p.company,
@@ -327,9 +350,18 @@ private fun ScanResultOverlay(
                                 color = Color.White,
                                 textAlign = TextAlign.Center
                             )
-                            if (ps.ticketName.isNotBlank()) {
+                            if (ps.displayCode.isNotBlank()) {
                                 Text(
-                                    text = ps.ticketName,
+                                    text = "Kod: ${ps.displayCode}",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.SemiBold,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                            ps.entitlementNames.forEach { name ->
+                                Text(
+                                    text = name,
                                     style = MaterialTheme.typography.bodyLarge,
                                     color = Color.White.copy(alpha = 0.85f),
                                     textAlign = TextAlign.Center

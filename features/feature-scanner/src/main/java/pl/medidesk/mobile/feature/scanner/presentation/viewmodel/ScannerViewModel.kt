@@ -43,8 +43,15 @@ data class PendingScan(
     val email: String,
     val knownLocally: Boolean,
     val alreadyCheckedIn: Boolean,
-    val orderStatus: String? = null
-)
+    val orderStatus: String? = null,
+    val ticketNumber: String = "",
+    val ticketNames: List<String> = emptyList()
+) {
+    val entitlementNames: List<String>
+        get() = ticketNames.ifEmpty { listOfNotNull(ticketName.takeIf { it.isNotBlank() }) }
+    val displayCode: String
+        get() = ticketNumber.ifBlank { ticketId }
+}
 
 data class ScannerUiState(
     val feedback: ScanFeedback = ScanFeedback.NONE,
@@ -104,7 +111,9 @@ class ScannerViewModel @Inject constructor(
                         email = result.email,
                         knownLocally = true,
                         alreadyCheckedIn = result.alreadyCheckedIn,
-                        orderStatus = result.orderStatus
+                        orderStatus = result.orderStatus,
+                        ticketNumber = result.ticketNumber.ifBlank { ticketId },
+                        ticketNames = result.ticketNames
                     )
                     _uiState.value = _uiState.value.copy(pendingScan = pending)
                 }

@@ -5,3 +5,7 @@ plugins {
 android {
     namespace = "pl.medidesk.mobile.core.model"
 }
+
+dependencies {
+    testImplementation(libs.junit)
+}

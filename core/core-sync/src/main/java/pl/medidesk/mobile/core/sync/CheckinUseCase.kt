@@ -8,7 +8,12 @@ import pl.medidesk.mobile.core.network.dto.CheckinRequest
 import pl.medidesk.mobile.core.database.dao.OfflineCheckinDao
 import pl.medidesk.mobile.core.database.dao.ParticipantDao
 import pl.medidesk.mobile.core.database.entities.OfflineCheckinEntity
+import pl.medidesk.mobile.core.database.entities.ParticipantEntity
+import pl.medidesk.mobile.core.mappers.toDomainList
 import pl.medidesk.mobile.core.model.ParticipantSummary
+import pl.medidesk.mobile.core.model.decodeTicketEntitlements
+import pl.medidesk.mobile.core.network.dto.ParticipantSummaryDto
+import pl.medidesk.mobile.core.network.dto.TicketEntitlementDto
 import java.time.Instant
 import javax.inject.Inject
 
@@ -39,15 +44,20 @@ class CheckinUseCase @Inject constructor(
                         )
                     )
                 }
+                val local = participantDao.findByAnyTicketId(ticketId)
                 CheckinResult(
                     success = body.success,
                     alreadyCheckedIn = body.alreadyCheckedIn,
                     checkedInAt = body.checkedInAt,
-                    participant = body.participant?.let {
-                        ParticipantSummary(it.id, it.firstName.orEmpty(), it.lastName.orEmpty(), it.email.orEmpty(), it.company.orEmpty(), it.ticketName.orEmpty(), it.ticketClassId.orEmpty())
-                    },
+                    participant = body.participant.toSummary(
+                        fallbackTickets = body.tickets,
+                        local = local
+                    ),
                     error = body.error,
-                    isOffline = false
+                    isOffline = false,
+                    ticketNumber = body.participant?.ticketNumber
+                        ?: local?.ticketNumber
+                        ?: ticketId
                 )
             } else {
                 if (BuildConfig.DEBUG) {
@@ -73,10 +83,14 @@ class CheckinUseCase @Inject constructor(
         val local = participantDao.findByAnyTicketId(ticketId)
         return if (local != null) {
             if (local.checkedInAt != null) {
-                CheckinResult(success = true, alreadyCheckedIn = true, checkedInAt = local.checkedInAt,
-                    participant = ParticipantSummary(local.id, local.firstName ?: "", local.lastName ?: "",
-                        local.email ?: "", local.company ?: "", local.ticketName ?: "", local.ticketClassId ?: ""),
-                    isOffline = true)
+                CheckinResult(
+                    success = true,
+                    alreadyCheckedIn = true,
+                    checkedInAt = local.checkedInAt,
+                    participant = local.toSummary(),
+                    isOffline = true,
+                    ticketNumber = local.ticketNumber ?: ticketId
+                )
             } else {
                 offlineCheckinDao.insert(OfflineCheckinEntity(ticketId = ticketId, eventId = eventId, scannedAt = scannedAt))
                 participantDao.markCheckedIn(ticketId, scannedAt)
@@ -90,13 +104,49 @@ class CheckinUseCase @Inject constructor(
                     )
                 )
 
-                CheckinResult(success = true, alreadyCheckedIn = false, checkedInAt = scannedAt,
-                    participant = ParticipantSummary(local.id, local.firstName ?: "", local.lastName ?: "",
-                        local.email ?: "", local.company ?: "", local.ticketName ?: "", local.ticketClassId ?: ""),
-                    isOffline = true)
+                CheckinResult(
+                    success = true,
+                    alreadyCheckedIn = false,
+                    checkedInAt = scannedAt,
+                    participant = local.toSummary(),
+                    isOffline = true,
+                    ticketNumber = local.ticketNumber ?: ticketId
+                )
             }
         } else {
             CheckinResult(success = false, error = "not_found", isOffline = true)
         }
     }
 }
+
+private fun ParticipantSummaryDto?.toSummary(
+    fallbackTickets: List<TicketEntitlementDto>?,
+    local: ParticipantEntity?
+): ParticipantSummary? {
+    val dto = this ?: return local?.toSummary()
+    val fromResponse = fallbackTickets.toDomainList()
+    val tickets = fromResponse.ifEmpty { decodeTicketEntitlements(local?.ticketsJson) }
+    return ParticipantSummary(
+        id = dto.id,
+        firstName = dto.firstName.orEmpty(),
+        lastName = dto.lastName.orEmpty(),
+        email = dto.email.orEmpty(),
+        company = dto.company.orEmpty(),
+        ticketName = dto.ticketName.orEmpty().ifBlank { local?.ticketName.orEmpty() },
+        ticketClassId = dto.ticketClassId.orEmpty(),
+        tickets = tickets,
+        ticketNumber = dto.ticketNumber.orEmpty().ifBlank { local?.ticketNumber.orEmpty() }
+    )
+}
+
+private fun ParticipantEntity.toSummary(): ParticipantSummary = ParticipantSummary(
+    id = id,
+    firstName = firstName.orEmpty(),
+    lastName = lastName.orEmpty(),
+    email = email.orEmpty(),
+    company = company.orEmpty(),
+    ticketName = ticketName.orEmpty(),
+    ticketClassId = ticketClassId.orEmpty(),
+    tickets = decodeTicketEntitlements(ticketsJson),
+    ticketNumber = ticketNumber.orEmpty()
+)

@@ -48,7 +48,10 @@ import pl.medidesk.mobile.core.network.dto.MenteeDto
 import pl.medidesk.mobile.core.network.dto.Review360ViewRequest
 import pl.medidesk.mobile.core.sync.SyncEngine
 import pl.medidesk.mobile.core.sync.ParticipantStatusChange
+import pl.medidesk.mobile.core.model.TicketEntitlement
+import pl.medidesk.mobile.core.model.entitlementDisplayNames
 import pl.medidesk.mobile.core.ui.components.SecureDialogEffect
+import pl.medidesk.mobile.core.ui.components.TicketNamesPlain
 import pl.medidesk.mobile.core.ui.theme.StatusColors
 import java.time.Instant
 import javax.inject.Inject
@@ -776,6 +779,11 @@ private fun ParticipantRow(
                     overflow = TextOverflow.Ellipsis
                 )
             }
+            val codes = participant.ticketNumber?.trim().orEmpty()
+            if (codes.isNotBlank()) {
+                Text("Kod: $codes", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            TicketNamesPlain(names = participant.entitlementNames())
         }
         // Prawa strona: akcja check-in
         Box(modifier = Modifier.padding(start = 8.dp)) {
@@ -862,7 +870,8 @@ private fun CheckInConfirmDialog(
 ) {
     val name = "${mentee.firstName ?: ""} ${mentee.lastName ?: ""}".trim().ifEmpty { "ten uczestnik" }
     val companyName = mentee.companyName
-    val ticketName = mentee.ticketName
+    val ticketNames = mentee.entitlementNames()
+    val code = mentee.ticketNumber?.trim().orEmpty()
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -884,9 +893,13 @@ private fun CheckInConfirmDialog(
                 if (!companyName.isNullOrBlank()) {
                     Text(companyName, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                if (!ticketName.isNullOrBlank()) {
+                if (code.isNotBlank()) {
                     Spacer(Modifier.height(4.dp))
-                    Text("Bilet: $ticketName", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Kod: $code", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                }
+                if (ticketNames.isNotEmpty()) {
+                    Spacer(Modifier.height(4.dp))
+                    TicketNamesPlain(names = ticketNames)
                 }
             }
         },
@@ -903,3 +916,13 @@ private fun CheckInConfirmDialog(
         }
     )
 }
+
+private fun MenteeDto.entitlementNames(): List<String> =
+    entitlementDisplayNames(
+        tickets.orEmpty().mapNotNull { dto ->
+            val name = dto.ticketName?.trim().orEmpty()
+            if (name.isBlank()) null
+            else TicketEntitlement(name, dto.isPrimary, dto.checkedIn)
+        },
+        ticketName
+    )

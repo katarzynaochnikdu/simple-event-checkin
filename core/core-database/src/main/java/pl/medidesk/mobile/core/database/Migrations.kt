@@ -83,3 +83,10 @@ val MIGRATION_9_10 = object : Migration(9, 10) {
         )
     }
 }
+
+val MIGRATION_10_11 = object : Migration(10, 11) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        // WO-MOB-037: offline cache of backend tickets[] (names only, no QR tokens).
+        db.execSQL("ALTER TABLE participants ADD COLUMN tickets_json TEXT")
+    }
+}

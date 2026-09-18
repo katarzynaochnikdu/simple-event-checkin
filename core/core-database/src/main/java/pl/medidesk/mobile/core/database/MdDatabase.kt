@@ -16,7 +16,8 @@ import pl.medidesk.mobile.core.database.entities.*
     ],
     // v9: added rsvp_sent / rsvp_response / rsvp_responded_at columns to participants (WO-MOB-003)
     // v10: added speaker_checkin_queue table for WO-MOB-015 (manual speaker check-in offline queue)
-    version = 10,
+    // v11: added tickets_json on participants (WO-MOB-037 — lista uprawnień po skanie)
+    version = 11,
     exportSchema = true
 )
 abstract class MdDatabase : RoomDatabase() {

@@ -2,7 +2,11 @@ package pl.medidesk.mobile.core.mappers
 
 import pl.medidesk.mobile.core.database.entities.ParticipantEntity
 import pl.medidesk.mobile.core.model.Participant
+import pl.medidesk.mobile.core.model.TicketEntitlement
+import pl.medidesk.mobile.core.model.decodeTicketEntitlements
+import pl.medidesk.mobile.core.model.encodeTicketEntitlements
 import pl.medidesk.mobile.core.network.dto.ParticipantDto
+import pl.medidesk.mobile.core.network.dto.TicketEntitlementDto
 
 /**
  * WO-MOB-004 (2026-05-19): unified mappers for Participant across layers.
@@ -59,12 +63,14 @@ fun ParticipantDto.toEntity(eventId: String): ParticipantEntity = ParticipantEnt
     orderParticipantsCheckedIn = orderParticipantsCheckedIn,
     rsvpSent = rsvpSent,
     rsvpResponse = rsvpResponse,
-    rsvpRespondedAt = rsvpRespondedAt
+    rsvpRespondedAt = rsvpRespondedAt,
+    ticketsJson = encodeTicketEntitlements(tickets.toDomainList())
 )
 
 fun ParticipantEntity.toDomain(): Participant = Participant(
     id = id,
     ticketId = ticketId,
+    ticketNumber = ticketNumber,
     backstageTicketId = backstageTicketId,
     firstName = firstName,
     lastName = lastName,
@@ -90,5 +96,17 @@ fun ParticipantEntity.toDomain(): Participant = Participant(
     orderParticipantsCheckedIn = orderParticipantsCheckedIn,
     rsvpSent = rsvpSent,
     rsvpResponse = rsvpResponse,
-    rsvpRespondedAt = rsvpRespondedAt
+    rsvpRespondedAt = rsvpRespondedAt,
+    tickets = decodeTicketEntitlements(ticketsJson)
 )
+
+fun List<TicketEntitlementDto>?.toDomainList(): List<TicketEntitlement> =
+    orEmpty().mapNotNull { dto ->
+        val name = dto.ticketName?.trim().orEmpty()
+        if (name.isBlank()) null
+        else TicketEntitlement(
+            ticketName = name,
+            isPrimary = dto.isPrimary,
+            checkedIn = dto.checkedIn
+        )
+    }

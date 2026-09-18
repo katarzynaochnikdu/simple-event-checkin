@@ -6,7 +6,8 @@ data class CheckinResult(
     val checkedInAt: String? = null,
     val participant: ParticipantSummary? = null,
     val error: String? = null,
-    val isOffline: Boolean = false
+    val isOffline: Boolean = false,
+    val ticketNumber: String? = null
 )
 
 data class ParticipantSummary(
@@ -16,7 +17,11 @@ data class ParticipantSummary(
     val email: String,
     val company: String,
     val ticketName: String,
-    val ticketClassId: String
+    val ticketClassId: String,
+    val tickets: List<TicketEntitlement> = emptyList(),
+    val ticketNumber: String = ""
 ) {
     val displayName: String get() = "$firstName $lastName"
+    val entitlementNames: List<String>
+        get() = entitlementDisplayNames(tickets, ticketName)
 }

@@ -3,6 +3,7 @@ package pl.medidesk.mobile.core.model
 data class Participant(
     val id: Long,
     val ticketId: String?,
+    val ticketNumber: String? = null,
     val backstageTicketId: String?,
     val firstName: String?,
     val lastName: String?,
@@ -28,8 +29,11 @@ data class Participant(
     val orderParticipantsCheckedIn: Int? = null,
     val rsvpSent: Boolean = false,
     val rsvpResponse: String? = null,
-    val rsvpRespondedAt: String? = null
+    val rsvpRespondedAt: String? = null,
+    val tickets: List<TicketEntitlement> = emptyList()
 ) {
     val displayName: String get() = "${firstName.orEmpty()} ${lastName.orEmpty()}".trim()
     val isCheckedIn: Boolean get() = checkedInAt != null
+    val entitlementNames: List<String>
+        get() = entitlementDisplayNames(tickets, ticketName)
 }

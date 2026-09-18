@@ -92,7 +92,15 @@ data class ParticipantDto(
     @Json(name = "order_participants_checked_in") val orderParticipantsCheckedIn: Int? = null,
     @Json(name = "rsvp_sent") val rsvpSent: Boolean = false,
     @Json(name = "rsvp_response") val rsvpResponse: String? = null,
-    @Json(name = "rsvp_responded_at") val rsvpRespondedAt: String? = null
+    @Json(name = "rsvp_responded_at") val rsvpRespondedAt: String? = null,
+    val tickets: List<TicketEntitlementDto>? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class TicketEntitlementDto(
+    @Json(name = "ticket_name") val ticketName: String? = null,
+    @Json(name = "is_primary") val isPrimary: Boolean = false,
+    @Json(name = "checked_in") val checkedIn: Boolean = false
 )
 
 @JsonClass(generateAdapter = true)
@@ -101,7 +109,8 @@ data class CheckinResponse(
     @Json(name = "already_checked_in") val alreadyCheckedIn: Boolean = false,
     @Json(name = "checked_in_at") val checkedInAt: String? = null,
     val participant: ParticipantSummaryDto? = null,
-    val error: String? = null
+    val error: String? = null,
+    val tickets: List<TicketEntitlementDto>? = null
 )
 
 @JsonClass(generateAdapter = true)
@@ -112,7 +121,8 @@ data class ParticipantSummaryDto(
     val email: String? = null,
     val company: String? = null,
     @Json(name = "ticket_name") val ticketName: String? = null,
-    @Json(name = "ticket_class_id") val ticketClassId: String? = null
+    @Json(name = "ticket_class_id") val ticketClassId: String? = null,
+    @Json(name = "ticket_number") val ticketNumber: String? = null
 )
 
 @JsonClass(generateAdapter = true)
@@ -442,6 +452,7 @@ data class MenteeDto(
     @Json(name = "crm_account_id") val crmAccountId: Long? = null,
     @Json(name = "crm_review360_status") val review360Status: String? = null,
     @Json(name = "ticket_name") val ticketName: String? = null,
+    val tickets: List<TicketEntitlementDto>? = null,
     @Json(name = "order_status") val orderStatus: String? = null,
     @Json(name = "payment_type") val paymentType: Int? = null,
     @Json(name = "order_total") val orderTotal: Double? = null,

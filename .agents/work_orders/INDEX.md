@@ -40,3 +40,4 @@
 | WO-MOB-034 | Platform/build NISK bundle: N-3 FLAG_SECURE dialogs + F2A-007 ProGuard + F2A-008 manifest + F2A-011 ACTION_VIEW allowlist + F2B-005/006 + F2A-012 dead modules | worker-implementer | ✅ DONE 2026-06-10 (committed `5362138`) | 2026-06-10 |
 | WO-MOB-035 | SQLCipher — encryption-at-rest Room md_checkin.db (F2A-004 ŚR, deferred od WO-207#2; pilność spadła po WO-MOB-028) | [TBD] | OPEN (deferred — decyzja usera) | 2026-06-10 |
 | WO-MOB-036 | AppNavHost consent-order (F2B-007c) + SecureDialogEffect na 5 residualnych dialogach PII (3 ekrany — N-3 residual) | Master | 🔧 IN PROGRESS 2026-06-12 (build pending) | 2026-06-12 |
+| WO-MOB-037 | Po skanie: jeden kod osoby + lista uprawnień (tickets[] z sync/check-in, Room v11) | Implementer | 🔧 IN PROGRESS 2026-09-18 | 2026-09-18 |
