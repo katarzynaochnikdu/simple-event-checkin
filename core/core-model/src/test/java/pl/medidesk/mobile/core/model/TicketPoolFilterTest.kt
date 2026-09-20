@@ -1,5 +1,6 @@
 package pl.medidesk.mobile.core.model
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -72,6 +73,30 @@ class TicketPoolFilterTest {
         )
 
         assertFalse(matches)
+    }
+
+    @Test
+    fun pendingTicketDisplayNames_keepsOnlyTicketsAwaitingPayment() {
+        // Arrange
+        val payload = listOf(
+            "Basic+ 24.09" to "awaiting_payment",
+            "Warsztat X" to "paid",
+            "" to "awaiting_payment",
+            "Kolacja" to null
+        )
+
+        // Act
+        val names = pendingTicketDisplayNames(payload)
+
+        assertEquals(listOf("Basic+ 24.09"), names)
+    }
+
+    @Test
+    fun pendingTicketDisplayNames_emptyPayload_showsNothing() {
+        // Act
+        val names = pendingTicketDisplayNames(emptyList())
+
+        assertTrue(names.isEmpty())
     }
 
     @Test

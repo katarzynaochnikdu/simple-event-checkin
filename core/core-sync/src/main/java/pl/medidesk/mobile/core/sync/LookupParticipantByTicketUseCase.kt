@@ -3,6 +3,7 @@ package pl.medidesk.mobile.core.sync
 import android.util.Log
 import pl.medidesk.mobile.core.database.dao.ParticipantDao
 import pl.medidesk.mobile.core.mappers.toDomainList
+import pl.medidesk.mobile.core.mappers.toPendingTicketNames
 import pl.medidesk.mobile.core.model.TicketEntitlement
 import pl.medidesk.mobile.core.model.decodeTicketEntitlements
 import pl.medidesk.mobile.core.model.entitlementDisplayNames
@@ -84,7 +85,11 @@ class LookupParticipantByTicketUseCase @Inject constructor(
                 match.checkedInAt != null,
                 match.orderStatus,
                 match.ticketNumber,
-                match.tickets.toDomainList()
+                match.tickets.toDomainList(),
+                // Bilety czekające na dopłatę — tylko informacja dla obsługi.
+                // Lokalny cache ich nie przechowuje (brak kolumny w bazie),
+                // więc widać je na tej ścieżce oraz w odpowiedzi check-inu.
+                match.pendingTickets.toPendingTicketNames()
             )
         } catch (e: Exception) {
             // WO-MOB-034 (F2B-005): DEBUG-guard — e.message poza release (higiena MOB-7).
@@ -107,7 +112,8 @@ class LookupParticipantByTicketUseCase @Inject constructor(
         ticketName: String?, company: String?, alreadyCheckedIn: Boolean,
         orderStatus: String? = null,
         ticketNumber: String? = null,
-        tickets: List<TicketEntitlement> = emptyList()
+        tickets: List<TicketEntitlement> = emptyList(),
+        pendingTicketNames: List<String> = emptyList()
     ): LookupResult.Found = LookupResult.Found(
         ticketId = ticketId,
         participantName = composeName(first, last, email),
@@ -117,7 +123,8 @@ class LookupParticipantByTicketUseCase @Inject constructor(
         alreadyCheckedIn = alreadyCheckedIn,
         orderStatus = orderStatus,
         ticketNumber = ticketNumber.orEmpty().ifBlank { ticketId },
-        ticketNames = entitlementDisplayNames(tickets, ticketName)
+        ticketNames = entitlementDisplayNames(tickets, ticketName),
+        pendingTicketNames = pendingTicketNames
     )
 }
 
@@ -140,6 +147,8 @@ sealed class LookupResult {
         val alreadyCheckedIn: Boolean,
         val orderStatus: String? = null,
         val ticketNumber: String = "",
-        val ticketNames: List<String> = emptyList()
+        val ticketNames: List<String> = emptyList(),
+        /** Bilety czekające na opłacenie — tylko do pokazania, nie do wpuszczenia. */
+        val pendingTicketNames: List<String> = emptyList()
     ) : LookupResult()
 }

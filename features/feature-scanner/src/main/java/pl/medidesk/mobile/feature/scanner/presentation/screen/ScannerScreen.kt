@@ -164,6 +164,10 @@ private fun ScanConfirmDialog(
                         Spacer(Modifier.height(8.dp))
                         TicketNameChips(names = pending.entitlementNames)
                     }
+                    if (pending.pendingTicketNames.isNotEmpty()) {
+                        Spacer(Modifier.height(10.dp))
+                        PendingTicketsWarning(names = pending.pendingTicketNames)
+                    }
                     if (pending.company.isNotBlank()) {
                         Text("Firma: ${pending.company}", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
                     }
@@ -227,6 +231,65 @@ private fun ScanConfirmDialog(
             TextButton(onClick = onDismiss) { Text("Anuluj") }
         }
     )
+}
+
+/**
+ * Bilety, za które dopłata jeszcze nie dotarła.
+ *
+ * Świadomie w kolorystyce ostrzeżenia — tej samej, co „ZAMÓWIENIE NIEOPŁACONE" —
+ * i nigdy razem z opłaconymi biletami: obsługa ma z jednego spojrzenia wiedzieć,
+ * że ten bilet istnieje, ale nie jest zapłacony i nie uprawnia do wejścia.
+ */
+@Composable
+private fun PendingTicketsWarning(
+    names: List<String>,
+    modifier: Modifier = Modifier,
+    containerColor: Color = MaterialTheme.colorScheme.errorContainer
+) {
+    if (names.isEmpty()) return
+    Surface(
+        modifier = modifier,
+        color = containerColor,
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Default.WarningAmber,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = if (names.size == 1) {
+                        "BILET NIEOPŁACONY — CZEKA NA OPŁATĘ"
+                    } else {
+                        "BILETY NIEOPŁACONE — CZEKAJĄ NA OPŁATĘ"
+                    },
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            Spacer(Modifier.height(8.dp))
+            TicketNameChips(
+                names = names,
+                chipColor = MaterialTheme.colorScheme.error,
+                chipContentColor = MaterialTheme.colorScheme.onError
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = if (names.size == 1) {
+                    "Nie uprawnia do wejścia."
+                } else {
+                    "Nie uprawniają do wejścia."
+                },
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
+    }
 }
 
 @Composable
@@ -339,6 +402,14 @@ private fun ScanResultOverlay(
                             textAlign = TextAlign.Center
                         )
                     }
+                    if (uiState.pendingTicketNames.isNotEmpty()) {
+                        Spacer(Modifier.height(16.dp))
+                        PendingTicketsWarning(
+                            names = uiState.pendingTicketNames,
+                            modifier = Modifier.padding(horizontal = 24.dp),
+                            containerColor = Color.White
+                        )
+                    }
                 }
                 if (uiState.feedback == ScanFeedback.DENIED) {
                     uiState.pendingScan?.let { ps ->
@@ -373,6 +444,14 @@ private fun ScanResultOverlay(
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = Color.White.copy(alpha = 0.75f),
                                     textAlign = TextAlign.Center
+                                )
+                            }
+                            if (ps.pendingTicketNames.isNotEmpty()) {
+                                Spacer(Modifier.height(16.dp))
+                                PendingTicketsWarning(
+                                    names = ps.pendingTicketNames,
+                                    modifier = Modifier.padding(horizontal = 24.dp),
+                                    containerColor = Color.White
                                 )
                             }
                         }

@@ -93,7 +93,8 @@ data class ParticipantDto(
     @Json(name = "rsvp_sent") val rsvpSent: Boolean = false,
     @Json(name = "rsvp_response") val rsvpResponse: String? = null,
     @Json(name = "rsvp_responded_at") val rsvpRespondedAt: String? = null,
-    val tickets: List<TicketEntitlementDto>? = null
+    val tickets: List<TicketEntitlementDto>? = null,
+    @Json(name = "pending_tickets") val pendingTickets: List<PendingTicketDto>? = null
 )
 
 @JsonClass(generateAdapter = true)
@@ -103,6 +104,22 @@ data class TicketEntitlementDto(
     @Json(name = "checked_in") val checkedIn: Boolean = false
 )
 
+/**
+ * Bilet, za który dopłata jeszcze nie dotarła — backend zwraca go w osobnym
+ * kluczu `pending_tickets[]`, NIGDY w `tickets[]`, bo nie uprawnia do wejścia
+ * i nie ma czego skanować.
+ *
+ * Czytamy wyłącznie nazwę i stan płatności. Kwoty (`amount_due`,
+ * `amount_due_grosze`) świadomie pomijamy — Moshi jest wrażliwy na typ pola,
+ * a obsłudze na bramce potrzebny jest fakt „nieopłacony", nie kwota.
+ * Starszy backend nie przyśle tego klucza i wtedy po prostu nic nie pokazujemy.
+ */
+@JsonClass(generateAdapter = true)
+data class PendingTicketDto(
+    @Json(name = "ticket_name") val ticketName: String? = null,
+    @Json(name = "payment_state") val paymentState: String? = null
+)
+
 @JsonClass(generateAdapter = true)
 data class CheckinResponse(
     val success: Boolean,
@@ -110,7 +127,8 @@ data class CheckinResponse(
     @Json(name = "checked_in_at") val checkedInAt: String? = null,
     val participant: ParticipantSummaryDto? = null,
     val error: String? = null,
-    val tickets: List<TicketEntitlementDto>? = null
+    val tickets: List<TicketEntitlementDto>? = null,
+    @Json(name = "pending_tickets") val pendingTickets: List<PendingTicketDto>? = null
 )
 
 @JsonClass(generateAdapter = true)

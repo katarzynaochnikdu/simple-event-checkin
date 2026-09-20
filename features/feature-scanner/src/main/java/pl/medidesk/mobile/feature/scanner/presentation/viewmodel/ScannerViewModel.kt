@@ -45,7 +45,12 @@ data class PendingScan(
     val alreadyCheckedIn: Boolean,
     val orderStatus: String? = null,
     val ticketNumber: String = "",
-    val ticketNames: List<String> = emptyList()
+    val ticketNames: List<String> = emptyList(),
+    /**
+     * Bilety, za które dopłata jeszcze nie dotarła. Wyłącznie informacja dla
+     * obsługi — taki bilet NIE uprawnia do wejścia i nie bierze udziału w check-inie.
+     */
+    val pendingTicketNames: List<String> = emptyList()
 ) {
     val entitlementNames: List<String>
         get() = ticketNames.ifEmpty { listOfNotNull(ticketName.takeIf { it.isNotBlank() }) }
@@ -59,7 +64,12 @@ data class ScannerUiState(
     val syncState: SyncState = SyncState(),
     val isScanning: Boolean = true,
     val pendingScan: PendingScan? = null,
-    val wrongEventInfo: WrongEventInfo? = null
+    val wrongEventInfo: WrongEventInfo? = null,
+    /**
+     * Bilety czekające na opłacenie dla ostatnio zeskanowanej osoby — pokazujemy je
+     * na ekranie wyniku skanu. Sam check-in ich nie dotyczy.
+     */
+    val pendingTicketNames: List<String> = emptyList()
 )
 
 @HiltViewModel
@@ -113,7 +123,8 @@ class ScannerViewModel @Inject constructor(
                         alreadyCheckedIn = result.alreadyCheckedIn,
                         orderStatus = result.orderStatus,
                         ticketNumber = result.ticketNumber.ifBlank { ticketId },
-                        ticketNames = result.ticketNames
+                        ticketNames = result.ticketNames,
+                        pendingTicketNames = result.pendingTicketNames
                     )
                     _uiState.value = _uiState.value.copy(pendingScan = pending)
                 }
@@ -167,7 +178,16 @@ class ScannerViewModel @Inject constructor(
                 result.isOffline -> ScanFeedback.SUCCESS_OFFLINE
                 else -> ScanFeedback.SUCCESS
             }
-            _uiState.value = _uiState.value.copy(feedback = feedback, lastResult = result)
+            // Odpowiedź check-inu zna bilety w toku; przy zapisie offline nie zna,
+            // więc zostawiamy to, co pokazał dialog potwierdzenia.
+            val pendingTicketNames = result.participant?.pendingTicketNames
+                .orEmpty()
+                .ifEmpty { pending.pendingTicketNames }
+            _uiState.value = _uiState.value.copy(
+                feedback = feedback,
+                lastResult = result,
+                pendingTicketNames = pendingTicketNames
+            )
 
             // Analytics: track every confirmed scan outcome
             Analytics.capture(
@@ -242,7 +262,8 @@ class ScannerViewModel @Inject constructor(
             lastResult = null,
             isScanning = true,
             pendingScan = null,
-            wrongEventInfo = null
+            wrongEventInfo = null,
+            pendingTicketNames = emptyList()
         )
         lastScannedTicketId = null
         lastScannedEventId = null

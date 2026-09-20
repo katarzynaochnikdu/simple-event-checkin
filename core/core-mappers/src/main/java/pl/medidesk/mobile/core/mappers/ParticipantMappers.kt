@@ -5,7 +5,9 @@ import pl.medidesk.mobile.core.model.Participant
 import pl.medidesk.mobile.core.model.TicketEntitlement
 import pl.medidesk.mobile.core.model.decodeTicketEntitlements
 import pl.medidesk.mobile.core.model.encodeTicketEntitlements
+import pl.medidesk.mobile.core.model.pendingTicketDisplayNames
 import pl.medidesk.mobile.core.network.dto.ParticipantDto
+import pl.medidesk.mobile.core.network.dto.PendingTicketDto
 import pl.medidesk.mobile.core.network.dto.TicketEntitlementDto
 
 /**
@@ -99,6 +101,13 @@ fun ParticipantEntity.toDomain(): Participant = Participant(
     rsvpRespondedAt = rsvpRespondedAt,
     tickets = decodeTicketEntitlements(ticketsJson)
 )
+
+/**
+ * Nazwy biletów czekających na opłacenie dopłaty (`pending_tickets[]`).
+ * Lista tylko do pokazania na ekranie — check-in ich nie dotyczy.
+ */
+fun List<PendingTicketDto>?.toPendingTicketNames(): List<String> =
+    pendingTicketDisplayNames(orEmpty().map { it.ticketName to it.paymentState })
 
 fun List<TicketEntitlementDto>?.toDomainList(): List<TicketEntitlement> =
     orEmpty().mapNotNull { dto ->

@@ -19,7 +19,12 @@ data class ParticipantSummary(
     val ticketName: String,
     val ticketClassId: String,
     val tickets: List<TicketEntitlement> = emptyList(),
-    val ticketNumber: String = ""
+    val ticketNumber: String = "",
+    /**
+     * Bilety czekające na opłacenie dopłaty — wyłącznie do pokazania obsłudze.
+     * NIE uprawniają do wejścia i nie biorą udziału w check-inie.
+     */
+    val pendingTicketNames: List<String> = emptyList()
 ) {
     val displayName: String get() = "$firstName $lastName"
     val entitlementNames: List<String>

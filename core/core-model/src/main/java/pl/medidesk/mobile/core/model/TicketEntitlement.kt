@@ -20,6 +20,24 @@ fun entitlementDisplayNames(
     return if (fallback.isNotBlank()) listOf(fallback) else emptyList()
 }
 
+/** Stan biletu, za który dopłata jeszcze nie dotarła (kontrakt backendu). */
+const val TICKET_PAYMENT_AWAITING = "awaiting_payment"
+
+/**
+ * Nazwy biletów czekających na opłacenie — do POKAZANIA, nigdy do wpuszczenia.
+ *
+ * Bierzemy tylko pozycje o stanie `awaiting_payment`; nieznany stan pomijamy,
+ * żeby przyszły stan płatności nie trafił na ekran jako „czeka na opłacenie".
+ */
+fun pendingTicketDisplayNames(names: List<Pair<String?, String?>>): List<String> =
+    names.mapNotNull { (ticketName, paymentState) ->
+        val name = ticketName?.trim().orEmpty()
+        val state = paymentState?.trim().orEmpty()
+        if (name.isBlank()) null
+        else if (!state.equals(TICKET_PAYMENT_AWAITING, ignoreCase = true)) null
+        else name
+    }.distinct()
+
 /**
  * Czy osoba należy do wybranej puli biletowej?
  *

@@ -10,9 +10,11 @@ import pl.medidesk.mobile.core.database.dao.ParticipantDao
 import pl.medidesk.mobile.core.database.entities.OfflineCheckinEntity
 import pl.medidesk.mobile.core.database.entities.ParticipantEntity
 import pl.medidesk.mobile.core.mappers.toDomainList
+import pl.medidesk.mobile.core.mappers.toPendingTicketNames
 import pl.medidesk.mobile.core.model.ParticipantSummary
 import pl.medidesk.mobile.core.model.decodeTicketEntitlements
 import pl.medidesk.mobile.core.network.dto.ParticipantSummaryDto
+import pl.medidesk.mobile.core.network.dto.PendingTicketDto
 import pl.medidesk.mobile.core.network.dto.TicketEntitlementDto
 import java.time.Instant
 import javax.inject.Inject
@@ -51,6 +53,7 @@ class CheckinUseCase @Inject constructor(
                     checkedInAt = body.checkedInAt,
                     participant = body.participant.toSummary(
                         fallbackTickets = body.tickets,
+                        pendingTickets = body.pendingTickets,
                         local = local
                     ),
                     error = body.error,
@@ -121,6 +124,7 @@ class CheckinUseCase @Inject constructor(
 
 private fun ParticipantSummaryDto?.toSummary(
     fallbackTickets: List<TicketEntitlementDto>?,
+    pendingTickets: List<PendingTicketDto>?,
     local: ParticipantEntity?
 ): ParticipantSummary? {
     val dto = this ?: return local?.toSummary()
@@ -135,7 +139,9 @@ private fun ParticipantSummaryDto?.toSummary(
         ticketName = dto.ticketName.orEmpty().ifBlank { local?.ticketName.orEmpty() },
         ticketClassId = dto.ticketClassId.orEmpty(),
         tickets = tickets,
-        ticketNumber = dto.ticketNumber.orEmpty().ifBlank { local?.ticketNumber.orEmpty() }
+        ticketNumber = dto.ticketNumber.orEmpty().ifBlank { local?.ticketNumber.orEmpty() },
+        // Bilety w toku są tylko informacją na ekranie — check-in ich nie obejmuje.
+        pendingTicketNames = pendingTickets.toPendingTicketNames()
     )
 }
 
