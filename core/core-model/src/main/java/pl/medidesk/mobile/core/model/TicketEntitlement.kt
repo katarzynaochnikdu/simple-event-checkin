@@ -21,6 +21,31 @@ fun entitlementDisplayNames(
 }
 
 /**
+ * Czy osoba należy do wybranej puli biletowej?
+ *
+ * Filtr po puli porównywał wyłącznie bilet GŁÓWNY (`ticketClassId`), więc osoba,
+ * która dokupiła drugi bilet, znikała z listy przy filtrze po tej drugiej puli.
+ * `TicketEntitlement` nie niesie identyfikatora puli (kontrakt sieciowy zwraca
+ * tylko nazwę), dlatego dodatkowe bilety dopasowujemy po NAZWIE puli — tej samej,
+ * którą operator widzi na chipsie filtra.
+ *
+ * Zachowanie bez zmian, gdy: brak filtra, osoba ma jeden bilet, lista biletów jest
+ * pusta (wtedy liczy się sam bilet główny) albo nie znamy nazwy wybranej puli.
+ */
+fun participantMatchesTicketPool(
+    primaryTicketClassId: String?,
+    ticketNames: List<String>,
+    selectedTicketClassId: String?,
+    selectedTicketClassName: String?
+): Boolean {
+    if (selectedTicketClassId == null) return true
+    if (primaryTicketClassId == selectedTicketClassId) return true
+    val poolName = selectedTicketClassName?.trim().orEmpty()
+    if (poolName.isBlank()) return false
+    return ticketNames.any { it.trim().equals(poolName, ignoreCase = true) }
+}
+
+/**
  * Minimalny JSON tablicy obiektów — bez org.json, da się testować na JVM.
  * Pola kontrolowane przez nas (nazwa biletu z katalogu).
  */

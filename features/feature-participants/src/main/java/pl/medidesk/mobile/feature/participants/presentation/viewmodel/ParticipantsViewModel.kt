@@ -15,6 +15,7 @@ import pl.medidesk.mobile.core.mappers.toDomain
 import pl.medidesk.mobile.core.model.Participant
 import pl.medidesk.mobile.core.model.SyncState
 import pl.medidesk.mobile.core.model.TicketClass
+import pl.medidesk.mobile.core.model.participantMatchesTicketPool
 import pl.medidesk.mobile.core.sync.SyncEngine
 import pl.medidesk.mobile.core.sync.ParticipantStatusChange
 import pl.medidesk.mobile.feature.participants.BuildConfig
@@ -79,7 +80,20 @@ class ParticipantsViewModel @Inject constructor(
         viewModelScope.launch {
             ticketClassDao.getTicketClassesFlow(eventId).collect { entities ->
                 val classes = entities.map { TicketClass(it.ticketClassId, it.ticketName, it.eventId) }
-                _uiState.value = _uiState.value.copy(ticketClasses = classes)
+                val current = _uiState.value
+                // Nazwy pul biletowych dojeżdżają osobnym flow — bez przeliczenia
+                // filtr ustawiony wcześniej (deep link z dashboardu) dopasowywałby
+                // wyłącznie bilet główny.
+                _uiState.value = current.copy(
+                    ticketClasses = classes,
+                    filteredParticipants = applyFilters(
+                        current.participants,
+                        current.searchQuery,
+                        current.filterCheckedIn,
+                        current.selectedTicketClassId,
+                        classes
+                    )
+                )
             }
         }
 
@@ -233,8 +247,14 @@ class ParticipantsViewModel @Inject constructor(
         all: List<Participant>,
         query: String,
         checkedInFilter: Boolean?,
-        classIdFilter: String?
+        classIdFilter: String?,
+        ticketClasses: List<TicketClass> = _uiState.value.ticketClasses
     ): List<Participant> {
+        // Nazwa wybranej puli — po niej rozpoznajemy DOKUPIONE bilety osoby,
+        // bo lista uprawnień niesie nazwę biletu, a nie identyfikator puli.
+        val selectedClassName = classIdFilter?.let { id ->
+            ticketClasses.firstOrNull { it.ticketClassId == id }?.ticketName
+        }
         return all.filter { p ->
             val notCancelled = p.orderStatus?.lowercase() !in listOf("cancelled", "refunded")
 
@@ -253,7 +273,12 @@ class ParticipantsViewModel @Inject constructor(
                 null -> true
             }
 
-            val matchesClass = classIdFilter == null || p.ticketClassId == classIdFilter
+            val matchesClass = participantMatchesTicketPool(
+                primaryTicketClassId = p.ticketClassId,
+                ticketNames = p.entitlementNames,
+                selectedTicketClassId = classIdFilter,
+                selectedTicketClassName = selectedClassName
+            )
 
             notCancelled && matchesQuery && matchesChecked && matchesClass
         }

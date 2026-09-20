@@ -8,9 +8,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -22,12 +24,15 @@ fun TicketNameChips(
     names: List<String>,
     modifier: Modifier = Modifier,
     chipColor: Color = MaterialTheme.colorScheme.primaryContainer,
-    chipContentColor: Color = MaterialTheme.colorScheme.onPrimaryContainer
+    chipContentColor: Color = MaterialTheme.colorScheme.onPrimaryContainer,
+    horizontalAlignment: Alignment.Horizontal = Alignment.Start,
+    spacing: Dp = 6.dp
 ) {
     if (names.isEmpty()) return
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(6.dp)
+        verticalArrangement = Arrangement.spacedBy(spacing),
+        horizontalAlignment = horizontalAlignment
     ) {
         names.forEach { name ->
             Surface(

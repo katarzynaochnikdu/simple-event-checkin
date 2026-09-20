@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import pl.medidesk.mobile.core.model.Participant
+import pl.medidesk.mobile.core.ui.components.TicketNameChips
 import pl.medidesk.mobile.core.ui.theme.StatusColors
 import pl.medidesk.mobile.feature.addorder.presentation.screen.AddOrderSheet
 import pl.medidesk.mobile.feature.participants.presentation.viewmodel.ParticipantsViewModel
@@ -403,22 +404,21 @@ private fun ParticipantItem(participant: Participant, onClick: () -> Unit, onSta
 
             Spacer(Modifier.width(8.dp))
 
-            // Right side: ticket name + payment status
-            Column(horizontalAlignment = Alignment.End) {
-                if (!participant.ticketName.isNullOrBlank()) {
-                    Surface(
-                        color = MaterialTheme.colorScheme.surfaceVariant,
-                        shape = RoundedCornerShape(6.dp)
-                    ) {
-                        Text(
-                            text = participant.ticketName!!,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontSize = 10.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
+            // Right side: WSZYSTKIE aktywne bilety osoby + payment status.
+            // Ten sam komponent, co okno potwierdzenia skanu i karta uczestnika —
+            // osoba z dokupionym biletem musi być widoczna także na liście,
+            // nie tylko po zeskanowaniu QR.
+            Column(
+                modifier = Modifier.widthIn(max = 140.dp),
+                horizontalAlignment = Alignment.End
+            ) {
+                TicketNameChips(
+                    names = participant.entitlementNames,
+                    chipColor = MaterialTheme.colorScheme.surfaceVariant,
+                    chipContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    horizontalAlignment = Alignment.End,
+                    spacing = 4.dp
+                )
 
                 val orderStatus = participant.orderStatus
                 if (!orderStatus.isNullOrEmpty()) {
