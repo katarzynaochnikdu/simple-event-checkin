@@ -15,6 +15,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.MeetingRoom
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.*
@@ -49,6 +50,7 @@ import pl.medidesk.mobile.core.ui.components.TicketNameChips
 import pl.medidesk.mobile.core.ui.theme.ScanDuplicate
 import pl.medidesk.mobile.core.ui.theme.ScanError
 import pl.medidesk.mobile.core.ui.theme.ScanSuccess
+import pl.medidesk.mobile.core.ui.theme.StatusColors
 import pl.medidesk.mobile.feature.scanner.presentation.viewmodel.PendingScan
 import pl.medidesk.mobile.feature.scanner.presentation.viewmodel.ScanFeedback
 import pl.medidesk.mobile.feature.scanner.presentation.viewmodel.ScannerUiState
@@ -161,12 +163,17 @@ private fun ScanConfirmDialog(
                         Text(pending.email, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
                     }
                     if (pending.entitlementNames.isNotEmpty()) {
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(10.dp))
+                        PaidTicketsCaption(pending.entitlementNames.size, StatusColors.Paid)
+                        Spacer(Modifier.height(6.dp))
                         TicketNameChips(names = pending.entitlementNames)
                     }
                     if (pending.pendingTicketNames.isNotEmpty()) {
                         Spacer(Modifier.height(10.dp))
-                        PendingTicketsWarning(names = pending.pendingTicketNames)
+                        PendingTicketsWarning(
+                            names = pending.pendingTicketNames,
+                            amountDue = pending.surchargeDue
+                        )
                     }
                     if (pending.company.isNotBlank()) {
                         Text("Firma: ${pending.company}", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
@@ -234,17 +241,43 @@ private fun ScanConfirmDialog(
 }
 
 /**
+ * Podpis sekcji biletów opłaconych. Obie sekcje na ekranie skanu są podpisane,
+ * także gdy w każdej jest po jednym bilecie — obsługa nie ma się domyślać,
+ * co jest opłacone, a co czeka na płatność.
+ */
+@Composable
+private fun PaidTicketsCaption(count: Int, color: Color) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(
+            Icons.Default.CheckCircle,
+            contentDescription = null,
+            tint = color,
+            modifier = Modifier.size(18.dp)
+        )
+        Spacer(Modifier.width(6.dp))
+        Text(
+            text = if (count == 1) "BILET OPŁACONY" else "BILETY OPŁACONE",
+            color = color,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+/**
  * Bilety, za które dopłata jeszcze nie dotarła.
  *
- * Świadomie w kolorystyce ostrzeżenia — tej samej, co „ZAMÓWIENIE NIEOPŁACONE" —
- * i nigdy razem z opłaconymi biletami: obsługa ma z jednego spojrzenia wiedzieć,
- * że ten bilet istnieje, ale nie jest zapłacony i nie uprawnia do wejścia.
+ * Uprawnienie liczy się od wystawienia proformy: taki bilet DAJE wstęp i świadczenia,
+ * a obsługa ma tylko widzieć, że płatność jest w toku (można zaczepić gościa przy
+ * rejestracji). Dlatego bursztyn `StatusColors.Pending` — ten sam, którym repo
+ * oznacza „oczekuje na płatność" — a NIE czerwień odmowy.
  */
 @Composable
 private fun PendingTicketsWarning(
     names: List<String>,
     modifier: Modifier = Modifier,
-    containerColor: Color = MaterialTheme.colorScheme.errorContainer
+    amountDue: String? = null,
+    containerColor: Color = StatusColors.Pending.copy(alpha = 0.12f)
 ) {
     if (names.isEmpty()) return
     Surface(
@@ -257,7 +290,7 @@ private fun PendingTicketsWarning(
                 Icon(
                     Icons.Default.WarningAmber,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error,
+                    tint = StatusColors.Pending,
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(Modifier.width(8.dp))
@@ -267,7 +300,7 @@ private fun PendingTicketsWarning(
                     } else {
                         "BILETY NIEOPŁACONE — CZEKAJĄ NA OPŁATĘ"
                     },
-                    color = MaterialTheme.colorScheme.error,
+                    color = StatusColors.Pending,
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -275,17 +308,24 @@ private fun PendingTicketsWarning(
             Spacer(Modifier.height(8.dp))
             TicketNameChips(
                 names = names,
-                chipColor = MaterialTheme.colorScheme.error,
-                chipContentColor = MaterialTheme.colorScheme.onError
+                chipColor = StatusColors.Pending,
+                chipContentColor = Color.White
             )
+            val amount = amountDue?.trim().orEmpty()
+            if (amount.isNotBlank()) {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    // Kwota przychodzi z backendu już sformatowana — niczego nie liczymy.
+                    text = "Do dopłaty: $amount zł",
+                    color = StatusColors.Pending,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
             Spacer(Modifier.height(8.dp))
             Text(
-                text = if (names.size == 1) {
-                    "Nie uprawnia do wejścia."
-                } else {
-                    "Nie uprawniają do wejścia."
-                },
-                color = MaterialTheme.colorScheme.error,
+                text = "Wpuść — płatność w toku.",
+                color = StatusColors.Pending,
                 style = MaterialTheme.typography.bodySmall
             )
         }
@@ -386,13 +426,17 @@ private fun ScanResultOverlay(
                             textAlign = TextAlign.Center
                         )
                     }
-                    p.entitlementNames.forEach { name ->
-                        Text(
-                            text = name,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = Color.White.copy(alpha = 0.85f),
-                            textAlign = TextAlign.Center
-                        )
+                    if (p.entitlementNames.isNotEmpty()) {
+                        Spacer(Modifier.height(8.dp))
+                        PaidTicketsCaption(p.entitlementNames.size, Color.White)
+                        p.entitlementNames.forEach { name ->
+                            Text(
+                                text = name,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = Color.White.copy(alpha = 0.85f),
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
                     if (p.company.isNotBlank()) {
                         Text(
@@ -407,6 +451,7 @@ private fun ScanResultOverlay(
                         PendingTicketsWarning(
                             names = uiState.pendingTicketNames,
                             modifier = Modifier.padding(horizontal = 24.dp),
+                            amountDue = uiState.surchargeDue,
                             containerColor = Color.White
                         )
                     }
@@ -430,13 +475,17 @@ private fun ScanResultOverlay(
                                     textAlign = TextAlign.Center
                                 )
                             }
-                            ps.entitlementNames.forEach { name ->
-                                Text(
-                                    text = name,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = Color.White.copy(alpha = 0.85f),
-                                    textAlign = TextAlign.Center
-                                )
+                            if (ps.entitlementNames.isNotEmpty()) {
+                                Spacer(Modifier.height(8.dp))
+                                PaidTicketsCaption(ps.entitlementNames.size, Color.White)
+                                ps.entitlementNames.forEach { name ->
+                                    Text(
+                                        text = name,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = Color.White.copy(alpha = 0.85f),
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
                             }
                             if (ps.company.isNotBlank()) {
                                 Text(
@@ -451,6 +500,7 @@ private fun ScanResultOverlay(
                                 PendingTicketsWarning(
                                     names = ps.pendingTicketNames,
                                     modifier = Modifier.padding(horizontal = 24.dp),
+                                    amountDue = ps.surchargeDue,
                                     containerColor = Color.White
                                 )
                             }

@@ -58,6 +58,7 @@ class CheckinUseCase @Inject constructor(
                     ),
                     error = body.error,
                     isOffline = false,
+                    surchargeDue = body.surchargeDue,
                     ticketNumber = body.participant?.ticketNumber
                         ?: local?.ticketNumber
                         ?: ticketId

@@ -86,10 +86,12 @@ class LookupParticipantByTicketUseCase @Inject constructor(
                 match.orderStatus,
                 match.ticketNumber,
                 match.tickets.toDomainList(),
-                // Bilety czekające na dopłatę — tylko informacja dla obsługi.
+                // Bilety czekające na dopłatę — uprawniają do wejścia, oznaczamy je
+                // tylko po to, żeby obsługa mogła przypomnieć o płatności.
                 // Lokalny cache ich nie przechowuje (brak kolumny w bazie),
                 // więc widać je na tej ścieżce oraz w odpowiedzi check-inu.
-                match.pendingTickets.toPendingTicketNames()
+                match.pendingTickets.toPendingTicketNames(),
+                match.surchargeDue
             )
         } catch (e: Exception) {
             // WO-MOB-034 (F2B-005): DEBUG-guard — e.message poza release (higiena MOB-7).
@@ -113,7 +115,8 @@ class LookupParticipantByTicketUseCase @Inject constructor(
         orderStatus: String? = null,
         ticketNumber: String? = null,
         tickets: List<TicketEntitlement> = emptyList(),
-        pendingTicketNames: List<String> = emptyList()
+        pendingTicketNames: List<String> = emptyList(),
+        surchargeDue: String? = null
     ): LookupResult.Found = LookupResult.Found(
         ticketId = ticketId,
         participantName = composeName(first, last, email),
@@ -124,7 +127,8 @@ class LookupParticipantByTicketUseCase @Inject constructor(
         orderStatus = orderStatus,
         ticketNumber = ticketNumber.orEmpty().ifBlank { ticketId },
         ticketNames = entitlementDisplayNames(tickets, ticketName),
-        pendingTicketNames = pendingTicketNames
+        pendingTicketNames = pendingTicketNames,
+        surchargeDue = surchargeDue
     )
 }
 
@@ -148,7 +152,9 @@ sealed class LookupResult {
         val orderStatus: String? = null,
         val ticketNumber: String = "",
         val ticketNames: List<String> = emptyList(),
-        /** Bilety czekające na opłacenie — tylko do pokazania, nie do wpuszczenia. */
-        val pendingTicketNames: List<String> = emptyList()
+        /** Bilety czekające na opłacenie — uprawniają do wejścia, tylko oznaczone. */
+        val pendingTicketNames: List<String> = emptyList(),
+        /** Suma dopłat w toku, sformatowana przez backend (np. "300,11"). */
+        val surchargeDue: String? = null
     ) : LookupResult()
 }

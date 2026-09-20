@@ -47,10 +47,13 @@ data class PendingScan(
     val ticketNumber: String = "",
     val ticketNames: List<String> = emptyList(),
     /**
-     * Bilety, za które dopłata jeszcze nie dotarła. Wyłącznie informacja dla
-     * obsługi — taki bilet NIE uprawnia do wejścia i nie bierze udziału w check-inie.
+     * Bilety, za które dopłata jeszcze nie dotarła. Uprawnienie liczy się od
+     * wystawienia proformy — taki bilet DAJE wstęp i świadczenia; oznaczamy go,
+     * żeby obsługa mogła delikatnie przypomnieć o płatności przy rejestracji.
      */
-    val pendingTicketNames: List<String> = emptyList()
+    val pendingTicketNames: List<String> = emptyList(),
+    /** Suma dopłat w toku, sformatowana przez backend (np. "300,11"). */
+    val surchargeDue: String? = null
 ) {
     val entitlementNames: List<String>
         get() = ticketNames.ifEmpty { listOfNotNull(ticketName.takeIf { it.isNotBlank() }) }
@@ -67,9 +70,11 @@ data class ScannerUiState(
     val wrongEventInfo: WrongEventInfo? = null,
     /**
      * Bilety czekające na opłacenie dla ostatnio zeskanowanej osoby — pokazujemy je
-     * na ekranie wyniku skanu. Sam check-in ich nie dotyczy.
+     * na ekranie wyniku skanu, w osobnej sekcji obok biletów opłaconych.
      */
-    val pendingTicketNames: List<String> = emptyList()
+    val pendingTicketNames: List<String> = emptyList(),
+    /** Suma dopłat w toku, sformatowana przez backend (np. "300,11"). */
+    val surchargeDue: String? = null
 )
 
 @HiltViewModel
@@ -124,7 +129,8 @@ class ScannerViewModel @Inject constructor(
                         orderStatus = result.orderStatus,
                         ticketNumber = result.ticketNumber.ifBlank { ticketId },
                         ticketNames = result.ticketNames,
-                        pendingTicketNames = result.pendingTicketNames
+                        pendingTicketNames = result.pendingTicketNames,
+                        surchargeDue = result.surchargeDue
                     )
                     _uiState.value = _uiState.value.copy(pendingScan = pending)
                 }
@@ -183,10 +189,13 @@ class ScannerViewModel @Inject constructor(
             val pendingTicketNames = result.participant?.pendingTicketNames
                 .orEmpty()
                 .ifEmpty { pending.pendingTicketNames }
+            val surchargeDue = result.surchargeDue?.takeIf { it.isNotBlank() }
+                ?: pending.surchargeDue
             _uiState.value = _uiState.value.copy(
                 feedback = feedback,
                 lastResult = result,
-                pendingTicketNames = pendingTicketNames
+                pendingTicketNames = pendingTicketNames,
+                surchargeDue = surchargeDue
             )
 
             // Analytics: track every confirmed scan outcome
@@ -263,7 +272,8 @@ class ScannerViewModel @Inject constructor(
             isScanning = true,
             pendingScan = null,
             wrongEventInfo = null,
-            pendingTicketNames = emptyList()
+            pendingTicketNames = emptyList(),
+            surchargeDue = null
         )
         lastScannedTicketId = null
         lastScannedEventId = null

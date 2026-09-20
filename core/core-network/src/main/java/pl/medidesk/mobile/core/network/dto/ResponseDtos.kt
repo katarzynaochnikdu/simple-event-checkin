@@ -94,7 +94,9 @@ data class ParticipantDto(
     @Json(name = "rsvp_response") val rsvpResponse: String? = null,
     @Json(name = "rsvp_responded_at") val rsvpRespondedAt: String? = null,
     val tickets: List<TicketEntitlementDto>? = null,
-    @Json(name = "pending_tickets") val pendingTickets: List<PendingTicketDto>? = null
+    @Json(name = "pending_tickets") val pendingTickets: List<PendingTicketDto>? = null,
+    /** Gotowy, sformatowany string z backendu (np. "300,11") albo brak. */
+    @Json(name = "surcharge_due") val surchargeDue: String? = null
 )
 
 @JsonClass(generateAdapter = true)
@@ -106,8 +108,10 @@ data class TicketEntitlementDto(
 
 /**
  * Bilet, za który dopłata jeszcze nie dotarła — backend zwraca go w osobnym
- * kluczu `pending_tickets[]`, NIGDY w `tickets[]`, bo nie uprawnia do wejścia
- * i nie ma czego skanować.
+ * kluczu `pending_tickets[]`, NIGDY w `tickets[]` — nie ma tu czego skanować
+ * (bilet nie ma jeszcze własnego QR). Uprawnienie liczy się od wystawienia
+ * proformy, więc taki bilet DAJE wstęp i świadczenia; pokazujemy go osobno,
+ * żeby obsługa mogła przypomnieć o płatności.
  *
  * Czytamy wyłącznie nazwę i stan płatności. Kwoty (`amount_due`,
  * `amount_due_grosze`) świadomie pomijamy — Moshi jest wrażliwy na typ pola,
@@ -128,7 +132,9 @@ data class CheckinResponse(
     val participant: ParticipantSummaryDto? = null,
     val error: String? = null,
     val tickets: List<TicketEntitlementDto>? = null,
-    @Json(name = "pending_tickets") val pendingTickets: List<PendingTicketDto>? = null
+    @Json(name = "pending_tickets") val pendingTickets: List<PendingTicketDto>? = null,
+    /** Gotowy, sformatowany string z backendu (np. "300,11") albo brak. */
+    @Json(name = "surcharge_due") val surchargeDue: String? = null
 )
 
 @JsonClass(generateAdapter = true)
