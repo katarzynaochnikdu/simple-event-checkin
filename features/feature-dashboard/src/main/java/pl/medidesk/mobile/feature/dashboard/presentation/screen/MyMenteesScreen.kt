@@ -110,7 +110,6 @@ class MyMenteesViewModel @Inject constructor(
                 val updatedParticipants = company.participants.map { m ->
                     val matches = (participantId != null && m.participantId == participantId)
                         || m.ticketId == ticketId
-                        || m.backstageTicketId == ticketId
                         || m.ticketNumber == ticketId
                     if (matches && m.checkedIn != isCheckedIn) m.copy(checkedIn = isCheckedIn) else m
                 }
@@ -214,7 +213,6 @@ class MyMenteesViewModel @Inject constructor(
         val mentee = _uiState.value.pendingCheckInMentee ?: return
         val ticketIdent = mentee.ticketNumber
             ?: mentee.ticketId
-            ?: mentee.backstageTicketId
         if (ticketIdent.isNullOrBlank()) {
             _uiState.update {
                 it.copy(

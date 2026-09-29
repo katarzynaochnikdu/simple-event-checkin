@@ -4,7 +4,6 @@ data class Participant(
     val id: Long,
     val ticketId: String?,
     val ticketNumber: String? = null,
-    val backstageTicketId: String?,
     val firstName: String?,
     val lastName: String?,
     val email: String?,

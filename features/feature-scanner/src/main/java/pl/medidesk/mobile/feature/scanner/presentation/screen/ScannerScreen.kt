@@ -58,7 +58,7 @@ import pl.medidesk.mobile.feature.scanner.presentation.viewmodel.ScannerViewMode
 import java.util.concurrent.Executors
 
 /**
- * WO-MOB-034 (F2B-006): dozwolony charset surowej wartości QR (Backstage ticket ID).
+ * WO-MOB-034 (F2B-006): dozwolony charset bieżącego identyfikatora biletu QR.
  * Alfanumeryczne + `_`/`-`, 1–100 znaków. Wszystko poza tym (control chars, emoji,
  * metaznaki) odrzucane przed lookupem — defense-in-depth nad parametryzowanym SQL.
  */
@@ -685,8 +685,8 @@ private fun CameraPreview(
                             .addOnSuccessListener { barcodes ->
                                 barcodes.firstOrNull()?.rawValue?.let { ticketId ->
                                     // WO-204: client-side guard — reject blank or oversized values
-                                    // before passing to ViewModel/API. Backstage ticket IDs are
-                                    // alphanumeric strings, never longer than ~100 chars.
+                                    // before passing to ViewModel/API. Bieżący identyfikator
+                                    // biletu jest alfanumeryczny i nie przekracza ~100 znaków.
                                     // WO-MOB-034 (F2B-006): defense-in-depth charset-whitelist —
                                     // odrzuca control chars / emoji / metaznaki ZANIM trafią do
                                     // lookupu. Length<=200 zostaje jako zewnętrzny strażnik.
