@@ -16,6 +16,9 @@ interface ParticipantDao {
     @Query("SELECT * FROM participants WHERE id = :participantId LIMIT 1")
     suspend fun getParticipantById(participantId: Long): ParticipantEntity?
 
+    @Query("SELECT * FROM participants WHERE id = :participantId AND event_id = :eventId LIMIT 1")
+    suspend fun getParticipantForEvent(participantId: Long, eventId: String): ParticipantEntity?
+
     @Query("SELECT * FROM participants WHERE id = :participantId LIMIT 1")
     fun getParticipantByIdFlow(participantId: Long): Flow<ParticipantEntity?>
 
@@ -56,7 +59,16 @@ interface ParticipantDao {
     fun getCheckedInParticipantsFlow(eventId: String): Flow<List<ParticipantEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(participants: List<ParticipantEntity>)
+    suspend fun insertAllRows(participants: List<ParticipantEntity>)
+
+    @Transaction
+    suspend fun insertAll(participants: List<ParticipantEntity>) {
+        val preservedParticipants = participants.map { participant ->
+            val existing = getParticipantForEvent(participant.id, participant.eventId)
+            participant.copy(backstageTicketId = participant.backstageTicketId ?: existing?.backstageTicketId)
+        }
+        insertAllRows(preservedParticipants)
+    }
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(participant: ParticipantEntity)
@@ -78,7 +90,12 @@ interface ParticipantDao {
 
     @Transaction
     suspend fun replaceAll(eventId: String, participants: List<ParticipantEntity>) {
+        val existingParticipants = getParticipants(eventId).associateBy { it.id to it.eventId }
+        val refreshedParticipants = participants.map { participant ->
+            val existing = existingParticipants[participant.id to participant.eventId]
+            participant.copy(backstageTicketId = participant.backstageTicketId ?: existing?.backstageTicketId)
+        }
         deleteAllForEvent(eventId)
-        insertAll(participants)
+        insertAllRows(refreshedParticipants)
     }
 }
