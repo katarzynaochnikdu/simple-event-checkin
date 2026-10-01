@@ -92,7 +92,7 @@ class ParticipantDetailsViewModel @Inject constructor(
             _checkinResult.value = CheckinResult.AlreadyCheckedIn
             return
         }
-        val ticketId = participant.ticketId ?: return
+        val ticketId = participant.currentCheckinIdentifier ?: return
 
         viewModelScope.launch {
             _checkinResult.value = CheckinResult.Loading
@@ -130,7 +130,7 @@ class ParticipantDetailsViewModel @Inject constructor(
     fun performUndoCheckin() {
         val participant = (_uiState.value as? ParticipantDetailsUiState.Success)?.participant ?: return
         if (!participant.isCheckedIn) return
-        val ticketId = participant.ticketId ?: return
+        val ticketId = participant.currentCheckinIdentifier ?: return
 
         viewModelScope.launch {
             _checkinResult.value = CheckinResult.Loading

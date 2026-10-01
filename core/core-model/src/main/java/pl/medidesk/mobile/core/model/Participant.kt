@@ -33,6 +33,8 @@ data class Participant(
 ) {
     val displayName: String get() = "${firstName.orEmpty()} ${lastName.orEmpty()}".trim()
     val isCheckedIn: Boolean get() = checkedInAt != null
+    val currentCheckinIdentifier: String?
+        get() = ticketId?.takeIf(String::isNotBlank) ?: ticketNumber?.takeIf(String::isNotBlank)
     val entitlementNames: List<String>
         get() = entitlementDisplayNames(tickets, ticketName)
 }
