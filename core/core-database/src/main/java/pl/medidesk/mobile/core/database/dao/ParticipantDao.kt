@@ -16,17 +16,19 @@ interface ParticipantDao {
     @Query("SELECT * FROM participants WHERE id = :participantId LIMIT 1")
     suspend fun getParticipantById(participantId: Long): ParticipantEntity?
 
+    @Query("SELECT * FROM participants WHERE id = :participantId AND event_id = :eventId LIMIT 1")
+    suspend fun getParticipantForEvent(participantId: Long, eventId: String): ParticipantEntity?
+
     @Query("SELECT * FROM participants WHERE id = :participantId LIMIT 1")
     fun getParticipantByIdFlow(participantId: Long): Flow<ParticipantEntity?>
 
-    @Query("SELECT * FROM participants WHERE backstage_ticket_id = :ticketId LIMIT 1")
+    @Query("SELECT * FROM participants WHERE ticket_number = :ticketId OR ticket_id = :ticketId LIMIT 1")
     suspend fun findByTicketId(ticketId: String): ParticipantEntity?
 
     @Query("""
         SELECT * FROM participants
         WHERE ticket_number = :ticketId
            OR ticket_id = :ticketId
-           OR backstage_ticket_id = :ticketId
         LIMIT 1
     """)
     suspend fun findByAnyTicketId(ticketId: String): ParticipantEntity?
@@ -34,7 +36,7 @@ interface ParticipantDao {
     @Query("""
         SELECT * FROM participants
         WHERE event_id = :eventId
-          AND (ticket_number = :ticketId OR ticket_id = :ticketId OR backstage_ticket_id = :ticketId)
+          AND (ticket_number = :ticketId OR ticket_id = :ticketId)
         LIMIT 1
     """)
     suspend fun findByTicketAndEvent(ticketId: String, eventId: String): ParticipantEntity?
@@ -57,7 +59,16 @@ interface ParticipantDao {
     fun getCheckedInParticipantsFlow(eventId: String): Flow<List<ParticipantEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(participants: List<ParticipantEntity>)
+    suspend fun insertAllRows(participants: List<ParticipantEntity>)
+
+    @Transaction
+    suspend fun insertAll(participants: List<ParticipantEntity>) {
+        val preservedParticipants = participants.map { participant ->
+            val existing = getParticipantForEvent(participant.id, participant.eventId)
+            participant.copy(backstageTicketId = participant.backstageTicketId ?: existing?.backstageTicketId)
+        }
+        insertAllRows(preservedParticipants)
+    }
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(participant: ParticipantEntity)
@@ -65,13 +76,13 @@ interface ParticipantDao {
     @Query("DELETE FROM participants WHERE event_id = :eventId")
     suspend fun deleteAllForEvent(eventId: String)
 
-    @Query("UPDATE participants SET checked_in_at = :checkedInAt, status = 'checked_in' WHERE ticket_number = :ticketId OR ticket_id = :ticketId OR backstage_ticket_id = :ticketId")
+    @Query("UPDATE participants SET checked_in_at = :checkedInAt, status = 'checked_in' WHERE ticket_number = :ticketId OR ticket_id = :ticketId")
     suspend fun markCheckedIn(ticketId: String, checkedInAt: String)
 
     @Query("UPDATE participants SET checked_in_at = :checkedInAt, status = 'checked_in' WHERE id = :participantId")
     suspend fun markCheckedInById(participantId: Long, checkedInAt: String)
     
-    @Query("UPDATE participants SET checked_in_at = NULL, status = 'rsvp_confirmed' WHERE ticket_number = :ticketId OR ticket_id = :ticketId OR backstage_ticket_id = :ticketId")
+    @Query("UPDATE participants SET checked_in_at = NULL, status = 'rsvp_confirmed' WHERE ticket_number = :ticketId OR ticket_id = :ticketId")
     suspend fun markCheckedOut(ticketId: String)
 
     @Query("UPDATE participants SET checked_in_at = NULL, status = 'rsvp_confirmed' WHERE id = :participantId")
@@ -79,7 +90,12 @@ interface ParticipantDao {
 
     @Transaction
     suspend fun replaceAll(eventId: String, participants: List<ParticipantEntity>) {
+        val existingParticipants = getParticipants(eventId).associateBy { it.id to it.eventId }
+        val refreshedParticipants = participants.map { participant ->
+            val existing = existingParticipants[participant.id to participant.eventId]
+            participant.copy(backstageTicketId = participant.backstageTicketId ?: existing?.backstageTicketId)
+        }
         deleteAllForEvent(eventId)
-        insertAll(participants)
+        insertAllRows(refreshedParticipants)
     }
 }

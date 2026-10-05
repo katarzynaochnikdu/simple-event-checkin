@@ -185,7 +185,7 @@ class ParticipantsViewModel @Inject constructor(
     fun performManualCheckin(participant: Participant) {
         viewModelScope.launch {
             val now = Instant.now().toString()
-            val identifier = participant.ticketId ?: participant.backstageTicketId
+            val identifier = participant.currentCheckinIdentifier
             // WO-204: guard PII logs in release builds
             if (BuildConfig.DEBUG) Log.d("ParticipantsVM", "Performing manual check-in for ID: ${participant.id}, TicketID: $identifier")
 
@@ -206,7 +206,7 @@ class ParticipantsViewModel @Inject constructor(
                 syncEngine.triggerImmediateSync(participant.eventId)
             } else {
                 // WO-204: no PII in release error log (participant.id = numeric, acceptable)
-                Log.e("ParticipantsVM", "Cannot sync check-in: no ticketId for participant ${participant.id}")
+                Log.e("ParticipantsVM", "Cannot sync check-in: no current ticket identifier for participant ${participant.id}")
             }
 
             dismissDialogs()
@@ -222,7 +222,7 @@ class ParticipantsViewModel @Inject constructor(
             // 1. Update local DB
             participantDao.markCheckedOutById(participant.id)
 
-            val identifier = participant.ticketId ?: participant.backstageTicketId
+            val identifier = participant.currentCheckinIdentifier
             if (identifier != null) {
                 offlineCheckinDao.insert(
                     OfflineCheckinEntity(
@@ -263,7 +263,6 @@ class ParticipantsViewModel @Inject constructor(
                 p.email?.contains(query, ignoreCase = true) == true ||
                 p.company?.contains(query, ignoreCase = true) == true ||
                 p.ticketId?.contains(query, ignoreCase = true) == true ||
-                p.backstageTicketId?.contains(query, ignoreCase = true) == true ||
                 p.buyerName?.contains(query, ignoreCase = true) == true ||
                 p.tags.any { it.contains(query, ignoreCase = true) }
 

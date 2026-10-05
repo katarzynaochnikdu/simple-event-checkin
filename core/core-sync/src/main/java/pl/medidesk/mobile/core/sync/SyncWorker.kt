@@ -169,12 +169,12 @@ class SyncWorker @AssistedInject constructor(
     }
 
     private suspend fun pushCheckins(eventId: String): Int {
-        val unsynced = offlineCheckinDao.getUnsynced().filter { it.eventId == eventId }
+        val unsynced = currentOfflineCheckinsForEvent(offlineCheckinDao.getUnsynced(), eventId)
         if (unsynced.isEmpty()) return 0
 
         if (BuildConfig.DEBUG) Log.d(TAG, "Pushing ${unsynced.size} checkins to server")
         val items = unsynced.mapNotNull { e ->
-            val tid = e.ticketId ?: e.backstageTicketId ?: return@mapNotNull null
+            val tid = e.ticketId?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
             CheckinSyncItem(
                 ticketId = tid,
                 eventId = e.eventId,

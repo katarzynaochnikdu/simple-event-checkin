@@ -72,7 +72,6 @@ class LookupParticipantByTicketUseCase @Inject constructor(
             val match = response.body()?.participants.orEmpty().firstOrNull {
                 it.ticketNumber == ticketId
                     || it.ticketId == ticketId
-                    || it.backstageTicketId == ticketId
             } ?: return LookupResult.NotFound
 
             found(
